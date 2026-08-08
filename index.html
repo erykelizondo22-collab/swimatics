@@ -115,63 +115,38 @@
 
     <div v-else class="no-print pb-20 min-h-screen">
         
-        <div class="glass-nav border-b border-slate-200/60 px-4 md:px-8 py-4 flex flex-wrap justify-between items-center sticky top-0 z-50 shadow-sm gap-y-4 transition-all">
-            <div class="flex items-center gap-2">
-                <button v-if="myTeam" @click="mobileNavOpen = !mobileNavOpen" class="md:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors shrink-0" aria-label="Toggle menu">
-                    <svg v-if="!mobileNavOpen" class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                    <svg v-else class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-                <div class="flex items-center gap-3 cursor-pointer group" @click="currentView = myTeam ? (isParent ? 'parent-home' : 'dashboard') : 'onboarding'; mobileNavOpen = false">
+        <div class="glass-nav border-b border-slate-200/60 px-4 md:px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm transition-all">
+            <div class="flex items-center gap-3 cursor-pointer group shrink-0" @click="currentView = myTeam ? (isParent ? 'parent-home' : 'dashboard') : 'onboarding'; mobileNavOpen = false">
                 <div class="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl group-hover:scale-105 transition-transform duration-300 overflow-hidden" :style="{ backgroundColor: teamColors.primary + '20' }">
                     <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain p-1">
                 </div>
                 <span class="font-black text-2xl tracking-tight hidden sm:inline-block text-slate-900 group-hover:opacity-80 transition-opacity">Swimatics</span>
-                </div>
             </div>
-            
-            <div class="flex flex-1 md:flex-none items-center justify-end gap-2 md:gap-8 overflow-x-auto no-scrollbar">
-                <div v-if="myTeam" class="flex items-center justify-end gap-2 sm:gap-4 md:gap-8 w-full md:w-auto">
-                    <nav class="hidden md:flex gap-1.5 sm:gap-2 md:gap-4 overflow-x-auto pb-1 flex-1 no-scrollbar items-center">
-                        <button v-if="isParent" @click="currentView = 'parent-home'" :class="{'bg-slate-900 text-white shadow-md': currentView === 'parent-home', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'parent-home'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Home</button>
-                        <template v-if="!isParent">
-                        <button @click="currentView = 'dashboard'" :class="{'bg-slate-900 text-white shadow-md': currentView === 'dashboard', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'dashboard'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Vault</button>
-                        <button @click="currentView = 'analytics'" :class="{'bg-slate-900 text-white shadow-md': currentView === 'analytics', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'analytics'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Analytics</button>
-                        <button @click="currentView = 'season-planning'" :class="{'bg-slate-900 text-white shadow-md': currentView === 'season-planning' || currentView === 'plan-builder', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'season-planning' && currentView !== 'plan-builder'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Season</button>
-                        <button @click="currentView = 'groups'; selectedGroupForEdit = null;" :class="{'bg-slate-900 text-white shadow-md': currentView === 'groups' || currentView === 'group-details', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'groups' && currentView !== 'group-details'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Groups</button>
-                        <button @click="currentView = 'roster'; loadSwimmers();" :class="{'bg-slate-900 text-white shadow-md': currentView === 'roster', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'roster'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Roster</button>
-                        <button @click="currentView = 'attendance'; loadSwimmers(); loadAttendanceForDate();" :class="{'bg-slate-900 text-white shadow-md': currentView === 'attendance', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'attendance'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Attendance</button>
-                        <button @click="currentView = 'meets'; loadMeets();" :class="{'bg-slate-900 text-white shadow-md': currentView === 'meets' || currentView === 'meet-detail', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'meets' && currentView !== 'meet-detail'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Meets</button>
-                        <button @click="currentView = 'import'; resetImport();" :class="{'bg-slate-900 text-white shadow-md': currentView === 'import', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'import'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Import</button>
-                        <button @click="currentView = 'staff'; loadStaff();" :class="{'bg-slate-900 text-white shadow-md': currentView === 'staff', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'staff'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Staff</button>
-                        </template>
-                    </nav>
-                    <div class="flex items-center gap-1.5 sm:gap-3 pl-2 sm:pl-3 md:pl-6 border-l border-slate-200 shrink-0">
-                        <span class="text-[10px] md:text-xs font-black bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm" :style="{ color: teamColors.primary }">{{myTeam}}</span>
-                        <button @click="switchAccount" title="Switch Google account" class="text-[10px] md:text-xs font-bold text-slate-400 hover:text-blue-500 transition-colors bg-slate-50 hover:bg-blue-50 px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap"><span class="hidden sm:inline">SWITCH</span><span class="sm:hidden">⇄</span></button>
-                        <button @click="logout" class="text-[10px] md:text-xs font-bold text-slate-400 hover:text-red-500 transition-colors bg-slate-50 hover:bg-red-50 px-3 py-1.5 rounded-lg whitespace-nowrap">LOGOUT</button>
-                    </div>
-                </div>
-                <div v-else class="flex items-center gap-2 sm:gap-4 shrink-0">
-                    <span class="text-sm font-bold text-slate-600 bg-slate-100 px-4 py-2 rounded-full border border-slate-200">{{coachName}}</span>
-                    <button @click="switchAccount" title="Switch Google account" class="text-xs font-bold text-slate-400 hover:text-blue-500 transition-colors whitespace-nowrap"><span class="hidden sm:inline">SWITCH</span><span class="sm:hidden">⇄</span></button>
-                    <button @click="logout" class="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors whitespace-nowrap">LOGOUT</button>
-                </div>
-            </div>
-        </div>
 
-        <div v-if="myTeam && mobileNavOpen" class="md:hidden bg-white border-b border-slate-200 shadow-lg px-4 py-3 flex flex-col gap-1 sticky top-[73px] z-40">
-            <button v-if="isParent" @click="currentView = 'parent-home'; mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'parent-home', 'text-slate-600 hover:bg-slate-100': currentView !== 'parent-home'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Home</button>
-            <template v-if="!isParent">
-            <button @click="currentView = 'dashboard'; mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'dashboard', 'text-slate-600 hover:bg-slate-100': currentView !== 'dashboard'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Vault</button>
-            <button @click="currentView = 'analytics'; mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'analytics', 'text-slate-600 hover:bg-slate-100': currentView !== 'analytics'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Analytics</button>
-            <button @click="currentView = 'season-planning'; mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'season-planning' || currentView === 'plan-builder', 'text-slate-600 hover:bg-slate-100': currentView !== 'season-planning' && currentView !== 'plan-builder'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Season</button>
-            <button @click="currentView = 'groups'; selectedGroupForEdit = null; mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'groups' || currentView === 'group-details', 'text-slate-600 hover:bg-slate-100': currentView !== 'groups' && currentView !== 'group-details'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Groups</button>
-            <button @click="currentView = 'roster'; loadSwimmers(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'roster', 'text-slate-600 hover:bg-slate-100': currentView !== 'roster'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Roster</button>
-            <button @click="currentView = 'attendance'; loadSwimmers(); loadAttendanceForDate(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'attendance', 'text-slate-600 hover:bg-slate-100': currentView !== 'attendance'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Attendance</button>
-            <button @click="currentView = 'meets'; loadMeets(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'meets' || currentView === 'meet-detail', 'text-slate-600 hover:bg-slate-100': currentView !== 'meets' && currentView !== 'meet-detail'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Meets</button>
-            <button @click="currentView = 'import'; resetImport(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'import', 'text-slate-600 hover:bg-slate-100': currentView !== 'import'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Import</button>
-            <button @click="currentView = 'staff'; loadStaff(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'staff', 'text-slate-600 hover:bg-slate-100': currentView !== 'staff'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Staff</button>
-            </template>
+            <div v-if="myTeam" class="flex items-center gap-1.5 sm:gap-3 shrink-0 relative">
+                <span class="hidden sm:inline text-[10px] md:text-xs font-black bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm" :style="{ color: teamColors.primary }">{{myTeam}}</span>
+                <button @click="switchAccount" title="Switch Google account" class="text-[10px] md:text-xs font-bold text-slate-400 hover:text-blue-500 transition-colors bg-slate-50 hover:bg-blue-50 px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap"><span class="hidden sm:inline">SWITCH</span><span class="sm:hidden">⇄</span></button>
+                <button @click="logout" class="text-[10px] md:text-xs font-bold text-slate-400 hover:text-red-500 transition-colors bg-slate-50 hover:bg-red-50 px-3 py-1.5 rounded-lg whitespace-nowrap">LOGOUT</button>
+                <button @click="mobileNavOpen = !mobileNavOpen" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-black transition-colors shrink-0" aria-label="Toggle menu">
+                    <svg v-if="!mobileNavOpen" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    <svg v-else class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+
+                <div v-if="mobileNavOpen" class="absolute top-full right-0 mt-2 w-64 bg-white border border-slate-200 shadow-xl rounded-2xl p-2 flex flex-col gap-1 z-50 max-h-[80vh] overflow-y-auto">
+                    <button v-if="isParent" @click="currentView = 'parent-home'; mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'parent-home', 'text-slate-600 hover:bg-slate-100': currentView !== 'parent-home'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Home</button>
+                    <template v-if="!isParent">
+                    <button v-for="m in navModules" :key="m.key" @click="selectModule(m.key); mobileNavOpen = false" :class="isModuleActive(m.key) ? 'bg-slate-900 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">{{m.label}}</button>
+                    <button v-if="myRole === 'owner' || myRole === 'admin'" @click="currentView = 'accounts'; loadAccounts(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'accounts', 'text-slate-600 hover:bg-slate-100': currentView !== 'accounts'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Accounts</button>
+                    <button @click="currentView = 'staff'; loadStaff(); loadCoachGroupLinks(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'staff', 'text-slate-600 hover:bg-slate-100': currentView !== 'staff'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Staff</button>
+                    <button v-if="myRole === 'owner' || myRole === 'admin'" @click="openLayoutEditor(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'layout', 'text-slate-600 hover:bg-slate-100': currentView !== 'layout'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Site Layout</button>
+                    </template>
+                </div>
+            </div>
+            <div v-else class="flex items-center gap-2 sm:gap-4 shrink-0">
+                <span class="text-sm font-bold text-slate-600 bg-slate-100 px-4 py-2 rounded-full border border-slate-200">{{coachName}}</span>
+                <button @click="switchAccount" title="Switch Google account" class="text-xs font-bold text-slate-400 hover:text-blue-500 transition-colors whitespace-nowrap"><span class="hidden sm:inline">SWITCH</span><span class="sm:hidden">⇄</span></button>
+                <button @click="logout" class="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors whitespace-nowrap">LOGOUT</button>
+            </div>
         </div>
 
         <div class="max-w-[1200px] mx-auto p-4 md:p-6 mt-6 relative">
@@ -207,14 +182,10 @@
             <div v-if="currentView === 'onboarding'" class="max-w-5xl mx-auto mt-8 md:mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 text-center relative flex flex-col justify-center hover:shadow-2xl transition-shadow duration-300">
                     <h2 class="text-2xl md:text-3xl font-black text-slate-900 mb-6 uppercase tracking-tight">Join a Team</h2>
-                    <div class="flex gap-2 mb-6 bg-slate-100 p-1.5 rounded-2xl">
-                        <button @click="joinAsRole = 'coach'" :class="joinAsRole === 'coach' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all">I'm a Coach</button>
-                        <button @click="joinAsRole = 'parent'" :class="joinAsRole === 'parent' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all">I'm a Parent</button>
-                    </div>
                     <input v-model="joinCode" placeholder="Team Code" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 uppercase text-center text-lg tracking-widest mb-4 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all">
                     <input v-model="teamPassword" type="password" placeholder="Vault Password" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 text-center text-lg tracking-widest mb-4 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all">
-                    <p v-if="joinAsRole === 'parent'" class="text-[11px] text-slate-400 font-bold mb-4 leading-relaxed">After joining, ask your coach to link your account to your swimmer(s) — you won't see any data until that's done.</p>
-                    <button @click="joinTeam()" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-black hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm">{{ joinAsRole === 'parent' ? 'Join as Parent' : 'Open Vault' }}</button>
+                    <p class="text-[11px] text-slate-400 font-bold mb-4 leading-relaxed">You'll join as a parent account. If you're a coach, ask an existing coach to promote you from the Accounts tab once you're in.</p>
+                    <button @click="joinTeam()" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-black hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm">Join Team</button>
                 </div>
                 <div class="bg-gradient-to-br from-blue-600 to-cyan-500 p-8 md:p-12 rounded-[2.5rem] shadow-xl shadow-blue-900/20 text-center text-white relative flex flex-col justify-center hover:shadow-2xl transition-shadow duration-300">
                     <h2 class="text-2xl md:text-3xl font-black mb-8 uppercase tracking-tight">Create a Vault</h2>
@@ -744,6 +715,12 @@
                         <div>
                             <div class="font-black uppercase text-slate-800 tracking-wide text-sm md:text-base">{{member.name || member.email}}</div>
                             <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 bg-white inline-block px-2 py-0.5 rounded border border-slate-200">{{member.role}}</div>
+                            <div v-if="(myRole === 'owner' || myRole === 'admin') && member.role !== 'parent' && teamGroupsList.length" class="mt-3 flex flex-wrap gap-1.5 items-center">
+                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mr-1">Groups:</span>
+                                <button v-for="g in teamGroupsList" :key="g.id" @click="toggleCoachGroup(member.id, g.name)"
+                                        :class="(coachGroupLinksMap[member.id] || []).includes(g.name) ? 'bg-slate-900 text-white' : 'bg-white text-slate-400 border border-slate-200'"
+                                        class="text-[9px] font-black uppercase px-2 py-1 rounded-md transition-colors">{{g.name}}</button>
+                            </div>
                         </div>
                         
                         <div v-if="(myRole === 'owner' || myRole === 'admin') && member.id !== user.id" class="flex gap-2 items-center">
@@ -769,6 +746,31 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div v-if="currentView === 'accounts'" class="max-w-4xl mx-auto space-y-6 mt-6">
+                <div class="border-b border-slate-200 pb-6">
+                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Accounts</h2>
+                    <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Everyone who has joined this team</p>
+                </div>
+
+                <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200">
+                    <input v-model="accountSearchQuery" placeholder="Search by name or email..." class="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-sm font-bold outline-none">
+                </div>
+
+                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                    <div v-for="acc in filteredAccounts" :key="acc.id" class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <div class="font-black uppercase text-slate-800">{{acc.name || acc.email}}</div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 bg-slate-50 inline-block px-2 py-0.5 rounded border border-slate-200">{{acc.role}}</div>
+                        </div>
+                        <div v-if="acc.id !== user.id" class="flex gap-2">
+                            <button v-if="acc.role === 'parent'" @click="promoteToCoach(acc.id, acc.name || acc.email)" class="text-[10px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-2 rounded-lg hover:bg-emerald-100 transition-colors">Promote to Coach</button>
+                            <button v-if="myRole === 'owner' && (acc.role === 'coach' || acc.role === 'admin')" @click="demoteToParent(acc.id, acc.name || acc.email)" class="text-[10px] font-black uppercase bg-slate-50 text-slate-500 border border-slate-200 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">Demote to Parent</button>
+                        </div>
+                    </div>
+                    <div v-if="!filteredAccounts.length" class="p-12 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No matching accounts</div>
                 </div>
             </div>
 
@@ -1053,9 +1055,129 @@
                 <div v-if="importState.status === 'done'" class="bg-emerald-50 border border-emerald-200 text-emerald-700 p-6 rounded-2xl font-black uppercase tracking-widest text-xs text-center">{{importState.message}} <button @click="resetImport" class="block mt-3 text-[10px] font-black uppercase underline">Import Another</button></div>
             </div>
 
+            <div v-if="currentView === 'layout'" class="max-w-2xl mx-auto space-y-6 mt-6">
+                <div class="border-b border-slate-200 pb-6">
+                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Site Layout</h2>
+                    <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Toggle and drag to reorder what your team sees</p>
+                </div>
+                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 p-4 space-y-2">
+                    <div v-for="(m, index) in layoutDraft" :key="m.key"
+                         draggable="true" @dragstart="layoutDragStart(index)" @dragover.prevent @drop="layoutDrop(index)"
+                         :class="{ 'opacity-50': draggedLayoutIndex === index, 'opacity-50 grayscale': !m.enabled }"
+                         class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl p-4 transition-opacity">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-5 h-5 text-slate-400 cursor-grab active:cursor-grabbing" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                            <span class="font-black uppercase text-sm text-slate-800">{{m.label}}</span>
+                        </div>
+                        <button @click="toggleLayoutModule(m.key)" :class="m.enabled ? 'bg-emerald-500' : 'bg-slate-300'" class="w-12 h-7 rounded-full relative transition-colors shrink-0">
+                            <span :class="m.enabled ? 'translate-x-6' : 'translate-x-1'" class="absolute top-1 w-5 h-5 bg-white rounded-full transition-transform"></span>
+                        </button>
+                    </div>
+                </div>
+                <button @click="saveLayout" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-sm">Save Layout</button>
+            </div>
+
+            <div v-if="currentView === 'calendar'" class="max-w-5xl mx-auto space-y-6 mt-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 border-b border-slate-200 pb-6">
+                    <div>
+                        <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Calendar</h2>
+                        <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">{{calendarMonthLabel}}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="prevMonth" class="w-10 h-10 bg-white border border-slate-200 rounded-xl font-black text-slate-600 hover:bg-slate-50">‹</button>
+                        <button @click="goToToday" class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black uppercase text-[10px] tracking-widest text-slate-600 hover:bg-slate-50">Today</button>
+                        <button @click="nextMonth" class="w-10 h-10 bg-white border border-slate-200 rounded-xl font-black text-slate-600 hover:bg-slate-50">›</button>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <button @click="calendarVisibilityFilter.team = !calendarVisibilityFilter.team" :class="calendarVisibilityFilter.team ? 'bg-blue-600 text-white' : 'bg-white text-slate-400 border border-slate-200'" class="text-[10px] font-black uppercase px-3 py-2 rounded-lg transition-colors">Team Calendar</button>
+                    <template v-if="!isParent">
+                        <button @click="calendarVisibilityFilter.coaches = !calendarVisibilityFilter.coaches" :class="calendarVisibilityFilter.coaches ? 'bg-purple-600 text-white' : 'bg-white text-slate-400 border border-slate-200'" class="text-[10px] font-black uppercase px-3 py-2 rounded-lg transition-colors">Coaches Only</button>
+                        <button @click="calendarVisibilityFilter.personal = !calendarVisibilityFilter.personal" :class="calendarVisibilityFilter.personal ? 'bg-amber-500 text-white' : 'bg-white text-slate-400 border border-slate-200'" class="text-[10px] font-black uppercase px-3 py-2 rounded-lg transition-colors">My Personal</button>
+                        <button @click="showNewCalendarEventForm = !showNewCalendarEventForm" class="ml-auto bg-slate-900 text-white px-6 py-2.5 rounded-lg font-black uppercase tracking-widest text-[10px]">+ New Event</button>
+                    </template>
+                </div>
+
+                <div v-if="showNewCalendarEventForm" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 space-y-3">
+                    <div class="flex gap-2 bg-slate-100 p-1.5 rounded-xl">
+                        <button @click="newCalendarEvent.visibility = 'team'" :class="newCalendarEvent.visibility === 'team' ? 'bg-slate-900 text-white' : 'text-slate-500'" class="flex-1 py-2.5 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all">Team Calendar</button>
+                        <button @click="newCalendarEvent.visibility = 'coaches'" :class="newCalendarEvent.visibility === 'coaches' ? 'bg-slate-900 text-white' : 'text-slate-500'" class="flex-1 py-2.5 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all">Coaches Only</button>
+                        <button @click="newCalendarEvent.visibility = 'personal'" :class="newCalendarEvent.visibility === 'personal' ? 'bg-slate-900 text-white' : 'text-slate-500'" class="flex-1 py-2.5 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all">Just Me</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input v-model="newCalendarEvent.title" placeholder="Event Title" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none md:col-span-2">
+                        <select v-model="newCalendarEvent.event_type" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                            <option value="practice">Practice</option><option value="meet">Meet</option><option value="event">Team Event</option>
+                        </select>
+                        <select v-if="newCalendarEvent.visibility === 'team'" v-model="newCalendarEvent.group_name" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                            <option value="">Whole Team</option>
+                            <option v-for="g in postableGroups" :key="g" :value="g">{{g}} only</option>
+                        </select>
+                        <input v-model="newCalendarEvent.start_date" type="date" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                        <input v-model="newCalendarEvent.location" placeholder="Location" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                        <input v-model="newCalendarEvent.start_time" type="time" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                        <input v-model="newCalendarEvent.end_time" type="time" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                        <textarea v-model="newCalendarEvent.notes" placeholder="Notes (optional)" rows="2" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none md:col-span-2"></textarea>
+                        <button @click="createCalendarEvent" class="md:col-span-2 bg-slate-900 text-white py-3 rounded-xl font-black uppercase tracking-widest text-xs">Add to Calendar</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="grid grid-cols-7 border-b border-slate-100">
+                        <div v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d" class="p-2 text-center text-[9px] font-black text-slate-400 uppercase tracking-widest">{{d}}</div>
+                    </div>
+                    <div class="grid grid-cols-7">
+                        <div v-for="cell in calendarGridDays" :key="cell.dateStr" @click="openCalendarDay(cell.dateStr)"
+                             :class="[cell.inMonth ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/60 hover:bg-slate-100', cell.isToday ? 'ring-2 ring-inset ring-blue-500' : '']"
+                             class="min-h-[80px] sm:min-h-[100px] border-b border-r border-slate-100 p-1.5 cursor-pointer transition-colors">
+                            <div class="text-[10px] font-black" :class="cell.inMonth ? 'text-slate-700' : 'text-slate-300'">{{cell.dayNum}}</div>
+                            <div class="space-y-0.5 mt-1">
+                                <div v-for="e in cell.events.slice(0,2)" :key="e.id" class="text-[8px] sm:text-[9px] font-bold px-1 py-0.5 rounded truncate"
+                                     :class="e.visibility === 'personal' ? 'bg-amber-100 text-amber-700' : e.visibility === 'coaches' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'">{{e.title}}</div>
+                                <div v-if="cell.events.length > 2" class="text-[8px] font-black text-slate-400">+{{cell.events.length - 2}} more</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="selectedCalendarDay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" @click.self="closeCalendarDay">
+                    <div class="bg-white rounded-3xl w-full max-w-md max-h-[80vh] overflow-y-auto p-6 space-y-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-black text-lg">{{formatPracticeDate(selectedCalendarDay)}}</h3>
+                            <button @click="closeCalendarDay" class="w-8 h-8 bg-slate-100 rounded-full font-black">X</button>
+                        </div>
+                        <div v-for="e in (eventsByDate[selectedCalendarDay] || [])" :key="e.id" class="bg-slate-50 p-3 rounded-xl">
+                            <div class="flex justify-between items-start gap-2">
+                                <div>
+                                    <div class="font-bold text-sm flex items-center gap-2 flex-wrap">
+                                        {{e.title}}
+                                        <span class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded" :class="e.visibility === 'personal' ? 'bg-amber-100 text-amber-700' : e.visibility === 'coaches' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'">{{ e.visibility === 'team' ? (e.group_name || 'Whole Team') : e.visibility }}</span>
+                                    </div>
+                                    <div class="text-[10px] text-slate-400 font-bold mt-1"><span v-if="e.start_time">{{e.start_time}}<span v-if="e.end_time"> – {{e.end_time}}</span> • </span>{{e.location}}</div>
+                                    <div v-if="e.notes" class="text-xs text-slate-500 mt-1">{{e.notes}}</div>
+                                </div>
+                                <button v-if="!isParent" @click="deleteCalendarEvent(e.id)" class="text-red-400 hover:text-red-600 text-[10px] font-black uppercase shrink-0">Remove</button>
+                            </div>
+                        </div>
+                        <div v-if="!(eventsByDate[selectedCalendarDay] || []).length" class="text-xs text-slate-400 font-bold text-center py-6">No events this day</div>
+                        <button v-if="!isParent" @click="addEventOnDay(selectedCalendarDay)" class="w-full text-[10px] font-black uppercase text-slate-500 border border-dashed border-slate-300 py-3 rounded-xl hover:bg-slate-50 transition-colors">+ Add Event This Day</button>
+                    </div>
+                </div>
+            </div>
+
             <div v-if="currentView === 'parent-home'" class="max-w-4xl mx-auto space-y-8 mt-6">
                 <div class="border-b border-slate-200 pb-6">
                     <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">My Swimmers</h2>
+                </div>
+
+                <div v-if="teamModules.includes('calendar') && upcomingCalendarEvents.length" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Upcoming on the Calendar</h4>
+                    <div v-for="e in upcomingCalendarEvents.slice(0,5)" :key="e.id" class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                        <div class="text-sm font-bold text-slate-800">{{e.title}} <span v-if="e.group_name" class="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 ml-1">{{e.group_name}}</span></div>
+                        <div class="text-[10px] font-black uppercase text-slate-400">{{formatPracticeDate(e.start_date)}}</div>
+                    </div>
+                    <button @click="currentView = 'calendar'" class="text-[10px] font-black uppercase text-slate-400 hover:text-slate-700 mt-3">View Full Calendar →</button>
                 </div>
 
                 <div v-if="!myLinkedSwimmers.length" class="text-center py-20 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2rem]">
@@ -1164,12 +1286,41 @@ createApp({
         const user = ref(null);
         const currentView = ref('dashboard');
         const mobileNavOpen = ref(false);
-        const joinAsRole = ref('coach');
 
         // ROSTER
         const swimmers = ref([]);
         const newSwimmer = ref({ first_name: '', last_name: '', birthdate: '', group_name: '' });
         const teamParents = ref([]); // team members with role 'parent'
+        const accountsList = ref([]);
+
+        // LAYOUT CUSTOMIZATION
+        const ALL_TOGGLEABLE_MODULES = [
+            { key: 'dashboard', label: 'Vault (Workouts)' },
+            { key: 'analytics', label: 'Analytics' },
+            { key: 'season-planning', label: 'Season Planning' },
+            { key: 'groups', label: 'Groups' },
+            { key: 'roster', label: 'Roster' },
+            { key: 'attendance', label: 'Attendance' },
+            { key: 'meets', label: 'Meets' },
+            { key: 'import', label: 'Smart Import' },
+            { key: 'calendar', label: 'Calendar' },
+        ];
+        const teamModules = ref(ALL_TOGGLEABLE_MODULES.map(m => m.key));
+        const layoutDraft = ref([]);
+        const draggedLayoutIndex = ref(null);
+
+        // COACH-GROUP ASSIGNMENTS
+        const coachGroupLinksMap = ref({}); // { coachUserId: [groupName, ...] }
+        const myAssignedGroups = ref([]);
+
+        // CALENDAR
+        const calendarEvents = ref([]);
+        const newCalendarEvent = ref({ title: '', event_type: 'practice', start_date: '', start_time: '', end_time: '', location: '', notes: '', group_name: '', visibility: 'team' });
+        const showNewCalendarEventForm = ref(false);
+        const calendarViewDate = ref(new Date());
+        const calendarVisibilityFilter = ref({ team: true, coaches: true, personal: true });
+        const selectedCalendarDay = ref(null);
+        const accountSearchQuery = ref('');
         const parentLinksBySwimmer = ref({}); // { swimmerId: [{linkId, parentUserId, name, email}] }
 
         // ATTENDANCE
@@ -1469,7 +1620,7 @@ createApp({
             const pwdToCheck = preHashedPassword !== undefined ? preHashedPassword : await sha256Hex(teamPassword.value);
             const { data } = await client.from('teams').select('id').eq('id', code).eq('password', pwdToCheck);
             if (!data?.length) return alert("Invalid Team Credentials");
-            const roleToAssign = preHashedPassword !== undefined ? 'coach' : joinAsRole.value;
+            const roleToAssign = preHashedPassword !== undefined ? 'coach' : 'parent';
             await client.auth.updateUser({ data: { team_id: code, team_role: roleToAssign } });
             localStorage.removeItem('pending_invite_code');
             localStorage.removeItem('pending_invite_key');
@@ -1975,6 +2126,237 @@ createApp({
             }
         }
 
+        // ============================================================
+        // ACCOUNTS — search every account on the team and promote a
+        // parent to coach (or demote back), reusing the same
+        // change_team_role RPC the Staff page already uses.
+        // ============================================================
+        async function loadAccounts() {
+            const { data } = await client.rpc('get_team_members', { p_team_id: myTeam.value });
+            accountsList.value = data || [];
+        }
+
+        const filteredAccounts = computed(() => {
+            const q = accountSearchQuery.value.toLowerCase().trim();
+            if(!q) return accountsList.value;
+            return accountsList.value.filter(a => (a.name||'').toLowerCase().includes(q) || (a.email||'').toLowerCase().includes(q));
+        });
+
+        async function promoteToCoach(id, name) {
+            if(!confirm(`Promote ${name} to Coach? They'll get full coach access.`)) return;
+            const { error } = await client.rpc('change_team_role', { target_user_id: id, p_team_id: myTeam.value, new_role: 'coach' });
+            if(error) return alert("Error: " + error.message);
+            loadAccounts();
+        }
+
+        async function demoteToParent(id, name) {
+            if(!confirm(`Demote ${name} back to Parent? They'll lose coach access immediately.`)) return;
+            const { error } = await client.rpc('change_team_role', { target_user_id: id, p_team_id: myTeam.value, new_role: 'parent' });
+            if(error) return alert("Error: " + error.message);
+            loadAccounts();
+        }
+
+        // ============================================================
+        // LAYOUT CUSTOMIZATION — which nav modules a team shows, and
+        // in what order. layoutDraft is a working copy edited while on
+        // the Layout screen; saveLayout() writes it back.
+        // ============================================================
+        async function loadTeamLayout() {
+            const { data } = await client.from('team_layout').select('modules').eq('team_id', myTeam.value).maybeSingle();
+            if(data && Array.isArray(data.modules) && data.modules.length) teamModules.value = data.modules;
+            else teamModules.value = ALL_TOGGLEABLE_MODULES.map(m => m.key);
+        }
+
+        function openLayoutEditor() {
+            const enabledSet = new Set(teamModules.value);
+            const orderedEnabled = teamModules.value
+                .map(key => ALL_TOGGLEABLE_MODULES.find(m => m.key === key))
+                .filter(Boolean)
+                .map(m => ({ ...m, enabled: true }));
+            const disabled = ALL_TOGGLEABLE_MODULES
+                .filter(m => !enabledSet.has(m.key))
+                .map(m => ({ ...m, enabled: false }));
+            layoutDraft.value = [...orderedEnabled, ...disabled];
+            currentView.value = 'layout';
+        }
+
+        function toggleLayoutModule(key) {
+            const item = layoutDraft.value.find(m => m.key === key);
+            if(item) item.enabled = !item.enabled;
+        }
+
+        function layoutDragStart(index) { draggedLayoutIndex.value = index; }
+        function layoutDrop(index) {
+            if(draggedLayoutIndex.value === null || draggedLayoutIndex.value === index) return;
+            const item = layoutDraft.value[draggedLayoutIndex.value];
+            layoutDraft.value.splice(draggedLayoutIndex.value, 1);
+            layoutDraft.value.splice(index, 0, item);
+            draggedLayoutIndex.value = null;
+        }
+
+        async function saveLayout() {
+            const orderedEnabledKeys = layoutDraft.value.filter(m => m.enabled).map(m => m.key);
+            if(!orderedEnabledKeys.length) return alert("Enable at least one module.");
+            const { error } = await client.from('team_layout').upsert({ team_id: myTeam.value, modules: orderedEnabledKeys }, { onConflict: 'team_id' });
+            if(error) return alert("Error saving layout: " + error.message);
+            teamModules.value = orderedEnabledKeys;
+            currentView.value = 'dashboard';
+        }
+
+        // ============================================================
+        // COACH-GROUP ASSIGNMENTS
+        // ============================================================
+        async function loadCoachGroupLinks() {
+            const { data } = await client.from('coach_group_links').select('*').eq('team_id', myTeam.value);
+            const map = {};
+            (data || []).forEach(link => {
+                if(!map[link.coach_user_id]) map[link.coach_user_id] = [];
+                map[link.coach_user_id].push(link.group_name);
+            });
+            coachGroupLinksMap.value = map;
+        }
+
+        async function toggleCoachGroup(coachUserId, groupName) {
+            const current = coachGroupLinksMap.value[coachUserId] || [];
+            if(current.includes(groupName)) {
+                await client.from('coach_group_links').delete().eq('coach_user_id', coachUserId).eq('group_name', groupName).eq('team_id', myTeam.value);
+            } else {
+                await client.from('coach_group_links').insert({ team_id: myTeam.value, coach_user_id: coachUserId, group_name: groupName });
+            }
+            loadCoachGroupLinks();
+        }
+
+        async function loadMyAssignedGroups() {
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const { data } = await client.from('coach_group_links').select('group_name').eq('team_id', myTeam.value).eq('coach_user_id', freshUser?.id);
+            myAssignedGroups.value = (data || []).map(r => r.group_name);
+        }
+
+        // ============================================================
+        // CALENDAR
+        // ============================================================
+        async function loadCalendarEvents() {
+            const { data } = await client.from('calendar_events').select('*').eq('team_id', myTeam.value).order('start_date', {ascending: true});
+            calendarEvents.value = data || [];
+        }
+
+        const upcomingCalendarEvents = computed(() => {
+            return calendarEvents.value.filter(e => e.start_date >= todayStr.value);
+        });
+
+        // Groups a coach is allowed to post to: owner/admin get every
+        // team group, a plain coach only sees groups they're assigned to.
+        const postableGroups = computed(() => {
+            if(myRole.value === 'owner' || myRole.value === 'admin') return teamGroupsList.value.map(g => g.name);
+            return myAssignedGroups.value;
+        });
+
+        async function createCalendarEvent() {
+            const ev = newCalendarEvent.value;
+            if(!ev.title || !ev.start_date) return alert("Title and date are required.");
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const { error } = await client.from('calendar_events').insert({
+                team_id: myTeam.value,
+                group_name: ev.visibility === 'team' ? (ev.group_name || null) : null,
+                visibility: ev.visibility,
+                title: ev.title, event_type: ev.event_type,
+                start_date: ev.start_date, start_time: ev.start_time || null, end_time: ev.end_time || null,
+                location: ev.location || null, notes: ev.notes || null,
+                created_by: freshUser?.id
+            });
+            if(error) return alert("Error creating event: " + error.message);
+            newCalendarEvent.value = { title: '', event_type: 'practice', start_date: '', start_time: '', end_time: '', location: '', notes: '', group_name: '', visibility: 'team' };
+            showNewCalendarEventForm.value = false;
+            loadCalendarEvents();
+        }
+
+        async function deleteCalendarEvent(id) {
+            if(!confirm("Remove this calendar event?")) return;
+            const { error } = await client.from('calendar_events').delete().eq('id', id);
+            if(error) return alert("Error: " + error.message);
+            loadCalendarEvents();
+        }
+
+        // ============================================================
+        // CALENDAR — month grid, filterable by which "calendar" an
+        // event belongs to (Team / Coaches Only / My Personal).
+        // ============================================================
+        function localDateStr(d) {
+            const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+            return `${y}-${m}-${day}`;
+        }
+
+        const calendarMonthLabel = computed(() => calendarViewDate.value.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }));
+
+        const visibleCalendarEvents = computed(() => calendarEvents.value.filter(e => calendarVisibilityFilter.value[e.visibility]));
+
+        const eventsByDate = computed(() => {
+            const map = {};
+            visibleCalendarEvents.value.forEach(e => {
+                if(!map[e.start_date]) map[e.start_date] = [];
+                map[e.start_date].push(e);
+            });
+            return map;
+        });
+
+        const calendarGridDays = computed(() => {
+            const year = calendarViewDate.value.getFullYear();
+            const month = calendarViewDate.value.getMonth();
+            const firstDow = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            const makeCell = (dateObj, inMonth) => {
+                const dateStr = localDateStr(dateObj);
+                return { dateStr, inMonth, dayNum: dateObj.getDate(), events: eventsByDate.value[dateStr] || [], isToday: dateStr === todayStr.value };
+            };
+
+            const cells = [];
+            for(let i = firstDow; i > 0; i--) cells.push(makeCell(new Date(year, month, 1 - i), false));
+            for(let d = 1; d <= daysInMonth; d++) cells.push(makeCell(new Date(year, month, d), true));
+            let next = 1;
+            while(cells.length % 7 !== 0) cells.push(makeCell(new Date(year, month + 1, next++), false));
+            return cells;
+        });
+
+        function prevMonth() { const d = new Date(calendarViewDate.value); d.setDate(1); d.setMonth(d.getMonth() - 1); calendarViewDate.value = d; }
+        function nextMonth() { const d = new Date(calendarViewDate.value); d.setDate(1); d.setMonth(d.getMonth() + 1); calendarViewDate.value = d; }
+        function goToToday() { calendarViewDate.value = new Date(); }
+        function openCalendarDay(dateStr) { selectedCalendarDay.value = dateStr; }
+        function closeCalendarDay() { selectedCalendarDay.value = null; }
+        function addEventOnDay(dateStr) {
+            newCalendarEvent.value.start_date = dateStr;
+            showNewCalendarEventForm.value = true;
+            selectedCalendarDay.value = null;
+        }
+
+        // ============================================================
+        // NAV DISPATCH — maps each toggleable module key to a label
+        // and an action, so the nav dropdown can be rendered from
+        // teamModules (order + on/off) instead of being hardcoded.
+        // ============================================================
+        const MODULE_DEFS = {
+            'dashboard': { label: 'Vault', activeViews: ['dashboard'], onSelect: () => { currentView.value = 'dashboard'; } },
+            'analytics': { label: 'Analytics', activeViews: ['analytics'], onSelect: () => { currentView.value = 'analytics'; } },
+            'season-planning': { label: 'Season', activeViews: ['season-planning','plan-builder'], onSelect: () => { currentView.value = 'season-planning'; } },
+            'groups': { label: 'Groups', activeViews: ['groups','group-details'], onSelect: () => { currentView.value = 'groups'; selectedGroupForEdit.value = null; } },
+            'roster': { label: 'Roster', activeViews: ['roster'], onSelect: () => { currentView.value = 'roster'; loadSwimmers(); } },
+            'attendance': { label: 'Attendance', activeViews: ['attendance'], onSelect: () => { currentView.value = 'attendance'; loadSwimmers(); loadAttendanceForDate(); } },
+            'meets': { label: 'Meets', activeViews: ['meets','meet-detail'], onSelect: () => { currentView.value = 'meets'; loadMeets(); } },
+            'import': { label: 'Import', activeViews: ['import'], onSelect: () => { currentView.value = 'import'; resetImport(); } },
+            'calendar': { label: 'Calendar', activeViews: ['calendar'], onSelect: () => { currentView.value = 'calendar'; loadCalendarEvents(); loadMyAssignedGroups(); } },
+        };
+
+        const navModules = computed(() => teamModules.value.filter(key => MODULE_DEFS[key]).map(key => ({ key, label: MODULE_DEFS[key].label })));
+
+        function selectModule(key) {
+            if(MODULE_DEFS[key]) MODULE_DEFS[key].onSelect();
+        }
+
+        function isModuleActive(key) {
+            const def = MODULE_DEFS[key];
+            return def ? def.activeViews.includes(currentView.value) : false;
+        }
+
         async function copyInviteLink() {
             const { data } = await client.from('teams').select('password').eq('id', myTeam.value).single();
             if(data) {
@@ -2404,10 +2786,12 @@ createApp({
                 } else {
                     loadTeamSettings();
                     loadGroups();
+                    loadTeamLayout();
                     if (isParent.value) {
                         currentView.value = 'parent-home';
                         loadMyLinkedSwimmers();
                         loadMeets();
+                        loadCalendarEvents();
                     } else {
                         currentView.value = 'dashboard';
                         loadWorkouts();
@@ -2427,8 +2811,8 @@ createApp({
                     user.value = session.user;
                     if(!myTeam.value && currentView.value !== 'onboarding') currentView.value = 'onboarding';
                     else if (myTeam.value && currentView.value === 'onboarding') { 
-                        loadTeamSettings(); loadGroups();
-                        if (isParent.value) { currentView.value = 'parent-home'; loadMyLinkedSwimmers(); loadMeets(); }
+                        loadTeamSettings(); loadGroups(); loadTeamLayout();
+                        if (isParent.value) { currentView.value = 'parent-home'; loadMyLinkedSwimmers(); loadMeets(); loadCalendarEvents(); }
                         else { currentView.value = 'dashboard'; loadWorkouts(); loadSeasonPlans(); }
                     }
                 }
@@ -2914,7 +3298,14 @@ createApp({
             selectedGroupSystems, addEnergySystem, removeEnergySystem, saveGroupSystems, calculateWeekTotal, seasonPlanTab,
             addAlias, removeAlias, saveGroupAliases, editorSystemTotals,
             selectedGroupForEdit, openGroupDetails, dragStart, drop, draggedGroupIndex, importSourceGroup, importSystemsAndAliases,
-            joinAsRole, isParent, secToTime,
+            isParent, secToTime,
+            accountsList, accountSearchQuery, filteredAccounts, loadAccounts, promoteToCoach, demoteToParent,
+            teamModules, layoutDraft, draggedLayoutIndex, openLayoutEditor, toggleLayoutModule, layoutDragStart, layoutDrop, saveLayout,
+            coachGroupLinksMap, myAssignedGroups, toggleCoachGroup,
+            calendarEvents, newCalendarEvent, showNewCalendarEventForm, upcomingCalendarEvents, postableGroups, createCalendarEvent, deleteCalendarEvent,
+            calendarViewDate, calendarVisibilityFilter, selectedCalendarDay, calendarMonthLabel, calendarGridDays, eventsByDate,
+            prevMonth, nextMonth, goToToday, openCalendarDay, closeCalendarDay, addEventOnDay,
+            navModules, selectModule, isModuleActive,
             swimmers, newSwimmer, teamParents, parentLinksBySwimmer, loadSwimmers, addSwimmer, deleteSwimmer, linkParentToSwimmer, unlinkParent,
             attendanceDate, attendanceGroupFilter, attendanceMap, filteredAttendanceSwimmers, loadAttendanceForDate, setAttendance,
             meetsList, showNewMeetForm, newMeet, selectedMeet, meetDetailTab, meetEventsList, newMeetEvent, meetEntriesList, overrideTimes,
