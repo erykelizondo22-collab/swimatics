@@ -208,7 +208,7 @@
                     <div class="absolute bottom-0 left-0 w-40 h-40 bg-black opacity-20 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
                     
                     <div class="relative z-10 text-center md:text-left">
-                        <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight mb-2">The Vault</h2>
+                        <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight mb-2">Workouts</h2>
                         <p class="text-white/80 font-medium text-sm md:text-base uppercase tracking-widest opacity-90">Your master workout repository</p>
                     </div>
                     
@@ -543,7 +543,7 @@
                     </div>
 
                     <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 space-y-4">
-                        <button @click="save" class="w-full text-white font-black py-4 rounded-xl shadow-lg uppercase tracking-widest hover:scale-[1.02] hover:shadow-xl transition-all duration-300 text-sm" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">Save to Vault</button>
+                        <button @click="save" class="w-full text-white font-black py-4 rounded-xl shadow-lg uppercase tracking-widest hover:scale-[1.02] hover:shadow-xl transition-all duration-300 text-sm" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">Save Workout</button>
                         <button onclick="window.print()" class="w-full bg-slate-100 text-slate-700 py-4 rounded-xl font-black uppercase tracking-widest border border-slate-200 hover:bg-slate-200 hover:text-slate-900 transition-colors text-sm">Print Sheet</button>
                         
                         <div class="border-t border-slate-100 pt-5 mt-2">
@@ -1336,7 +1336,7 @@ createApp({
 
         // LAYOUT CUSTOMIZATION
         const ALL_TOGGLEABLE_MODULES = [
-            { key: 'dashboard', label: 'Vault (Workouts)' },
+            { key: 'dashboard', label: 'Workouts' },
             { key: 'analytics', label: 'Analytics' },
             { key: 'season-planning', label: 'Season Planning' },
             { key: 'groups', label: 'Groups' },
@@ -1846,7 +1846,7 @@ createApp({
                     }
                 }
 
-                pdfImportProgress.value = totalImported > 0 ? `Success! Saved ${totalImported} workouts to Vault.` : "No valid workouts found.";
+                pdfImportProgress.value = totalImported > 0 ? `Success! Saved ${totalImported} workouts.` : "No valid workouts found.";
                 setTimeout(() => { isImportingPdf.value = false; pdfImportProgress.value = ""; loadWorkouts(); }, 3000);
 
             } catch (err) {
@@ -1935,7 +1935,7 @@ createApp({
         }
 
         async function deleteWorkout(id) {
-            if(confirm("Permanently delete from Vault?")) { 
+            if(confirm("Permanently delete this workout?")) { 
                 await client.from("workouts").delete().eq('id', id); 
                 loadWorkouts(); 
             }
@@ -2288,11 +2288,13 @@ createApp({
 
         async function toggleCoachGroup(coachUserId, groupName) {
             const current = coachGroupLinksMap.value[coachUserId] || [];
+            let error;
             if(current.includes(groupName)) {
-                await client.from('coach_group_links').delete().eq('coach_user_id', coachUserId).eq('group_name', groupName).eq('team_id', myTeam.value);
+                ({ error } = await client.from('coach_group_links').delete().eq('coach_user_id', coachUserId).eq('group_name', groupName).eq('team_id', myTeam.value));
             } else {
-                await client.from('coach_group_links').insert({ team_id: myTeam.value, coach_user_id: coachUserId, group_name: groupName });
+                ({ error } = await client.from('coach_group_links').insert({ team_id: myTeam.value, coach_user_id: coachUserId, group_name: groupName }));
             }
+            if(error) alert("Error updating group assignment: " + error.message);
             loadCoachGroupLinks();
         }
 
@@ -2405,7 +2407,7 @@ createApp({
         // teamModules (order + on/off) instead of being hardcoded.
         // ============================================================
         const MODULE_DEFS = {
-            'dashboard': { label: 'Vault', activeViews: ['dashboard'], onSelect: () => { currentView.value = 'dashboard'; } },
+            'dashboard': { label: 'Workouts', activeViews: ['dashboard'], onSelect: () => { currentView.value = 'dashboard'; } },
             'analytics': { label: 'Analytics', activeViews: ['analytics'], onSelect: () => { currentView.value = 'analytics'; } },
             'season-planning': { label: 'Season', activeViews: ['season-planning','plan-builder'], onSelect: () => { currentView.value = 'season-planning'; } },
             'groups': { label: 'Groups', activeViews: ['groups','group-details'], onSelect: () => { currentView.value = 'groups'; selectedGroupForEdit.value = null; } },
@@ -2930,6 +2932,22 @@ createApp({
                     // FIX: pick up role changes (promote/demote) made by an owner
                     // without requiring the affected coach to log out and back in.
                     refreshMyRole();
+                    // FIX: refreshMyRole() above only updates the client-side
+                    // display of a person's role -- it does NOT touch the actual
+                    // Supabase session token. Every RLS policy in this app
+                    // (is_team_coach, is_team_parent, is_team_office, and every
+                    // policy built on them -- workouts, calendar, roster, meets)
+                    // checks the role baked into that token, not a live database
+                    // value. So a coach who was just promoted, or just assigned
+                    // to a group, could see the UI update instantly while every
+                    // actual database query still silently failed against their
+                    // stale token -- e.g. a newly-group-assigned coach seeing an
+                    // empty workouts list with no error, because the query
+                    // itself was being filtered out at the database level.
+                    // Forcing a session refresh here mints a new token with
+                    // current data, self-healing that gap within ~10s instead
+                    // of requiring a manual logout/login.
+                    await client.auth.refreshSession();
                 }
             }, 10000); 
         });
