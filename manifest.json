@@ -1,7 +1,7 @@
 {
-  "name": "SwimSync",
-  "short_name": "SwimSync",
-  "id": "/swimsync-app-v1",
+  "name": "Swimatics",
+  "short_name": "Swimatics",
+  "id": "/Swimatics-app-v1",
   "description": "Coach Access Portal and Workout Vault",
   "start_url": "/",
   "display": "standalone",
