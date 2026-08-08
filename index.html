@@ -109,6 +109,10 @@
                 <svg class="w-6 h-6" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
                 Sign in with Google
             </button>
+
+            <button @click="switchAccount" class="mt-3 text-[11px] font-bold text-slate-400 hover:text-blue-500 transition-colors uppercase tracking-widest">
+                Use a different Google account
+            </button>
         </div>
     </div>
 
@@ -137,11 +141,13 @@
                     </nav>
                     <div class="flex items-center gap-3 pl-3 md:pl-6 border-l border-slate-200">
                         <span class="text-[10px] md:text-xs font-black bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm" :style="{ color: teamColors.primary }">{{myTeam}}</span>
+                        <button @click="switchAccount" title="Switch Google account" class="text-[10px] md:text-xs font-bold text-slate-400 hover:text-blue-500 transition-colors bg-slate-50 hover:bg-blue-50 px-3 py-1.5 rounded-lg">SWITCH</button>
                         <button @click="logout" class="text-[10px] md:text-xs font-bold text-slate-400 hover:text-red-500 transition-colors bg-slate-50 hover:bg-red-50 px-3 py-1.5 rounded-lg">LOGOUT</button>
                     </div>
                 </div>
                 <div v-else class="flex items-center gap-4">
                     <span class="text-sm font-bold text-slate-600 bg-slate-100 px-4 py-2 rounded-full border border-slate-200">{{coachName}}</span>
+                    <button @click="switchAccount" title="Switch Google account" class="text-xs font-bold text-slate-400 hover:text-blue-500 transition-colors">SWITCH</button>
                     <button @click="logout" class="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors">LOGOUT</button>
                 </div>
             </div>
@@ -254,7 +260,7 @@
                             <div class="h-1 flex-1 rounded-full opacity-20" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', transparent)' }"></div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-                            <div v-for="w in todaysWorkouts" :key="w.id" @click="loadWorkout(w)" class="p-6 bg-white border border-slate-200 rounded-[2rem] hover:shadow-xl hover:-translate-y-1 cursor-pointer transition-all duration-300 group relative flex flex-col" :style="{ '--tw-border-opacity': '1' }" onmouseover="this.style.borderColor=__vue_app__.config.globalProperties.teamColors.primary" onmouseout="this.style.borderColor='#e2e8f0'">
+                            <div v-for="w in todaysWorkouts" :key="w.id" @click="loadWorkout(w)" class="p-6 bg-white border border-slate-200 rounded-[2rem] hover:shadow-xl hover:-translate-y-1 cursor-pointer transition-all duration-300 group relative flex flex-col">
                                 <button @click.stop="deleteWorkout(w.id)" class="absolute top-5 right-5 text-slate-300 hover:text-red-500 hover:bg-red-50 z-10 bg-slate-50 p-2.5 rounded-xl transition-all duration-200 opacity-0 group-hover:opacity-100">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
@@ -992,7 +998,24 @@ createApp({
 
         const unit = computed(() => poolType.value === 'SCY' ? 'y' : 'm');
 
-        const myRole = computed(() => user.value?.user_metadata?.team_role || 'coach');
+        // FIX: team_role was read only from the JWT's user_metadata, which is
+        // baked in at join time — if an owner promotes/demotes someone else via
+        // changeRole(), that person's own session kept showing the old role
+        // (and the old permissions) until they logged out and back in.
+        // myRoleLive is refreshed from the team_members table (see
+        // refreshMyRole/loadStaff and the polling interval below) and takes
+        // priority whenever it's available.
+        const myRoleLive = ref(null);
+        const myRole = computed(() => myRoleLive.value || user.value?.user_metadata?.team_role || 'coach');
+
+        async function refreshMyRole() {
+            if (!myTeam.value || !user.value) return;
+            const { data, error } = await client.rpc('get_team_members', { p_team_id: myTeam.value });
+            if (!error && data) {
+                const me = data.find(m => m.id === user.value.id);
+                if (me) myRoleLive.value = me.role;
+            }
+        }
         const coachName = computed(() => {
             if (!user.value) return "";
             return user.value.user_metadata?.full_name?.split(' ')[0] || user.value.email?.split('@')[0] || "";
@@ -1100,8 +1123,45 @@ createApp({
             }
         }, { deep: true });
 
+        // FIX: force the Google account chooser instead of silently reusing whatever
+        // Google session cookie is already active in the browser.
+        // FIX: passwords were previously stored and compared as plain text in the
+        // `teams.password` column. Hash on the client before it ever leaves the
+        // browser, and only ever compare/store the hash from here on.
+        // NOTE: this changes the storage format — any team created before this
+        // change has a plain-text password in the database and will need its
+        // password reset (Staff > Vault Security) once, since a plain-text value
+        // will never match a SHA-256 hash again.
+        async function sha256Hex(str) {
+            const enc = new TextEncoder().encode(str || "");
+            const hashBuffer = await crypto.subtle.digest('SHA-256', enc);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
         async function login(){ 
-            await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href }}); 
+            await client.auth.signInWithOAuth({ 
+                provider: 'google', 
+                options: { 
+                    redirectTo: window.location.href,
+                    queryParams: { prompt: 'select_account' }
+                }
+            }); 
+        }
+
+        // NEW: one-click switch — signs out of the current Supabase session and
+        // immediately re-opens the Google account chooser so a different
+        // Google account can be selected without a manual logout-then-login.
+        async function switchAccount(){
+            localStorage.removeItem('pending_invite_code');
+            localStorage.removeItem('pending_invite_key');
+            await client.auth.signOut();
+            await client.auth.signInWithOAuth({ 
+                provider: 'google', 
+                options: { 
+                    redirectTo: window.location.href,
+                    queryParams: { prompt: 'select_account' }
+                }
+            });
         }
 
         async function logout(){ 
@@ -1111,9 +1171,12 @@ createApp({
             location.reload(); 
         }
 
-        async function joinTeam() {
+        async function joinTeam(preHashedPassword) {
             const code = (joinCode.value || "").trim().toUpperCase();
-            const { data } = await client.from('teams').select('id').eq('id', code).eq('password', teamPassword.value);
+            // FIX: invite links carry an already-hashed credential (see copyInviteLink) —
+            // only hash here when the coach actually typed a password by hand.
+            const pwdToCheck = preHashedPassword !== undefined ? preHashedPassword : await sha256Hex(teamPassword.value);
+            const { data } = await client.from('teams').select('id').eq('id', code).eq('password', pwdToCheck);
             if (!data?.length) return alert("Invalid Team Credentials");
             await client.auth.updateUser({ data: { team_id: code, team_role: 'coach' } });
             localStorage.removeItem('pending_invite_code');
@@ -1123,7 +1186,8 @@ createApp({
 
         async function createTeam() {
             const upperCode = (newTeamId.value || "").trim().toUpperCase();
-            const { error } = await client.from('teams').insert({ id: upperCode, password: newTeamPassword.value });
+            const hashedPwd = await sha256Hex(newTeamPassword.value);
+            const { error } = await client.from('teams').insert({ id: upperCode, password: hashedPwd });
             
             if (error) {
                 if(error.code === '23505') return alert("That Team Code is already taken! Please add a number or choose a different name.");
@@ -1307,7 +1371,8 @@ createApp({
         async function updateVaultPassword() {
             if(!newVaultPassword.value) return alert("Enter a new password");
             if(confirm("Are you sure? All magic links previously sent will instantly stop working.")) {
-                const { error } = await client.rpc('change_team_password', { p_team_id: myTeam.value, new_password: newVaultPassword.value });
+                const hashedPwd = await sha256Hex(newVaultPassword.value);
+                const { error } = await client.rpc('change_team_password', { p_team_id: myTeam.value, new_password: hashedPwd });
                 if(error) alert("Error: " + error.message);
                 else { alert("Master password updated securely."); newVaultPassword.value = ""; }
             }
@@ -1595,6 +1660,11 @@ createApp({
         async function loadStaff() {
             const { data } = await client.rpc('get_team_members', { p_team_id: myTeam.value });
             staffList.value = data || [];
+            // FIX: reuse this fetch to keep myRoleLive in sync too.
+            if (user.value) {
+                const me = (data || []).find(m => m.id === user.value.id);
+                if (me) myRoleLive.value = me.role;
+            }
         }
 
         async function removeStaff(id, name) {
@@ -1655,8 +1725,12 @@ createApp({
                         isProcessingInvite.value = true;
                         currentView.value = 'onboarding';
                         joinCode.value = localStorage.getItem('pending_invite_code');
-                        teamPassword.value = atob(localStorage.getItem('pending_invite_key'));
-                        setTimeout(joinTeam, 1000); 
+                        // FIX: the invite link carries the already-hashed password (see
+                        // copyInviteLink) — pass it straight to joinTeam instead of putting
+                        // it in teamPassword.value, which would get hashed a second time
+                        // and never match.
+                        const inviteHash = atob(localStorage.getItem('pending_invite_key'));
+                        setTimeout(() => joinTeam(inviteHash), 1000); 
                     } else {
                         currentView.value = 'onboarding';
                     }
@@ -1666,10 +1740,16 @@ createApp({
                     loadWorkouts(); 
                     loadSeasonPlans(); 
                     loadGroups(); 
+                    refreshMyRole();
                 }
             }
 
+            // FIX: supabase-js v2 fires an 'INITIAL_SESSION' event immediately on
+            // subscribe (in addition to the getUser() call above), which was
+            // causing loadTeamSettings/loadWorkouts/loadSeasonPlans/loadGroups to
+            // run twice on every page load. Skip that first synthetic event.
             client.auth.onAuthStateChange((event, session) => {
+                if (event === 'INITIAL_SESSION') return;
                 if (session) {
                     user.value = session.user;
                     if(!myTeam.value && currentView.value !== 'onboarding') currentView.value = 'onboarding';
@@ -1687,6 +1767,9 @@ createApp({
                         alert("Your access to this vault has been revoked.");
                         logout();
                     }
+                    // FIX: pick up role changes (promote/demote) made by an owner
+                    // without requiring the affected coach to log out and back in.
+                    refreshMyRole();
                 }
             }, 10000); 
         });
@@ -1728,9 +1811,12 @@ createApp({
             
             let m=str.match(/(\d+)\s*[xX]\s*(\d+)/i); let q=1,d=0;
             if(m){q=+m[1]; d=+m[2];} else if(/^\d+/.test(str)){d=parseInt(str);} else return null;
-            let paceMatch = str.match(/[@|on]\s*(\d+):(\d+)/);
+            // FIX: was `/[@|on]\s*(\d+):(\d+)/` — a character class, which only ever
+            // matched a single stray '@' | '|' | 'o' | 'n' character rather than the
+            // intended literal words "@" or "on". Use a proper alternation instead.
+            let paceMatch = str.match(/(?:@|on)\s*(\d+):(\d+)/i);
             let dur = paceMatch ? (parseInt(paceMatch[1])*60 + parseInt(paceMatch[2])) : Math.round((d/100)*baseSec);
-            let label = str.replace(/(\d+\s*[xX]\s*\d+|[@|on]\s*\d+:\d+)/g,"").trim();
+            let label = str.replace(/(\d+\s*[xX]\s*\d+|(?:@|on)\s*\d+:\d+)/gi,"").trim();
             return { rest:false, q, d, dur, label, p:secToTime(dur) };
         }
 
@@ -2139,7 +2225,7 @@ createApp({
         }
 
         return {
-            user, login, logout, currentView, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
+            user, login, logout, switchAccount, currentView, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
             hasPendingInvite, isProcessingInvite, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors,
             title, group, poolType, defaultStroke, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
