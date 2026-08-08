@@ -141,8 +141,6 @@
                     </template>
                     <template v-else>
                     <button v-for="m in navModules" :key="m.key" @click="selectModule(m.key); mobileNavOpen = false" :class="isModuleActive(m.key) ? 'bg-slate-900 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">{{m.label}}</button>
-                    <button v-if="myRole === 'owner' || myRole === 'admin'" @click="currentView = 'accounts'; loadAccounts(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'accounts', 'text-slate-600 hover:bg-slate-100': currentView !== 'accounts'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Accounts</button>
-                    <button @click="currentView = 'staff'; loadStaff(); loadCoachGroupLinks(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'staff', 'text-slate-600 hover:bg-slate-100': currentView !== 'staff'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Staff</button>
                     <button v-if="myRole === 'owner' || myRole === 'admin'" @click="openLayoutEditor(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'layout', 'text-slate-600 hover:bg-slate-100': currentView !== 'layout'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Site Layout</button>
                     </template>
                 </div>
@@ -1348,6 +1346,8 @@ createApp({
             { key: 'meets', label: 'Meets' },
             { key: 'import', label: 'Smart Import' },
             { key: 'calendar', label: 'Calendar' },
+            { key: 'staff', label: 'Staff' },
+            { key: 'accounts', label: 'Accounts (Owner/Admin Only)' },
         ];
         const teamModules = ref(ALL_TOGGLEABLE_MODULES.map(m => m.key));
         const layoutDraft = ref([]);
@@ -2408,9 +2408,13 @@ createApp({
             'meets': { label: 'Meets', activeViews: ['meets','meet-detail'], onSelect: () => { currentView.value = 'meets'; loadMeets(); } },
             'import': { label: 'Import', activeViews: ['import'], onSelect: () => { currentView.value = 'import'; resetImport(); } },
             'calendar': { label: 'Calendar', activeViews: ['calendar'], onSelect: () => { currentView.value = 'calendar'; loadCalendarEvents(); loadMyAssignedGroups(); } },
+            'staff': { label: 'Staff', activeViews: ['staff'], onSelect: () => { currentView.value = 'staff'; loadStaff(); loadCoachGroupLinks(); } },
+            'accounts': { label: 'Accounts', activeViews: ['accounts'], ownerAdminOnly: true, onSelect: () => { currentView.value = 'accounts'; loadAccounts(); } },
         };
 
-        const navModules = computed(() => teamModules.value.filter(key => MODULE_DEFS[key]).map(key => ({ key, label: MODULE_DEFS[key].label })));
+        const navModules = computed(() => teamModules.value
+            .filter(key => MODULE_DEFS[key] && (!MODULE_DEFS[key].ownerAdminOnly || myRole.value === 'owner' || myRole.value === 'admin'))
+            .map(key => ({ key, label: MODULE_DEFS[key].label })));
 
         function selectModule(key) {
             if(MODULE_DEFS[key]) MODULE_DEFS[key].onSelect();
