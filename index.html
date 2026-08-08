@@ -116,23 +116,19 @@
     <div v-else class="no-print pb-20 min-h-screen">
         
         <div class="glass-nav border-b border-slate-200/60 px-4 md:px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm transition-all">
-            <div class="flex items-center gap-3 cursor-pointer group shrink-0" @click="currentView = myTeam ? (isParent ? 'parent-home' : 'dashboard') : 'onboarding'; mobileNavOpen = false">
-                <div class="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl group-hover:scale-105 transition-transform duration-300 overflow-hidden" :style="{ backgroundColor: teamColors.primary + '20' }">
-                    <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain p-1">
-                </div>
-                <span class="font-black text-2xl tracking-tight hidden sm:inline-block text-slate-900 group-hover:opacity-80 transition-opacity">Swimatics</span>
-            </div>
-
-            <div v-if="myTeam" class="flex items-center gap-1.5 sm:gap-3 shrink-0 relative">
-                <span class="hidden sm:inline text-[10px] md:text-xs font-black bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm" :style="{ color: teamColors.primary }">{{myTeam}}</span>
-                <button @click="switchAccount" title="Switch Google account" class="text-[10px] md:text-xs font-bold text-slate-400 hover:text-blue-500 transition-colors bg-slate-50 hover:bg-blue-50 px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap"><span class="hidden sm:inline">SWITCH</span><span class="sm:hidden">⇄</span></button>
-                <button @click="logout" class="text-[10px] md:text-xs font-bold text-slate-400 hover:text-red-500 transition-colors bg-slate-50 hover:bg-red-50 px-3 py-1.5 rounded-lg whitespace-nowrap">LOGOUT</button>
-                <button @click="mobileNavOpen = !mobileNavOpen" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-black transition-colors shrink-0" aria-label="Toggle menu">
+            <div class="flex items-center gap-2 shrink-0 relative">
+                <button v-if="myTeam" @click="mobileNavOpen = !mobileNavOpen" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-black transition-colors shrink-0" aria-label="Toggle menu">
                     <svg v-if="!mobileNavOpen" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     <svg v-else class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
+                <div class="flex items-center gap-3 cursor-pointer group" @click="currentView = myTeam ? (isParent ? 'parent-home' : 'dashboard') : 'onboarding'; mobileNavOpen = false">
+                    <div class="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl group-hover:scale-105 transition-transform duration-300 overflow-hidden" :style="{ backgroundColor: teamColors.primary + '20' }">
+                        <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain p-1">
+                    </div>
+                    <span class="font-black text-2xl tracking-tight hidden sm:inline-block text-slate-900 group-hover:opacity-80 transition-opacity">Swimatics</span>
+                </div>
 
-                <div v-if="mobileNavOpen" class="absolute top-full right-0 mt-2 w-64 bg-white border border-slate-200 shadow-xl rounded-2xl p-2 flex flex-col gap-1 z-50 max-h-[80vh] overflow-y-auto">
+                <div v-if="mobileNavOpen" class="absolute top-full left-0 mt-2 w-64 bg-white border border-slate-200 shadow-xl rounded-2xl p-2 flex flex-col gap-1 z-50 max-h-[80vh] overflow-y-auto">
                     <button v-if="isParent" @click="currentView = 'parent-home'; mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'parent-home', 'text-slate-600 hover:bg-slate-100': currentView !== 'parent-home'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Home</button>
                     <template v-if="!isParent">
                     <button v-for="m in navModules" :key="m.key" @click="selectModule(m.key); mobileNavOpen = false" :class="isModuleActive(m.key) ? 'bg-slate-900 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">{{m.label}}</button>
@@ -141,6 +137,12 @@
                     <button v-if="myRole === 'owner' || myRole === 'admin'" @click="openLayoutEditor(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'layout', 'text-slate-600 hover:bg-slate-100': currentView !== 'layout'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Site Layout</button>
                     </template>
                 </div>
+            </div>
+
+            <div v-if="myTeam" class="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                <span class="hidden sm:inline text-[10px] md:text-xs font-black bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm" :style="{ color: teamColors.primary }">{{myTeam}}</span>
+                <button @click="switchAccount" title="Switch Google account" class="text-[10px] md:text-xs font-bold text-slate-400 hover:text-blue-500 transition-colors bg-slate-50 hover:bg-blue-50 px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap"><span class="hidden sm:inline">SWITCH</span><span class="sm:hidden">⇄</span></button>
+                <button @click="logout" class="text-[10px] md:text-xs font-bold text-slate-400 hover:text-red-500 transition-colors bg-slate-50 hover:bg-red-50 px-3 py-1.5 rounded-lg whitespace-nowrap">LOGOUT</button>
             </div>
             <div v-else class="flex items-center gap-2 sm:gap-4 shrink-0">
                 <span class="text-sm font-bold text-slate-600 bg-slate-100 px-4 py-2 rounded-full border border-slate-200">{{coachName}}</span>
@@ -264,7 +266,11 @@
                                 <div class="text-[10px] font-black self-start px-3 py-1 rounded-md uppercase tracking-widest mb-4 border" :style="{ color: teamColors.primary, backgroundColor: teamColors.primary + '10', borderColor: teamColors.primary + '30' }">TODAY • {{formatPracticeDate(w.practice_date)}}</div>
                                 <div class="font-black text-xl leading-tight uppercase text-slate-900 tracking-tight pr-8 mb-6 flex-1">{{w.title}}</div>
                                 <div class="text-[11px] font-bold text-slate-500 mt-auto border-t border-slate-100 pt-4 flex justify-between items-center uppercase tracking-widest">
-                                    <span class="bg-slate-100 px-2 py-1 rounded-md text-slate-600">{{w.group}}</span>
+                                    <span class="flex items-center gap-1.5">
+                                        <span class="bg-slate-100 px-2 py-1 rounded-md text-slate-600">{{w.group}}</span>
+                                        <span v-if="w.visibility === 'private'" title="Private" class="text-slate-400">🔒</span>
+                                        <span v-else-if="w.visibility === 'public'" title="Visible to all coaches" class="text-slate-400">🌐</span>
+                                    </span>
                                     <span class="font-black text-sm px-2 py-1 rounded-md" :style="{ color: teamColors.primary, backgroundColor: teamColors.primary + '10' }">{{w.total_yards}}{{w.pool_type === 'SCM' || w.pool_type === 'LCM' ? 'm' : 'y'}}</span>
                                 </div>
                             </div>
@@ -284,7 +290,11 @@
                                 <div class="text-[10px] font-black text-amber-600 bg-amber-50 self-start px-3 py-1 rounded-md uppercase tracking-widest mb-4 border border-amber-100">{{formatPracticeDate(w.practice_date)}}</div>
                                 <div class="font-black text-xl leading-tight uppercase text-slate-900 tracking-tight pr-8 mb-6 flex-1">{{w.title}}</div>
                                 <div class="text-[11px] font-bold text-slate-500 mt-auto border-t border-slate-100 pt-4 flex justify-between items-center uppercase tracking-widest">
-                                    <span class="bg-slate-100 px-2 py-1 rounded-md text-slate-600">{{w.group}}</span>
+                                    <span class="flex items-center gap-1.5">
+                                        <span class="bg-slate-100 px-2 py-1 rounded-md text-slate-600">{{w.group}}</span>
+                                        <span v-if="w.visibility === 'private'" title="Private" class="text-slate-400">🔒</span>
+                                        <span v-else-if="w.visibility === 'public'" title="Visible to all coaches" class="text-slate-400">🌐</span>
+                                    </span>
                                     <span class="text-amber-600 font-black text-sm bg-amber-50 px-2 py-1 rounded-md">{{w.total_yards}}{{w.pool_type === 'SCM' || w.pool_type === 'LCM' ? 'm' : 'y'}}</span>
                                 </div>
                             </div>
@@ -304,7 +314,11 @@
                                 <div class="text-[10px] font-black text-slate-500 bg-slate-200/50 self-start px-3 py-1 rounded-md uppercase tracking-widest mb-4">{{formatPracticeDate(w.practice_date)}}</div>
                                 <div class="font-black text-xl leading-tight uppercase text-slate-600 tracking-tight pr-8 mb-6 flex-1 group-hover:text-slate-900 transition-colors">{{w.title}}</div>
                                 <div class="text-[11px] font-bold text-slate-400 mt-auto border-t border-slate-200/60 pt-4 flex justify-between items-center uppercase tracking-widest">
-                                    <span class="bg-white border border-slate-200 px-2 py-1 rounded-md text-slate-500">{{w.group}}</span>
+                                    <span class="flex items-center gap-1.5">
+                                        <span class="bg-white border border-slate-200 px-2 py-1 rounded-md text-slate-500">{{w.group}}</span>
+                                        <span v-if="w.visibility === 'private'" title="Private" class="text-slate-400">🔒</span>
+                                        <span v-else-if="w.visibility === 'public'" title="Visible to all coaches" class="text-slate-400">🌐</span>
+                                    </span>
                                     <span class="text-slate-600 font-black text-sm bg-white border border-slate-200 px-2 py-1 rounded-md">{{w.total_yards}}{{w.pool_type === 'SCM' || w.pool_type === 'LCM' ? 'm' : 'y'}}</span>
                                 </div>
                             </div>
@@ -411,6 +425,20 @@
                                 <option value="LCM">LCM (Long Course)</option>
                             </select>
                         </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Visibility</label>
+                        <div class="flex gap-2 bg-slate-50 border border-slate-200 p-1.5 rounded-2xl">
+                            <button @click="workoutVisibility = 'group'" :class="workoutVisibility === 'group' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all">Group Coaches</button>
+                            <button @click="workoutVisibility = 'private'" :class="workoutVisibility === 'private' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all">Private</button>
+                            <button @click="workoutVisibility = 'public'" :class="workoutVisibility === 'public' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all">All Your Team's Coaches</button>
+                        </div>
+                        <p class="text-[10px] text-slate-400 font-bold ml-2 leading-relaxed">
+                            <span v-if="workoutVisibility === 'group'">Only coaches assigned to {{ group || 'this group' }} can see it.</span>
+                            <span v-else-if="workoutVisibility === 'private'">Only you can see it.</span>
+                            <span v-else>Every coach on your team can see it — coaches on other teams never can, regardless of this setting.</span>
+                        </p>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1382,6 +1410,7 @@ createApp({
         const input = ref("");
         const poolType = ref("SCY");
         const defaultStroke = ref("free");
+        const workoutVisibility = ref("group");
         
         const cloudWorkouts = ref([]);
         const seasonPlans = ref([]);
@@ -1823,6 +1852,7 @@ createApp({
 
         async function save(){
             if(!title.value || !group.value || !practiceDate.value) return alert("Fill out Title, Group, and Date.");
+            const { data: { user: freshUser } } = await client.auth.getUser();
             const payload = { 
                 title: title.value, 
                 team_id: myTeam.value, 
@@ -1834,7 +1864,9 @@ createApp({
                 pool_type: poolType.value, 
                 default_stroke: defaultStroke.value,
                 start: start.value, 
-                base: base.value
+                base: base.value,
+                visibility: workoutVisibility.value,
+                created_by: freshUser?.id
             };
             
             if(currentWorkoutId.value) {
@@ -1858,6 +1890,7 @@ createApp({
             practiceDate.value = getLocalTodayStr();
             poolType.value = "SCY"; 
             defaultStroke.value = "free";
+            workoutVisibility.value = "group";
             start.value = "17:00"; 
             base.value = "1:30";
             input.value = "Warmup:\n\nMain Set:\n\n"; 
@@ -1871,6 +1904,7 @@ createApp({
             practiceDate.value = w.practice_date || getLocalTodayStr(); 
             poolType.value = w.pool_type || "SCY"; 
             defaultStroke.value = w.default_stroke || "free";
+            workoutVisibility.value = w.visibility || "group";
             start.value = w.start || "17:00"; 
             base.value = w.base || "1:30";
             input.value = w.content; 
@@ -3286,7 +3320,7 @@ createApp({
             user, login, logout, switchAccount, currentView, mobileNavOpen, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
             hasPendingInvite, isProcessingInvite, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors,
-            title, group, poolType, defaultStroke, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
+            title, group, poolType, defaultStroke, workoutVisibility, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
             seasonPlans, activePlanContext, teamGroupsList, staffList, planForm, newGroupName, myRole, myTeam,
             filterGroup, filterDate, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
             formatTime, formattedStartTime, save, loadWorkout, startNewWorkout, formatPracticeDate, startNewPlan, editPlan, addWeek, savePlan, deletePlan, deleteWorkout,
