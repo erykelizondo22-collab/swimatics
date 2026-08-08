@@ -908,11 +908,14 @@
                         <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Roster</h2>
                         <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">{{ swimmers.length }} Swimmers</p>
                     </div>
-                    <div class="flex flex-wrap gap-2 items-center bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
-                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Attendance Period</span>
-                        <input type="date" v-model="attendanceAnalyticsStart" @change="loadRosterAttendanceSummary" class="bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs font-bold outline-none">
-                        <span class="text-slate-400 text-xs font-black">to</span>
-                        <input type="date" v-model="attendanceAnalyticsEnd" @change="loadRosterAttendanceSummary" class="bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs font-bold outline-none">
+                    <div class="flex flex-col items-end gap-1.5">
+                        <div class="flex flex-wrap gap-2 items-center bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Attendance Period</span>
+                            <input type="date" v-model="attendanceAnalyticsStart" @change="loadRosterAttendanceSummary" class="bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs font-bold outline-none">
+                            <span class="text-slate-400 text-xs font-black">to</span>
+                            <input type="date" v-model="attendanceAnalyticsEnd" @change="loadRosterAttendanceSummary" class="bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs font-bold outline-none">
+                        </div>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mr-1">{{ rosterAttendanceDebug }}</p>
                     </div>
                 </div>
 
@@ -1472,6 +1475,7 @@ createApp({
         const attendanceAnalyticsData = ref([]);
         const groupAttendanceSummary = ref({}); // { groupName: percent|null }
         const rosterSwimmerAttendance = ref({}); // { swimmerId: percent|null }
+        const rosterAttendanceDebug = ref('');
 
         // MEETS
         const meetsList = ref([]);
@@ -2723,16 +2727,22 @@ createApp({
         async function loadRosterAttendanceSummary() {
             if(!attendanceAnalyticsStart.value || !attendanceAnalyticsEnd.value) resetAttendanceAnalyticsDates();
             const swimmerIds = swimmers.value.map(s => s.id);
-            if(!swimmerIds.length) { rosterSwimmerAttendance.value = {}; groupAttendanceSummary.value = {}; return; }
+            if(!swimmerIds.length) { rosterSwimmerAttendance.value = {}; groupAttendanceSummary.value = {}; rosterAttendanceDebug.value = 'No swimmers on roster yet.'; return; }
 
             const { data, error } = await client.from("attendance").select("*")
                 .eq('team_id', myTeam.value)
                 .in('swimmer_id', swimmerIds)
                 .gte('practice_date', attendanceAnalyticsStart.value)
                 .lte('practice_date', attendanceAnalyticsEnd.value);
-            if(error) { alert("Error loading attendance summary: " + error.message); return; }
+            if(error) {
+                rosterAttendanceDebug.value = 'Query error: ' + error.message;
+                alert("Error loading attendance summary: " + error.message);
+                return;
+            }
 
             const rows = data || [];
+            rosterAttendanceDebug.value = `Found ${rows.length} attendance record(s) across ${swimmerIds.length} swimmer(s) for ${attendanceAnalyticsStart.value} to ${attendanceAnalyticsEnd.value}.`;
+
             const perSwimmer = {};
             swimmers.value.forEach(s => {
                 const sRows = rows.filter(r => r.swimmer_id === s.id);
@@ -3672,7 +3682,7 @@ createApp({
             attendanceDate, attendanceGroupFilter, attendanceMap, filteredAttendanceSwimmers, loadAttendanceForDate, setAttendance,
             attendanceViewTab, attendanceMarkGroup, openAttendanceMark, attendanceAnalyticsGroup, attendanceAnalyticsStart, attendanceAnalyticsEnd, attendanceAnalyticsData,
             openAttendanceAnalytics, loadAttendanceAnalytics, groupAttendancePercent, groupAttendanceSummary, loadGroupAttendanceSummary,
-            swimmersByGroup, rosterSwimmerAttendance, loadRosterAttendanceSummary,
+            swimmersByGroup, rosterSwimmerAttendance, loadRosterAttendanceSummary, rosterAttendanceDebug,
             meetsList, showNewMeetForm, newMeet, selectedMeet, meetDetailTab, meetEventsList, newMeetEvent, meetEntriesList, overrideTimes,
             loadMeets, createMeet, openMeetDetail, addMeetEvent, deleteMeetEvent, pendingEntriesCount, swimmerName, eventLabel, approveMeetEntry, declineMeetEntry,
             myLinkedSwimmers, parentMeetEntryTarget, parentMeetEntryEvents, openParentMeetEntry, entryExistsFor, entryStatusFor, requestMeetEntry,
