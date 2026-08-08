@@ -746,7 +746,7 @@
 
                 <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200 space-y-4">
                     <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest border-b border-slate-100 pb-4 mb-4">Active Members</h3>
-                    <div v-for="member in staffList" :key="member.id" class="flex flex-col sm:flex-row justify-between sm:items-center bg-slate-50 p-5 rounded-2xl border border-slate-200 gap-4 hover:border-slate-300 transition-colors">
+                    <div v-for="member in visibleStaffList" :key="member.id" class="flex flex-col sm:flex-row justify-between sm:items-center bg-slate-50 p-5 rounded-2xl border border-slate-200 gap-4 hover:border-slate-300 transition-colors">
                         <div>
                             <div class="font-black uppercase text-slate-800 tracking-wide text-sm md:text-base">{{member.name || member.email}}</div>
                             <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 bg-white inline-block px-2 py-0.5 rounded border border-slate-200">{{member.role}}</div>
@@ -2187,6 +2187,13 @@ createApp({
             accountsList.value = data || [];
         }
 
+        // Staff page only ever shows non-parent members. Demoting someone
+        // back to 'parent' removes them from here the same way promoting
+        // a parent removes them from Accounts -- staffList itself still
+        // holds everyone (get_team_members returns the whole roster),
+        // this just filters what's displayed.
+        const visibleStaffList = computed(() => staffList.value.filter(m => m.role !== 'parent'));
+
         const filteredAccounts = computed(() => {
             // Accounts only ever shows unpromoted parent accounts -- as
             // soon as someone is promoted to coach or office staff,
@@ -3370,7 +3377,7 @@ createApp({
             seasonPlans, activePlanContext, teamGroupsList, staffList, planForm, newGroupName, myRole, myTeam,
             filterGroup, filterDate, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
             formatTime, formattedStartTime, save, loadWorkout, startNewWorkout, formatPracticeDate, startNewPlan, editPlan, addWeek, savePlan, deletePlan, deleteWorkout,
-            addGroup, deleteGroup, removeStaff, changeRole, copyInviteLink, joinTeam, createTeam, updateVaultPassword, discardDraft, loadStaff,
+            addGroup, deleteGroup, removeStaff, changeRole, copyInviteLink, joinTeam, createTeam, updateVaultPassword, discardDraft, loadStaff, visibleStaffList,
             hasDraft, resumeDraft, currentSetPace, updateCursor, stressScore, stressColor,
             analyticsGroup, analyticsStartDate, analyticsEndDate, analyticsStats, resetAnalyticsDates,
             showAiModal, aiPrompt, isAiLoading, generateWithAI,
