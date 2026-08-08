@@ -34,7 +34,8 @@
             @page { margin: 0.5in; } 
             .no-print { display: none !important; }
             body { background: white !important; }
-            #sheet { 
+            .print-page { display: none !important; }
+            .print-page.print-active { 
                 box-shadow: none !important; 
                 margin: 0 !important; 
                 width: 100% !important; 
@@ -43,7 +44,7 @@
             }
         }
 
-        #sheet { 
+        #sheet, #calendarSheet { 
             width: 8.5in; 
             min-height: 11in; 
             margin: 20px auto; 
@@ -544,7 +545,7 @@
 
                     <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 space-y-4">
                         <button @click="save" class="w-full text-white font-black py-4 rounded-xl shadow-lg uppercase tracking-widest hover:scale-[1.02] hover:shadow-xl transition-all duration-300 text-sm" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">Save Workout</button>
-                        <button onclick="window.print()" class="w-full bg-slate-100 text-slate-700 py-4 rounded-xl font-black uppercase tracking-widest border border-slate-200 hover:bg-slate-200 hover:text-slate-900 transition-colors text-sm">Print Sheet</button>
+                        <button @click="printTarget = 'workout'; $nextTick(() => window.print())" class="w-full bg-slate-100 text-slate-700 py-4 rounded-xl font-black uppercase tracking-widest border border-slate-200 hover:bg-slate-200 hover:text-slate-900 transition-colors text-sm">Print Sheet</button>
                         
                         <div class="border-t border-slate-100 pt-5 mt-2">
                             <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex justify-between">
@@ -952,35 +953,39 @@
                 <div class="border-b border-slate-200 pb-6 flex flex-col sm:flex-row justify-between sm:items-end gap-4">
                     <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Attendance</h2>
                     <div class="flex gap-2 bg-slate-100 p-1.5 rounded-2xl w-full sm:w-auto">
-                        <button @click="attendanceViewTab = 'mark'" :class="attendanceViewTab === 'mark' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all">Take Attendance</button>
+                        <button @click="attendanceViewTab = 'mark'; attendanceMarkGroup = null; attendanceGroupFilter = '';" :class="attendanceViewTab === 'mark' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all">Take Attendance</button>
                         <button @click="attendanceViewTab = 'analytics'; attendanceAnalyticsGroup = null; loadGroupAttendanceSummary();" :class="attendanceViewTab === 'analytics' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all">Analytics</button>
                     </div>
                 </div>
 
                 <div v-if="attendanceViewTab === 'mark'" class="space-y-6">
-                    <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200 flex flex-wrap gap-4 items-end">
-                        <div class="flex-1 min-w-[150px]">
-                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5 ml-2">Date</label>
-                            <input type="date" v-model="attendanceDate" @change="loadAttendanceForDate" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                    <div v-if="!attendanceMarkGroup" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div v-for="g in postableGroups" :key="g" @click="openAttendanceMark(g)" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer transition-all">
+                            <div class="font-black text-xl uppercase text-slate-900">{{g}}</div>
+                            <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">{{ swimmers.filter(s => s.group_name === g).length }} Swimmers</div>
                         </div>
-                        <div class="flex-1 min-w-[150px]">
-                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5 ml-2">Group</label>
-                            <select v-model="attendanceGroupFilter" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
-                                <option value="">All Groups</option>
-                                <option v-for="g in teamGroupsList" :key="g.id" :value="g.name">{{g.name}}</option>
-                            </select>
-                        </div>
+                        <div v-if="!postableGroups.length" class="sm:col-span-2 md:col-span-3 text-center py-20 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2rem]">No groups assigned to you yet</div>
                     </div>
-                    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
-                        <div v-for="s in filteredAttendanceSwimmers" :key="s.id" class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div class="font-bold text-slate-800">{{s.first_name}} {{s.last_name}} <span class="text-[10px] text-slate-400 uppercase font-black ml-2">{{s.group_name}}</span></div>
-                            <div class="flex gap-2">
-                                <button @click="setAttendance(s.id, 'present')" :class="attendanceMap[s.id] === 'present' ? 'bg-emerald-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Present</button>
-                                <button @click="setAttendance(s.id, 'excused')" :class="attendanceMap[s.id] === 'excused' ? 'bg-amber-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Excused</button>
-                                <button @click="setAttendance(s.id, 'absent')" :class="attendanceMap[s.id] === 'absent' ? 'bg-red-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Absent</button>
+
+                    <div v-else class="space-y-6">
+                        <div class="flex flex-wrap justify-between items-center gap-4">
+                            <button @click="attendanceMarkGroup = null; attendanceGroupFilter = '';" class="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-slate-100 transition-colors">← Back to Groups</button>
+                            <div>
+                                <input type="date" v-model="attendanceDate" @change="loadAttendanceForDate" class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none">
                             </div>
                         </div>
-                        <div v-if="!filteredAttendanceSwimmers.length" class="p-12 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No swimmers in this group</div>
+                        <h3 class="text-2xl font-black uppercase text-slate-900">{{attendanceMarkGroup}}</h3>
+                        <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                            <div v-for="s in filteredAttendanceSwimmers" :key="s.id" class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div class="font-bold text-slate-800">{{s.first_name}} {{s.last_name}}</div>
+                                <div class="flex gap-2">
+                                    <button @click="setAttendance(s.id, 'present')" :class="attendanceMap[s.id] === 'present' ? 'bg-emerald-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Present</button>
+                                    <button @click="setAttendance(s.id, 'excused')" :class="attendanceMap[s.id] === 'excused' ? 'bg-amber-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Excused</button>
+                                    <button @click="setAttendance(s.id, 'absent')" :class="attendanceMap[s.id] === 'absent' ? 'bg-red-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Absent</button>
+                                </div>
+                            </div>
+                            <div v-if="!filteredAttendanceSwimmers.length" class="p-12 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No swimmers in this group</div>
+                        </div>
                     </div>
                 </div>
 
@@ -1188,6 +1193,7 @@
                         <button @click="prevMonth" class="w-10 h-10 bg-white border border-slate-200 rounded-xl font-black text-slate-600 hover:bg-slate-50">‹</button>
                         <button @click="goToToday" class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black uppercase text-[10px] tracking-widest text-slate-600 hover:bg-slate-50">Today</button>
                         <button @click="nextMonth" class="w-10 h-10 bg-white border border-slate-200 rounded-xl font-black text-slate-600 hover:bg-slate-50">›</button>
+                        <button @click="printTarget = 'calendar'; $nextTick(() => window.print())" class="px-4 py-2.5 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-colors">Print</button>
                     </div>
                 </div>
 
@@ -1319,7 +1325,7 @@
         </div>
     </div>
 
-    <div id="sheet" style="display:none; position: relative; overflow: hidden;" :class="{'no-print': !user}">
+    <div id="sheet" style="display:none; position: relative; overflow: hidden;" class="print-page" :class="{'no-print': !user, 'print-active': printTarget === 'workout'}">
         <div v-if="teamLogoUrl" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 0; opacity: 0.08; pointer-events: none;">
             <img :src="teamLogoUrl" style="width: 70%; max-height: 70%; object-fit: contain; filter: grayscale(100%);">
         </div>
@@ -1372,6 +1378,40 @@
         </div>
     </div>
 
+    <div id="calendarSheet" style="display:none; position: relative; overflow: hidden;" class="print-page" :class="{'no-print': !user, 'print-active': printTarget === 'calendar'}">
+        <div v-if="teamLogoUrl" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 0; opacity: 0.06; pointer-events: none;">
+            <img :src="teamLogoUrl" style="width: 60%; max-height: 60%; object-fit: contain; filter: grayscale(100%);">
+        </div>
+
+        <div style="position: relative; z-index: 10;">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2 opacity-40 grayscale">
+                    <img src="icon.png" alt="Swimatics" class="w-6 h-6 object-contain">
+                    <span class="font-black text-lg tracking-tighter uppercase text-black">Swimatics</span>
+                </div>
+                <img v-if="teamLogoUrl" :src="teamLogoUrl" style="height: 32px; width: auto; object-fit: contain;">
+            </div>
+
+            <div class="flex justify-between border-b-[4px] pb-2 mb-4 items-end" :style="{ borderColor: teamColors.primary }">
+                <div>
+                    <div class="text-3xl font-black uppercase leading-tight tracking-tighter">{{myTeam}} Calendar</div>
+                    <div class="text-xs font-bold tracking-[0.2em] uppercase mt-1">{{calendarMonthLabel}}</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-7" style="border-top: 1px solid #cbd5e1; border-left: 1px solid #cbd5e1;">
+                <div v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d" class="text-center text-[9px] font-black uppercase py-1.5 bg-slate-50" style="border-right: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1;">{{d}}</div>
+            </div>
+            <div class="grid grid-cols-7" style="border-left: 1px solid #cbd5e1;">
+                <div v-for="cell in calendarGridDays" :key="cell.dateStr" class="p-1" style="border-right: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; min-height: 78px;">
+                    <div class="text-[10px] font-black" :class="cell.inMonth ? 'text-black' : 'text-slate-300'">{{cell.dayNum}}</div>
+                    <div v-for="e in cell.events.slice(0,4)" :key="e.id" class="text-[7px] font-bold leading-tight mt-0.5" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">• {{e.title}}</div>
+                    <div v-if="cell.events.length > 4" class="text-[7px] font-black text-slate-400">+{{cell.events.length - 4}} more</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -1388,6 +1428,7 @@ createApp({
         const currentView = ref('dashboard');
         const mobileNavOpen = ref(false);
         const navMenuRef = ref(null);
+        const printTarget = ref('workout'); // 'workout' | 'calendar' -- which hidden print sheet is currently active
 
         // ROSTER
         const swimmers = ref([]);
@@ -1435,6 +1476,7 @@ createApp({
         const attendanceGroupFilter = ref('');
         const attendanceMap = ref({}); // { swimmerId: 'present'|'absent'|'excused' }
         const attendanceViewTab = ref('mark');
+        const attendanceMarkGroup = ref(null);
         const attendanceAnalyticsGroup = ref(null);
         const attendanceAnalyticsStart = ref('');
         const attendanceAnalyticsEnd = ref('');
@@ -2479,7 +2521,7 @@ createApp({
             'season-planning': { label: 'Season', activeViews: ['season-planning','plan-builder'], onSelect: () => { currentView.value = 'season-planning'; } },
             'groups': { label: 'Groups', activeViews: ['groups','group-details'], onSelect: () => { currentView.value = 'groups'; selectedGroupForEdit.value = null; } },
             'roster': { label: 'Roster', activeViews: ['roster'], onSelect: () => { currentView.value = 'roster'; loadSwimmers(); } },
-            'attendance': { label: 'Attendance', activeViews: ['attendance'], onSelect: () => { currentView.value = 'attendance'; loadSwimmers(); loadAttendanceForDate(); } },
+            'attendance': { label: 'Attendance', activeViews: ['attendance'], onSelect: () => { currentView.value = 'attendance'; attendanceMarkGroup.value = null; loadSwimmers(); loadAttendanceForDate(); } },
             'meets': { label: 'Meets', activeViews: ['meets','meet-detail'], onSelect: () => { currentView.value = 'meets'; loadMeets(); } },
             'import': { label: 'Import', activeViews: ['import'], onSelect: () => { currentView.value = 'import'; resetImport(); } },
             'calendar': { label: 'Calendar', activeViews: ['calendar'], onSelect: () => { currentView.value = 'calendar'; loadCalendarEvents(); loadMyAssignedGroups(); } },
@@ -2625,6 +2667,11 @@ createApp({
             d.setDate(d.getDate() - 30);
             attendanceAnalyticsStart.value = d.toISOString().split('T')[0];
             attendanceAnalyticsEnd.value = getLocalTodayStr();
+        }
+
+        function openAttendanceMark(groupName) {
+            attendanceMarkGroup.value = groupName;
+            attendanceGroupFilter.value = groupName;
         }
 
         async function openAttendanceAnalytics(groupName) {
@@ -3552,7 +3599,7 @@ createApp({
         }
 
         return {
-            user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
+            user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, printTarget, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
             hasPendingInvite, isProcessingInvite, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors,
             title, group, poolType, defaultStroke, workoutVisibility, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
@@ -3577,7 +3624,7 @@ createApp({
             navModules, selectModule, isModuleActive,
             swimmers, newSwimmer, teamParents, parentLinksBySwimmer, loadSwimmers, addSwimmer, deleteSwimmer, updateSwimmerGroup, linkParentToSwimmer, unlinkParent,
             attendanceDate, attendanceGroupFilter, attendanceMap, filteredAttendanceSwimmers, loadAttendanceForDate, setAttendance,
-            attendanceViewTab, attendanceAnalyticsGroup, attendanceAnalyticsStart, attendanceAnalyticsEnd, attendanceAnalyticsData,
+            attendanceViewTab, attendanceMarkGroup, openAttendanceMark, attendanceAnalyticsGroup, attendanceAnalyticsStart, attendanceAnalyticsEnd, attendanceAnalyticsData,
             openAttendanceAnalytics, loadAttendanceAnalytics, groupAttendancePercent, groupAttendanceSummary, loadGroupAttendanceSummary,
             meetsList, showNewMeetForm, newMeet, selectedMeet, meetDetailTab, meetEventsList, newMeetEvent, meetEntriesList, overrideTimes,
             loadMeets, createMeet, openMeetDetail, addMeetEvent, deleteMeetEvent, pendingEntriesCount, swimmerName, eventLabel, approveMeetEntry, declineMeetEntry,
