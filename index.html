@@ -1347,7 +1347,7 @@ createApp({
             { key: 'import', label: 'Smart Import' },
             { key: 'calendar', label: 'Calendar' },
             { key: 'staff', label: 'Staff' },
-            { key: 'accounts', label: 'Accounts (Owner/Admin Only)' },
+            { key: 'accounts', label: 'Accounts' },
         ];
         const teamModules = ref(ALL_TOGGLEABLE_MODULES.map(m => m.key));
         const layoutDraft = ref([]);
@@ -2409,7 +2409,7 @@ createApp({
             'import': { label: 'Import', activeViews: ['import'], onSelect: () => { currentView.value = 'import'; resetImport(); } },
             'calendar': { label: 'Calendar', activeViews: ['calendar'], onSelect: () => { currentView.value = 'calendar'; loadCalendarEvents(); loadMyAssignedGroups(); } },
             'staff': { label: 'Staff', activeViews: ['staff'], onSelect: () => { currentView.value = 'staff'; loadStaff(); loadCoachGroupLinks(); } },
-            'accounts': { label: 'Accounts', activeViews: ['accounts'], ownerAdminOnly: true, onSelect: () => { currentView.value = 'accounts'; loadAccounts(); } },
+            'accounts': { label: 'Accounts', activeViews: ['accounts'], onSelect: () => { currentView.value = 'accounts'; loadAccounts(); } },
         };
 
         const navModules = computed(() => teamModules.value
