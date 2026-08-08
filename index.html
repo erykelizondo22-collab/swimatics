@@ -121,16 +121,25 @@
                     <svg v-if="!mobileNavOpen" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     <svg v-else class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
-                <div class="flex items-center gap-3 cursor-pointer group" @click="currentView = myTeam ? (isParent ? 'parent-home' : 'dashboard') : 'onboarding'; mobileNavOpen = false">
+                <div class="flex items-center gap-3 cursor-pointer group" @click="currentView = myTeam ? (isParent ? 'parent-home' : (isOffice ? 'roster' : 'dashboard')) : 'onboarding'; mobileNavOpen = false">
                     <div class="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl group-hover:scale-105 transition-transform duration-300 overflow-hidden" :style="{ backgroundColor: teamColors.primary + '20' }">
                         <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain p-1">
                     </div>
                     <span class="font-black text-2xl tracking-tight hidden sm:inline-block text-slate-900 group-hover:opacity-80 transition-opacity">Swimatics</span>
                 </div>
 
+                <div v-if="mobileNavOpen" @click="mobileNavOpen = false" class="fixed inset-0 z-40"></div>
+
                 <div v-if="mobileNavOpen" class="absolute top-full left-0 mt-2 w-64 bg-white border border-slate-200 shadow-xl rounded-2xl p-2 flex flex-col gap-1 z-50 max-h-[80vh] overflow-y-auto">
-                    <button v-if="isParent" @click="currentView = 'parent-home'; mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'parent-home', 'text-slate-600 hover:bg-slate-100': currentView !== 'parent-home'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Home</button>
-                    <template v-if="!isParent">
+                    <template v-if="isParent">
+                    <button @click="currentView = 'parent-home'; mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'parent-home', 'text-slate-600 hover:bg-slate-100': currentView !== 'parent-home'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Home</button>
+                    <button v-if="teamModules.includes('calendar')" @click="currentView = 'calendar'; loadCalendarEvents(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'calendar', 'text-slate-600 hover:bg-slate-100': currentView !== 'calendar'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Calendar</button>
+                    </template>
+                    <template v-else-if="isOffice">
+                    <button @click="currentView = 'roster'; loadSwimmers(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'roster', 'text-slate-600 hover:bg-slate-100': currentView !== 'roster'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Roster</button>
+                    <button @click="currentView = 'calendar'; loadCalendarEvents(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'calendar', 'text-slate-600 hover:bg-slate-100': currentView !== 'calendar'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Calendar</button>
+                    </template>
+                    <template v-else>
                     <button v-for="m in navModules" :key="m.key" @click="selectModule(m.key); mobileNavOpen = false" :class="isModuleActive(m.key) ? 'bg-slate-900 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">{{m.label}}</button>
                     <button v-if="myRole === 'owner' || myRole === 'admin'" @click="currentView = 'accounts'; loadAccounts(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'accounts', 'text-slate-600 hover:bg-slate-100': currentView !== 'accounts'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Accounts</button>
                     <button @click="currentView = 'staff'; loadStaff(); loadCoachGroupLinks(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'staff', 'text-slate-600 hover:bg-slate-100': currentView !== 'staff'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Staff</button>
@@ -756,6 +765,8 @@
                                     @change="changeRole(member.id, member.name || member.email, $event.target.value)" 
                                     :value="member.role"
                                     class="bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest px-3 py-2.5 rounded-xl text-slate-700 outline-none focus:border-slate-400 cursor-pointer shadow-sm">
+                                <option value="parent">Parent</option>
+                                <option value="office">Office Staff</option>
                                 <option value="coach">Coach</option>
                                 <option value="admin">Admin</option>
                                 <option value="owner">Owner</option>
@@ -785,6 +796,7 @@
 
                 <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200">
                     <input v-model="accountSearchQuery" placeholder="Search by name or email..." class="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-sm font-bold outline-none">
+                    <p class="text-[10px] text-slate-400 font-bold mt-2 ml-1">Showing unpromoted parent accounts only. Once promoted, they move to the Staff page.</p>
                 </div>
 
                 <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
@@ -794,8 +806,8 @@
                             <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 bg-slate-50 inline-block px-2 py-0.5 rounded border border-slate-200">{{acc.role}}</div>
                         </div>
                         <div v-if="acc.id !== user.id" class="flex gap-2">
-                            <button v-if="acc.role === 'parent'" @click="promoteToCoach(acc.id, acc.name || acc.email)" class="text-[10px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-2 rounded-lg hover:bg-emerald-100 transition-colors">Promote to Coach</button>
-                            <button v-if="myRole === 'owner' && (acc.role === 'coach' || acc.role === 'admin')" @click="demoteToParent(acc.id, acc.name || acc.email)" class="text-[10px] font-black uppercase bg-slate-50 text-slate-500 border border-slate-200 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">Demote to Parent</button>
+                            <button @click="promoteToCoach(acc.id, acc.name || acc.email)" class="text-[10px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-2 rounded-lg hover:bg-emerald-100 transition-colors">Promote to Coach</button>
+                            <button @click="promoteToOffice(acc.id, acc.name || acc.email)" class="text-[10px] font-black uppercase bg-blue-50 text-blue-600 border border-blue-100 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors">Promote to Office</button>
                         </div>
                     </div>
                     <div v-if="!filteredAccounts.length" class="p-12 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No matching accounts</div>
@@ -925,6 +937,10 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
+                            <select :value="s.group_name || ''" @change="updateSwimmerGroup(s.id, $event.target.value)" class="bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-xl outline-none">
+                                <option value="" disabled>Move to Group...</option>
+                                <option v-for="g in teamGroupsList" :key="g.id" :value="g.name">{{g.name}}</option>
+                            </select>
                             <select @change="linkParentToSwimmer(s.id, $event.target.value); $event.target.value=''" class="bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-xl outline-none">
                                 <option value="" disabled selected>+ Link Parent</option>
                                 <option v-for="p in teamParents" :key="p.id" :value="p.id">{{p.name || p.email}}</option>
@@ -1120,15 +1136,15 @@
 
                 <div class="flex flex-wrap items-center gap-2">
                     <button @click="calendarVisibilityFilter.team = !calendarVisibilityFilter.team" :class="calendarVisibilityFilter.team ? 'bg-blue-600 text-white' : 'bg-white text-slate-400 border border-slate-200'" class="text-[10px] font-black uppercase px-3 py-2 rounded-lg transition-colors">Team Calendar</button>
-                    <template v-if="!isParent">
+                    <template v-if="!isParent && !isOffice">
                         <button @click="calendarVisibilityFilter.coaches = !calendarVisibilityFilter.coaches" :class="calendarVisibilityFilter.coaches ? 'bg-purple-600 text-white' : 'bg-white text-slate-400 border border-slate-200'" class="text-[10px] font-black uppercase px-3 py-2 rounded-lg transition-colors">Coaches Only</button>
                         <button @click="calendarVisibilityFilter.personal = !calendarVisibilityFilter.personal" :class="calendarVisibilityFilter.personal ? 'bg-amber-500 text-white' : 'bg-white text-slate-400 border border-slate-200'" class="text-[10px] font-black uppercase px-3 py-2 rounded-lg transition-colors">My Personal</button>
-                        <button @click="showNewCalendarEventForm = !showNewCalendarEventForm" class="ml-auto bg-slate-900 text-white px-6 py-2.5 rounded-lg font-black uppercase tracking-widest text-[10px]">+ New Event</button>
                     </template>
+                    <button v-if="!isParent" @click="showNewCalendarEventForm = !showNewCalendarEventForm" class="ml-auto bg-slate-900 text-white px-6 py-2.5 rounded-lg font-black uppercase tracking-widest text-[10px]">+ New Event</button>
                 </div>
 
                 <div v-if="showNewCalendarEventForm" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 space-y-3">
-                    <div class="flex gap-2 bg-slate-100 p-1.5 rounded-xl">
+                    <div v-if="!isOffice" class="flex gap-2 bg-slate-100 p-1.5 rounded-xl">
                         <button @click="newCalendarEvent.visibility = 'team'" :class="newCalendarEvent.visibility === 'team' ? 'bg-slate-900 text-white' : 'text-slate-500'" class="flex-1 py-2.5 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all">Team Calendar</button>
                         <button @click="newCalendarEvent.visibility = 'coaches'" :class="newCalendarEvent.visibility === 'coaches' ? 'bg-slate-900 text-white' : 'text-slate-500'" class="flex-1 py-2.5 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all">Coaches Only</button>
                         <button @click="newCalendarEvent.visibility = 'personal'" :class="newCalendarEvent.visibility === 'personal' ? 'bg-slate-900 text-white' : 'text-slate-500'" class="flex-1 py-2.5 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all">Just Me</button>
@@ -1478,6 +1494,7 @@ createApp({
         const myRoleLive = ref(null);
         const myRole = computed(() => myRoleLive.value || user.value?.user_metadata?.team_role || 'coach');
         const isParent = computed(() => myRole.value === 'parent');
+        const isOffice = computed(() => myRole.value === 'office');
 
         async function refreshMyRole() {
             if (!myTeam.value || !user.value) return;
@@ -2171,14 +2188,27 @@ createApp({
         }
 
         const filteredAccounts = computed(() => {
+            // Accounts only ever shows unpromoted parent accounts -- as
+            // soon as someone is promoted to coach or office staff,
+            // their role changes and they naturally disappear from here
+            // (loadAccounts() re-fetches after every promote/demote) and
+            // show up on the Staff page instead.
+            const parentsOnly = accountsList.value.filter(a => a.role === 'parent');
             const q = accountSearchQuery.value.toLowerCase().trim();
-            if(!q) return accountsList.value;
-            return accountsList.value.filter(a => (a.name||'').toLowerCase().includes(q) || (a.email||'').toLowerCase().includes(q));
+            if(!q) return parentsOnly;
+            return parentsOnly.filter(a => (a.name||'').toLowerCase().includes(q) || (a.email||'').toLowerCase().includes(q));
         });
 
         async function promoteToCoach(id, name) {
             if(!confirm(`Promote ${name} to Coach? They'll get full coach access.`)) return;
             const { error } = await client.rpc('change_team_role', { target_user_id: id, p_team_id: myTeam.value, new_role: 'coach' });
+            if(error) return alert("Error: " + error.message);
+            loadAccounts();
+        }
+
+        async function promoteToOffice(id, name) {
+            if(!confirm(`Promote ${name} to Office Staff? They'll be able to manage registration and post to the team calendar.`)) return;
+            const { error } = await client.rpc('change_team_role', { target_user_id: id, p_team_id: myTeam.value, new_role: 'office' });
             if(error) return alert("Error: " + error.message);
             loadAccounts();
         }
@@ -2281,7 +2311,7 @@ createApp({
         // Groups a coach is allowed to post to: owner/admin get every
         // team group, a plain coach only sees groups they're assigned to.
         const postableGroups = computed(() => {
-            if(myRole.value === 'owner' || myRole.value === 'admin') return teamGroupsList.value.map(g => g.name);
+            if(myRole.value === 'owner' || myRole.value === 'admin' || myRole.value === 'office') return teamGroupsList.value.map(g => g.name);
             return myAssignedGroups.value;
         });
 
@@ -2428,6 +2458,13 @@ createApp({
         async function deleteSwimmer(id) {
             if(!confirm("Remove this swimmer from the roster? Attendance and times history stay, but they'll vanish from menus.")) return;
             await client.from("swimmers").update({ active: false }).eq('id', id);
+            loadSwimmers();
+        }
+
+        async function updateSwimmerGroup(swimmerId, newGroup) {
+            if(!newGroup) return;
+            const { error } = await client.from("swimmers").update({ group_name: newGroup }).eq('id', swimmerId);
+            if(error) return alert("Error moving swimmer: " + error.message);
             loadSwimmers();
         }
 
@@ -2826,6 +2863,10 @@ createApp({
                         loadMyLinkedSwimmers();
                         loadMeets();
                         loadCalendarEvents();
+                    } else if (isOffice.value) {
+                        currentView.value = 'roster';
+                        loadSwimmers();
+                        refreshMyRole();
                     } else {
                         currentView.value = 'dashboard';
                         loadWorkouts();
@@ -2847,6 +2888,7 @@ createApp({
                     else if (myTeam.value && currentView.value === 'onboarding') { 
                         loadTeamSettings(); loadGroups(); loadTeamLayout();
                         if (isParent.value) { currentView.value = 'parent-home'; loadMyLinkedSwimmers(); loadMeets(); loadCalendarEvents(); }
+                        else if (isOffice.value) { currentView.value = 'roster'; loadSwimmers(); }
                         else { currentView.value = 'dashboard'; loadWorkouts(); loadSeasonPlans(); }
                     }
                 }
@@ -3332,15 +3374,15 @@ createApp({
             selectedGroupSystems, addEnergySystem, removeEnergySystem, saveGroupSystems, calculateWeekTotal, seasonPlanTab,
             addAlias, removeAlias, saveGroupAliases, editorSystemTotals,
             selectedGroupForEdit, openGroupDetails, dragStart, drop, draggedGroupIndex, importSourceGroup, importSystemsAndAliases,
-            isParent, secToTime,
-            accountsList, accountSearchQuery, filteredAccounts, loadAccounts, promoteToCoach, demoteToParent,
+            isParent, isOffice, secToTime,
+            accountsList, accountSearchQuery, filteredAccounts, loadAccounts, promoteToCoach, promoteToOffice, demoteToParent,
             teamModules, layoutDraft, draggedLayoutIndex, openLayoutEditor, toggleLayoutModule, layoutDragStart, layoutDrop, saveLayout,
             coachGroupLinksMap, myAssignedGroups, toggleCoachGroup,
             calendarEvents, newCalendarEvent, showNewCalendarEventForm, upcomingCalendarEvents, postableGroups, createCalendarEvent, deleteCalendarEvent,
             calendarViewDate, calendarVisibilityFilter, selectedCalendarDay, calendarMonthLabel, calendarGridDays, eventsByDate,
             prevMonth, nextMonth, goToToday, openCalendarDay, closeCalendarDay, addEventOnDay,
             navModules, selectModule, isModuleActive,
-            swimmers, newSwimmer, teamParents, parentLinksBySwimmer, loadSwimmers, addSwimmer, deleteSwimmer, linkParentToSwimmer, unlinkParent,
+            swimmers, newSwimmer, teamParents, parentLinksBySwimmer, loadSwimmers, addSwimmer, deleteSwimmer, updateSwimmerGroup, linkParentToSwimmer, unlinkParent,
             attendanceDate, attendanceGroupFilter, attendanceMap, filteredAttendanceSwimmers, loadAttendanceForDate, setAttendance,
             meetsList, showNewMeetForm, newMeet, selectedMeet, meetDetailTab, meetEventsList, newMeetEvent, meetEntriesList, overrideTimes,
             loadMeets, createMeet, openMeetDetail, addMeetEvent, deleteMeetEvent, pendingEntriesCount, swimmerName, eventLabel, approveMeetEntry, declineMeetEntry,
