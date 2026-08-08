@@ -18,6 +18,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <style>
         [v-cloak] { display: none; }
@@ -120,7 +121,7 @@
                     <svg v-if="!mobileNavOpen" class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     <svg v-else class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
-                <div class="flex items-center gap-3 cursor-pointer group" @click="currentView = myTeam ? 'dashboard' : 'onboarding'; mobileNavOpen = false">
+                <div class="flex items-center gap-3 cursor-pointer group" @click="currentView = myTeam ? (isParent ? 'parent-home' : 'dashboard') : 'onboarding'; mobileNavOpen = false">
                 <div class="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl group-hover:scale-105 transition-transform duration-300 overflow-hidden" :style="{ backgroundColor: teamColors.primary + '20' }">
                     <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain p-1">
                 </div>
@@ -131,11 +132,18 @@
             <div class="flex flex-1 md:flex-none items-center justify-end gap-2 md:gap-8 overflow-x-auto no-scrollbar">
                 <div v-if="myTeam" class="flex items-center justify-end gap-2 sm:gap-4 md:gap-8 w-full md:w-auto">
                     <nav class="hidden md:flex gap-1.5 sm:gap-2 md:gap-4 overflow-x-auto pb-1 flex-1 no-scrollbar items-center">
+                        <button v-if="isParent" @click="currentView = 'parent-home'" :class="{'bg-slate-900 text-white shadow-md': currentView === 'parent-home', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'parent-home'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Home</button>
+                        <template v-if="!isParent">
                         <button @click="currentView = 'dashboard'" :class="{'bg-slate-900 text-white shadow-md': currentView === 'dashboard', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'dashboard'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Vault</button>
                         <button @click="currentView = 'analytics'" :class="{'bg-slate-900 text-white shadow-md': currentView === 'analytics', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'analytics'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Analytics</button>
                         <button @click="currentView = 'season-planning'" :class="{'bg-slate-900 text-white shadow-md': currentView === 'season-planning' || currentView === 'plan-builder', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'season-planning' && currentView !== 'plan-builder'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Season</button>
                         <button @click="currentView = 'groups'; selectedGroupForEdit = null;" :class="{'bg-slate-900 text-white shadow-md': currentView === 'groups' || currentView === 'group-details', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'groups' && currentView !== 'group-details'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Groups</button>
+                        <button @click="currentView = 'roster'; loadSwimmers();" :class="{'bg-slate-900 text-white shadow-md': currentView === 'roster', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'roster'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Roster</button>
+                        <button @click="currentView = 'attendance'; loadSwimmers(); loadAttendanceForDate();" :class="{'bg-slate-900 text-white shadow-md': currentView === 'attendance', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'attendance'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Attendance</button>
+                        <button @click="currentView = 'meets'; loadMeets();" :class="{'bg-slate-900 text-white shadow-md': currentView === 'meets' || currentView === 'meet-detail', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'meets' && currentView !== 'meet-detail'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Meets</button>
+                        <button @click="currentView = 'import'; resetImport();" :class="{'bg-slate-900 text-white shadow-md': currentView === 'import', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'import'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Import</button>
                         <button @click="currentView = 'staff'; loadStaff();" :class="{'bg-slate-900 text-white shadow-md': currentView === 'staff', 'text-slate-500 hover:bg-slate-100 hover:text-slate-900': currentView !== 'staff'}" class="text-xs md:text-sm font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 px-4 py-2 rounded-full">Staff</button>
+                        </template>
                     </nav>
                     <div class="flex items-center gap-1.5 sm:gap-3 pl-2 sm:pl-3 md:pl-6 border-l border-slate-200 shrink-0">
                         <span class="text-[10px] md:text-xs font-black bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm" :style="{ color: teamColors.primary }">{{myTeam}}</span>
@@ -152,11 +160,18 @@
         </div>
 
         <div v-if="myTeam && mobileNavOpen" class="md:hidden bg-white border-b border-slate-200 shadow-lg px-4 py-3 flex flex-col gap-1 sticky top-[73px] z-40">
+            <button v-if="isParent" @click="currentView = 'parent-home'; mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'parent-home', 'text-slate-600 hover:bg-slate-100': currentView !== 'parent-home'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Home</button>
+            <template v-if="!isParent">
             <button @click="currentView = 'dashboard'; mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'dashboard', 'text-slate-600 hover:bg-slate-100': currentView !== 'dashboard'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Vault</button>
             <button @click="currentView = 'analytics'; mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'analytics', 'text-slate-600 hover:bg-slate-100': currentView !== 'analytics'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Analytics</button>
             <button @click="currentView = 'season-planning'; mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'season-planning' || currentView === 'plan-builder', 'text-slate-600 hover:bg-slate-100': currentView !== 'season-planning' && currentView !== 'plan-builder'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Season</button>
             <button @click="currentView = 'groups'; selectedGroupForEdit = null; mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'groups' || currentView === 'group-details', 'text-slate-600 hover:bg-slate-100': currentView !== 'groups' && currentView !== 'group-details'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Groups</button>
+            <button @click="currentView = 'roster'; loadSwimmers(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'roster', 'text-slate-600 hover:bg-slate-100': currentView !== 'roster'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Roster</button>
+            <button @click="currentView = 'attendance'; loadSwimmers(); loadAttendanceForDate(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'attendance', 'text-slate-600 hover:bg-slate-100': currentView !== 'attendance'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Attendance</button>
+            <button @click="currentView = 'meets'; loadMeets(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'meets' || currentView === 'meet-detail', 'text-slate-600 hover:bg-slate-100': currentView !== 'meets' && currentView !== 'meet-detail'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Meets</button>
+            <button @click="currentView = 'import'; resetImport(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'import', 'text-slate-600 hover:bg-slate-100': currentView !== 'import'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Import</button>
             <button @click="currentView = 'staff'; loadStaff(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'staff', 'text-slate-600 hover:bg-slate-100': currentView !== 'staff'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Staff</button>
+            </template>
         </div>
 
         <div class="max-w-[1200px] mx-auto p-4 md:p-6 mt-6 relative">
@@ -191,10 +206,15 @@
 
             <div v-if="currentView === 'onboarding'" class="max-w-5xl mx-auto mt-8 md:mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 text-center relative flex flex-col justify-center hover:shadow-2xl transition-shadow duration-300">
-                    <h2 class="text-2xl md:text-3xl font-black text-slate-900 mb-8 uppercase tracking-tight">Join a Team</h2>
+                    <h2 class="text-2xl md:text-3xl font-black text-slate-900 mb-6 uppercase tracking-tight">Join a Team</h2>
+                    <div class="flex gap-2 mb-6 bg-slate-100 p-1.5 rounded-2xl">
+                        <button @click="joinAsRole = 'coach'" :class="joinAsRole === 'coach' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all">I'm a Coach</button>
+                        <button @click="joinAsRole = 'parent'" :class="joinAsRole === 'parent' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all">I'm a Parent</button>
+                    </div>
                     <input v-model="joinCode" placeholder="Team Code" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 uppercase text-center text-lg tracking-widest mb-4 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all">
-                    <input v-model="teamPassword" type="password" placeholder="Vault Password" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 text-center text-lg tracking-widest mb-8 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all">
-                    <button @click="joinTeam" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-black hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm">Open Vault</button>
+                    <input v-model="teamPassword" type="password" placeholder="Vault Password" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 text-center text-lg tracking-widest mb-4 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all">
+                    <p v-if="joinAsRole === 'parent'" class="text-[11px] text-slate-400 font-bold mb-4 leading-relaxed">After joining, ask your coach to link your account to your swimmer(s) — you won't see any data until that's done.</p>
+                    <button @click="joinTeam()" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-black hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm">{{ joinAsRole === 'parent' ? 'Join as Parent' : 'Open Vault' }}</button>
                 </div>
                 <div class="bg-gradient-to-br from-blue-600 to-cyan-500 p-8 md:p-12 rounded-[2.5rem] shadow-xl shadow-blue-900/20 text-center text-white relative flex flex-col justify-center hover:shadow-2xl transition-shadow duration-300">
                     <h2 class="text-2xl md:text-3xl font-black mb-8 uppercase tracking-tight">Create a Vault</h2>
@@ -843,6 +863,236 @@
                 </div>
             </div>
 
+            <div v-if="currentView === 'roster'" class="max-w-5xl mx-auto space-y-6 mt-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 border-b border-slate-200 pb-6">
+                    <div>
+                        <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Roster</h2>
+                        <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">{{ swimmers.length }} Swimmers</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest mb-4">Add Swimmer</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        <input v-model="newSwimmer.first_name" placeholder="First Name" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                        <input v-model="newSwimmer.last_name" placeholder="Last Name" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                        <input v-model="newSwimmer.birthdate" type="date" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                        <select v-model="newSwimmer.group_name" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                            <option value="" disabled>Group</option>
+                            <option v-for="g in teamGroupsList" :key="g.id" :value="g.name">{{g.name}}</option>
+                        </select>
+                        <button @click="addSwimmer" class="bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-xs">Add</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                    <div v-for="s in swimmers" :key="s.id" class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <div class="font-black text-slate-900 uppercase">{{s.first_name}} {{s.last_name}}</div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{{s.group_name || 'No Group'}} <span v-if="s.birthdate">• {{s.birthdate}}</span></div>
+                            <div class="flex flex-wrap gap-1 mt-2">
+                                <span v-for="p in (parentLinksBySwimmer[s.id] || [])" :key="p.linkId" class="bg-blue-50 text-blue-700 text-[9px] font-bold px-2 py-1 rounded-md border border-blue-100">{{p.name || p.email}} <button @click="unlinkParent(p.linkId)" class="ml-1 text-blue-300 hover:text-red-500">×</button></span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <select @change="linkParentToSwimmer(s.id, $event.target.value); $event.target.value=''" class="bg-slate-50 border border-slate-200 text-xs font-bold px-3 py-2 rounded-xl outline-none">
+                                <option value="" disabled selected>+ Link Parent</option>
+                                <option v-for="p in teamParents" :key="p.id" :value="p.id">{{p.name || p.email}}</option>
+                            </select>
+                            <button @click="deleteSwimmer(s.id)" class="text-red-400 hover:bg-red-50 hover:text-red-600 text-[10px] font-black uppercase px-3 py-2 rounded-lg">Delete</button>
+                        </div>
+                    </div>
+                    <div v-if="!swimmers.length" class="p-12 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No swimmers yet — add one above or use Import</div>
+                </div>
+            </div>
+
+            <div v-if="currentView === 'attendance'" class="max-w-5xl mx-auto space-y-6 mt-6">
+                <div class="border-b border-slate-200 pb-6">
+                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Attendance</h2>
+                </div>
+                <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200 flex flex-wrap gap-4 items-end">
+                    <div class="flex-1 min-w-[150px]">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5 ml-2">Date</label>
+                        <input type="date" v-model="attendanceDate" @change="loadAttendanceForDate" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                    </div>
+                    <div class="flex-1 min-w-[150px]">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5 ml-2">Group</label>
+                        <select v-model="attendanceGroupFilter" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                            <option value="">All Groups</option>
+                            <option v-for="g in teamGroupsList" :key="g.id" :value="g.name">{{g.name}}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                    <div v-for="s in filteredAttendanceSwimmers" :key="s.id" class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="font-bold text-slate-800">{{s.first_name}} {{s.last_name}} <span class="text-[10px] text-slate-400 uppercase font-black ml-2">{{s.group_name}}</span></div>
+                        <div class="flex gap-2">
+                            <button @click="setAttendance(s.id, 'present')" :class="attendanceMap[s.id] === 'present' ? 'bg-emerald-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Present</button>
+                            <button @click="setAttendance(s.id, 'excused')" :class="attendanceMap[s.id] === 'excused' ? 'bg-amber-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Excused</button>
+                            <button @click="setAttendance(s.id, 'absent')" :class="attendanceMap[s.id] === 'absent' ? 'bg-red-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Absent</button>
+                        </div>
+                    </div>
+                    <div v-if="!filteredAttendanceSwimmers.length" class="p-12 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No swimmers in this group</div>
+                </div>
+            </div>
+
+            <div v-if="currentView === 'meets'" class="max-w-5xl mx-auto space-y-6 mt-6">
+                <div class="flex justify-between items-end border-b border-slate-200 pb-6">
+                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Meets</h2>
+                    <button @click="showNewMeetForm = !showNewMeetForm" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs">+ New Meet</button>
+                </div>
+                <div v-if="showNewMeetForm" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <input v-model="newMeet.name" placeholder="Meet Name" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none md:col-span-2">
+                    <input v-model="newMeet.start_date" type="date" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                    <select v-model="newMeet.course" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                        <option value="SCY">SCY</option><option value="SCM">SCM</option><option value="LCM">LCM</option>
+                    </select>
+                    <button @click="createMeet" class="md:col-span-4 bg-slate-900 text-white py-3 rounded-xl font-black uppercase tracking-widest text-xs">Create Meet</button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div v-for="m in meetsList" :key="m.id" @click="openMeetDetail(m)" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 hover:shadow-lg cursor-pointer transition-all">
+                        <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{{m.course}} • {{formatPracticeDate(m.start_date)}}</div>
+                        <div class="font-black text-xl text-slate-900 uppercase">{{m.name}}</div>
+                    </div>
+                    <div v-if="!meetsList.length" class="sm:col-span-2 text-center py-20 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2rem]">No meets yet</div>
+                </div>
+            </div>
+
+            <div v-if="currentView === 'meet-detail' && selectedMeet" class="max-w-5xl mx-auto space-y-6 mt-6">
+                <div class="flex justify-between items-center border-b border-slate-200 pb-6">
+                    <div>
+                        <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">{{selectedMeet.name}}</h2>
+                        <p class="text-sm font-bold uppercase tracking-widest mt-1 text-slate-400">{{selectedMeet.course}} • {{formatPracticeDate(selectedMeet.start_date)}}</p>
+                    </div>
+                    <button @click="currentView = 'meets'" class="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl uppercase tracking-widest">Back</button>
+                </div>
+
+                <div class="flex gap-6 border-b border-slate-100 pb-2">
+                    <button @click="meetDetailTab = 'events'" :class="meetDetailTab === 'events' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'" class="font-black uppercase tracking-widest text-xs pb-2 transition-colors">Events</button>
+                    <button @click="meetDetailTab = 'entries'" :class="meetDetailTab === 'entries' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'" class="font-black uppercase tracking-widest text-xs pb-2 transition-colors">Entries <span v-if="pendingEntriesCount" class="ml-1 bg-amber-500 text-white text-[9px] px-1.5 py-0.5 rounded-full">{{pendingEntriesCount}}</span></button>
+                </div>
+
+                <div v-if="meetDetailTab === 'events'" class="space-y-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-2 md:grid-cols-6 gap-2">
+                        <input v-model="newMeetEvent.event_number" placeholder="#" class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
+                        <select v-model="newMeetEvent.gender" class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
+                            <option value="M">Boys</option><option value="F">Girls</option><option value="X">Mixed</option>
+                        </select>
+                        <input v-model="newMeetEvent.distance" type="number" placeholder="Dist" class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
+                        <select v-model="newMeetEvent.stroke" class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
+                            <option value="Free">Free</option><option value="Back">Back</option><option value="Breast">Breast</option><option value="Fly">Fly</option><option value="IM">IM</option>
+                        </select>
+                        <input v-model="newMeetEvent.qual_time" placeholder="Qual Time (m:ss.hh)" class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
+                        <button @click="addMeetEvent" class="bg-slate-900 text-white rounded-lg font-black uppercase tracking-widest text-[10px]">Add</button>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
+                        <div v-for="e in meetEventsList" :key="e.id" class="p-4 flex justify-between items-center">
+                            <div class="text-sm font-bold text-slate-800">#{{e.event_number}} — {{e.gender}} {{e.distance}} {{e.stroke}} <span v-if="e.qual_time_seconds" class="text-[10px] text-amber-600 font-black ml-2">QT {{secToTime(e.qual_time_seconds)}}</span></div>
+                            <button @click="deleteMeetEvent(e.id)" class="text-red-400 hover:text-red-600 text-[10px] font-black uppercase">Remove</button>
+                        </div>
+                        <div v-if="!meetEventsList.length" class="p-10 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No events yet — add above or use Import</div>
+                    </div>
+                </div>
+
+                <div v-if="meetDetailTab === 'entries'" class="space-y-4">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
+                        <div v-for="en in meetEntriesList" :key="en.id" class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <div class="font-bold text-slate-800">{{swimmerName(en.swimmer_id)}} — {{eventLabel(en.meet_event_id)}}</div>
+                                <div class="text-[10px] font-black uppercase tracking-widest mt-1" :class="en.status === 'approved' ? 'text-emerald-600' : en.status === 'declined' ? 'text-red-500' : 'text-amber-600'">{{ en.status === 'pending_coach_approval' ? '⚠ Manual Override Needed' : en.status }}</div>
+                            </div>
+                            <div v-if="en.status === 'pending_coach_approval'" class="flex items-center gap-2">
+                                <input v-model="overrideTimes[en.id]" placeholder="Time m:ss.hh" class="w-28 bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
+                                <button @click="approveMeetEntry(en.id)" class="bg-emerald-500 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase">Approve</button>
+                                <button @click="declineMeetEntry(en.id)" class="bg-red-50 text-red-500 px-3 py-2 rounded-lg text-[10px] font-black uppercase">Decline</button>
+                            </div>
+                        </div>
+                        <div v-if="!meetEntriesList.length" class="p-10 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No entries yet</div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="currentView === 'import'" class="max-w-3xl mx-auto space-y-6 mt-6">
+                <div class="border-b border-slate-200 pb-6">
+                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Smart Import</h2>
+                    <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Upload a roster, times, or meet event file</p>
+                </div>
+
+                <div v-if="importState.status === 'idle'" class="bg-white p-10 rounded-[2rem] shadow-sm border-2 border-dashed border-slate-200 text-center">
+                    <input type="file" id="genericImportUpload" @change="handleGenericImport" class="hidden">
+                    <button @click="triggerGenericImportUpload" class="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs">Choose File</button>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">PDF, CSV, TXT, XLSX, or Hy-Tek exports (HY3/CL2/EV3)</p>
+                </div>
+
+                <div v-if="importState.status === 'reading' || importState.status === 'analyzing'" class="bg-indigo-50 border border-indigo-200 text-indigo-700 p-6 rounded-2xl font-black uppercase tracking-widest text-xs text-center animate-pulse">{{importState.message}}</div>
+
+                <div v-if="importState.status === 'error'" class="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl font-bold text-sm">{{importState.message}} <button @click="resetImport" class="block mt-3 text-[10px] font-black uppercase underline">Try Again</button></div>
+
+                <div v-if="importState.status === 'preview'" class="space-y-4">
+                    <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-xs font-bold text-amber-700">Detected: <span class="uppercase font-black">{{importPreview.detected_type}}</span> — review below, uncheck anything wrong, then confirm.</div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+                        <table class="w-full text-xs">
+                            <thead><tr class="border-b border-slate-100 text-slate-400 uppercase font-black">
+                                <th class="p-3 text-left">Include</th>
+                                <th v-for="col in importColumns" :key="col" class="p-3 text-left">{{col}}</th>
+                            </tr></thead>
+                            <tbody>
+                                <tr v-for="(row, i) in importPreview.records" :key="i" class="border-b border-slate-50">
+                                    <td class="p-3"><input type="checkbox" v-model="row._include"></td>
+                                    <td v-for="col in importColumns" :key="col" class="p-3"><input v-model="row[col]" class="bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full outline-none"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex gap-3">
+                        <button @click="confirmImport" class="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-sm">Confirm Import ({{importPreview.records.filter(r=>r._include).length}} rows)</button>
+                        <button @click="resetImport" class="px-8 bg-slate-50 border border-slate-200 rounded-2xl font-black uppercase tracking-widest text-xs">Cancel</button>
+                    </div>
+                </div>
+
+                <div v-if="importState.status === 'done'" class="bg-emerald-50 border border-emerald-200 text-emerald-700 p-6 rounded-2xl font-black uppercase tracking-widest text-xs text-center">{{importState.message}} <button @click="resetImport" class="block mt-3 text-[10px] font-black uppercase underline">Import Another</button></div>
+            </div>
+
+            <div v-if="currentView === 'parent-home'" class="max-w-4xl mx-auto space-y-8 mt-6">
+                <div class="border-b border-slate-200 pb-6">
+                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">My Swimmers</h2>
+                </div>
+
+                <div v-if="!myLinkedSwimmers.length" class="text-center py-20 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2rem]">
+                    Not linked to a swimmer yet — ask your coach to link your account from the Roster page.
+                </div>
+
+                <div v-for="s in myLinkedSwimmers" :key="s.id" class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200 space-y-6">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-2xl font-black uppercase text-slate-900">{{s.first_name}} {{s.last_name}}</h3>
+                        <span class="text-[10px] font-black uppercase bg-slate-100 px-3 py-1.5 rounded-lg text-slate-500">{{s.group_name}}</span>
+                    </div>
+                    <div>
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Upcoming Meets</h4>
+                        <div v-for="m in meetsList" :key="m.id" class="flex justify-between items-center bg-slate-50 p-4 rounded-xl mb-2">
+                            <div class="text-sm font-bold text-slate-800">{{m.name}} <span class="text-[10px] text-slate-400 font-black uppercase ml-2">{{formatPracticeDate(m.start_date)}}</span></div>
+                            <button @click="openParentMeetEntry(m, s)" class="text-[10px] font-black uppercase bg-slate-900 text-white px-3 py-2 rounded-lg">Enter Events</button>
+                        </div>
+                        <div v-if="!meetsList.length" class="text-xs text-slate-400 font-bold">No upcoming meets</div>
+                    </div>
+                </div>
+
+                <div v-if="parentMeetEntryTarget" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div class="bg-white rounded-3xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6 space-y-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-black text-lg">{{parentMeetEntryTarget.meet.name}} — {{parentMeetEntryTarget.swimmer.first_name}}</h3>
+                            <button @click="parentMeetEntryTarget = null" class="w-8 h-8 bg-slate-100 rounded-full font-black">X</button>
+                        </div>
+                        <div v-for="e in parentMeetEntryEvents" :key="e.id" class="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
+                            <div class="text-xs font-bold">#{{e.event_number}} {{e.gender}} {{e.distance}} {{e.stroke}}</div>
+                            <button v-if="!entryExistsFor(e.id)" @click="requestMeetEntry(e)" class="text-[10px] font-black uppercase bg-blue-600 text-white px-3 py-1.5 rounded-lg">Enter</button>
+                            <span v-else class="text-[10px] font-black uppercase" :class="entryStatusFor(e.id)==='approved' ? 'text-emerald-600' : 'text-amber-600'">{{entryStatusFor(e.id) === 'pending_coach_approval' ? 'Pending Coach' : entryStatusFor(e.id)}}</span>
+                        </div>
+                        <div v-if="!parentMeetEntryEvents.length" class="text-xs text-slate-400 font-bold text-center py-6">No events loaded for this meet yet</div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -914,6 +1164,43 @@ createApp({
         const user = ref(null);
         const currentView = ref('dashboard');
         const mobileNavOpen = ref(false);
+        const joinAsRole = ref('coach');
+
+        // ROSTER
+        const swimmers = ref([]);
+        const newSwimmer = ref({ first_name: '', last_name: '', birthdate: '', group_name: '' });
+        const teamParents = ref([]); // team members with role 'parent'
+        const parentLinksBySwimmer = ref({}); // { swimmerId: [{linkId, parentUserId, name, email}] }
+
+        // ATTENDANCE
+        const attendanceDate = ref((() => {
+            const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+            return (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
+        })());
+        const attendanceGroupFilter = ref('');
+        const attendanceMap = ref({}); // { swimmerId: 'present'|'absent'|'excused' }
+
+        // MEETS
+        const meetsList = ref([]);
+        const showNewMeetForm = ref(false);
+        const newMeet = ref({ name: '', start_date: '', course: 'SCY' });
+        const selectedMeet = ref(null);
+        const meetDetailTab = ref('events');
+        const meetEventsList = ref([]);
+        const newMeetEvent = ref({ event_number: '', gender: 'M', distance: '', stroke: 'Free', qual_time: '' });
+        const meetEntriesList = ref([]);
+        const overrideTimes = ref({});
+
+        // PARENT PORTAL
+        const myLinkedSwimmers = ref([]);
+        const parentMeetEntryTarget = ref(null);
+        const parentMeetEntryEvents = ref([]);
+        const parentMeetEntries = ref([]); // this parent's swimmer's entries for the open meet
+
+        // SMART IMPORT
+        const importState = ref({ status: 'idle', message: '' });
+        const importPreview = ref({ detected_type: '', records: [] });
+        const importColumns = ref([]);
         const practiceDate = ref(new Date().toISOString().split('T')[0]);
         const hasDraft = ref(false);
 
@@ -1010,6 +1297,7 @@ createApp({
         // priority whenever it's available.
         const myRoleLive = ref(null);
         const myRole = computed(() => myRoleLive.value || user.value?.user_metadata?.team_role || 'coach');
+        const isParent = computed(() => myRole.value === 'parent');
 
         async function refreshMyRole() {
             if (!myTeam.value || !user.value) return;
@@ -1181,7 +1469,8 @@ createApp({
             const pwdToCheck = preHashedPassword !== undefined ? preHashedPassword : await sha256Hex(teamPassword.value);
             const { data } = await client.from('teams').select('id').eq('id', code).eq('password', pwdToCheck);
             if (!data?.length) return alert("Invalid Team Credentials");
-            await client.auth.updateUser({ data: { team_id: code, team_role: 'coach' } });
+            const roleToAssign = preHashedPassword !== undefined ? 'coach' : joinAsRole.value;
+            await client.auth.updateUser({ data: { team_id: code, team_role: roleToAssign } });
             localStorage.removeItem('pending_invite_code');
             localStorage.removeItem('pending_invite_key');
             location.reload();
@@ -1696,6 +1985,381 @@ createApp({
             }
         }
 
+        // ============================================================
+        // ROSTER
+        // ============================================================
+        async function loadSwimmers() {
+            const { data } = await client.from("swimmers").select("*").eq('team_id', myTeam.value).eq('active', true).order('last_name', {ascending: true});
+            swimmers.value = data || [];
+            loadTeamParents();
+            loadParentLinks();
+        }
+
+        async function addSwimmer() {
+            if(!newSwimmer.value.first_name || !newSwimmer.value.last_name) return alert("First and last name required.");
+            const { error } = await client.from("swimmers").insert({
+                team_id: myTeam.value,
+                first_name: newSwimmer.value.first_name.trim(),
+                last_name: newSwimmer.value.last_name.trim(),
+                birthdate: newSwimmer.value.birthdate || null,
+                group_name: newSwimmer.value.group_name || null
+            });
+            if(error) return alert("Error adding swimmer: " + error.message);
+            newSwimmer.value = { first_name: '', last_name: '', birthdate: '', group_name: '' };
+            loadSwimmers();
+        }
+
+        async function deleteSwimmer(id) {
+            if(!confirm("Remove this swimmer from the roster? Attendance and times history stay, but they'll vanish from menus.")) return;
+            await client.from("swimmers").update({ active: false }).eq('id', id);
+            loadSwimmers();
+        }
+
+        async function loadTeamParents() {
+            const { data } = await client.rpc('get_team_members', { p_team_id: myTeam.value });
+            teamParents.value = (data || []).filter(m => m.role === 'parent');
+        }
+
+        async function loadParentLinks() {
+            const { data } = await client.from("parent_links").select("*").eq('team_id', myTeam.value);
+            const map = {};
+            (data || []).forEach(link => {
+                const parent = teamParents.value.find(p => p.id === link.parent_user_id);
+                if(!map[link.swimmer_id]) map[link.swimmer_id] = [];
+                map[link.swimmer_id].push({ linkId: link.id, parentUserId: link.parent_user_id, name: parent?.name, email: parent?.email });
+            });
+            parentLinksBySwimmer.value = map;
+        }
+
+        async function linkParentToSwimmer(swimmerId, parentUserId) {
+            if(!parentUserId) return;
+            const { error } = await client.from("parent_links").insert({ team_id: myTeam.value, swimmer_id: swimmerId, parent_user_id: parentUserId });
+            if(error) { if(error.code !== '23505') alert("Error linking parent: " + error.message); return; }
+            loadParentLinks();
+        }
+
+        async function unlinkParent(linkId) {
+            await client.from("parent_links").delete().eq('id', linkId);
+            loadParentLinks();
+        }
+
+        // ============================================================
+        // ATTENDANCE
+        // ============================================================
+        const filteredAttendanceSwimmers = computed(() => {
+            return swimmers.value.filter(s => !attendanceGroupFilter.value || s.group_name === attendanceGroupFilter.value);
+        });
+
+        async function loadAttendanceForDate() {
+            const { data } = await client.from("attendance").select("*").eq('team_id', myTeam.value).eq('practice_date', attendanceDate.value);
+            const map = {};
+            (data || []).forEach(a => { map[a.swimmer_id] = a.status; });
+            attendanceMap.value = map;
+        }
+
+        async function setAttendance(swimmerId, status) {
+            attendanceMap.value = { ...attendanceMap.value, [swimmerId]: status };
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const { error } = await client.from("attendance").upsert({
+                team_id: myTeam.value, swimmer_id: swimmerId, practice_date: attendanceDate.value,
+                status, marked_by: freshUser?.id
+            }, { onConflict: 'swimmer_id,practice_date' });
+            if(error) alert("Error saving attendance: " + error.message);
+        }
+
+        // ============================================================
+        // TIME PARSING HELPERS (m:ss.hh <-> seconds, for meets)
+        // ============================================================
+        function parseTimeToSeconds(str) {
+            if(!str) return null;
+            str = str.trim();
+            let m = str.match(/^(\d+):(\d+(?:\.\d+)?)$/);
+            if(m) return parseInt(m[1]) * 60 + parseFloat(m[2]);
+            let s = parseFloat(str);
+            return isNaN(s) ? null : s;
+        }
+
+        // ============================================================
+        // MEETS
+        // ============================================================
+        async function loadMeets() {
+            const { data } = await client.from("meets").select("*").eq('team_id', myTeam.value).order('start_date', {ascending: true});
+            meetsList.value = data || [];
+        }
+
+        async function createMeet() {
+            if(!newMeet.value.name || !newMeet.value.start_date) return alert("Meet name and start date required.");
+            const { error } = await client.from("meets").insert({ team_id: myTeam.value, ...newMeet.value });
+            if(error) return alert("Error creating meet: " + error.message);
+            newMeet.value = { name: '', start_date: '', course: 'SCY' };
+            showNewMeetForm.value = false;
+            loadMeets();
+        }
+
+        async function openMeetDetail(meet) {
+            selectedMeet.value = meet;
+            meetDetailTab.value = 'events';
+            currentView.value = 'meet-detail';
+            await loadSwimmers();
+            await loadMeetEvents(meet.id);
+            await loadMeetEntries(meet.id);
+        }
+
+        async function loadMeetEvents(meetId) {
+            const { data } = await client.from("meet_events").select("*").eq('meet_id', meetId).order('event_number', {ascending: true});
+            meetEventsList.value = data || [];
+        }
+
+        async function addMeetEvent() {
+            const ev = newMeetEvent.value;
+            if(!ev.distance || !ev.stroke) return alert("Distance and stroke required.");
+            const { error } = await client.from("meet_events").insert({
+                meet_id: selectedMeet.value.id,
+                event_number: ev.event_number || null,
+                gender: ev.gender, distance: parseInt(ev.distance), stroke: ev.stroke,
+                qual_time_seconds: parseTimeToSeconds(ev.qual_time)
+            });
+            if(error) return alert("Error adding event: " + error.message);
+            newMeetEvent.value = { event_number: '', gender: 'M', distance: '', stroke: 'Free', qual_time: '' };
+            loadMeetEvents(selectedMeet.value.id);
+        }
+
+        async function deleteMeetEvent(id) {
+            if(!confirm("Remove this event?")) return;
+            await client.from("meet_events").delete().eq('id', id);
+            loadMeetEvents(selectedMeet.value.id);
+        }
+
+        async function loadMeetEntries(meetId) {
+            const { data } = await client.from("meet_entries").select("*").eq('meet_id', meetId);
+            meetEntriesList.value = data || [];
+        }
+
+        const pendingEntriesCount = computed(() => meetEntriesList.value.filter(e => e.status === 'pending_coach_approval').length);
+
+        function swimmerName(id) {
+            const s = swimmers.value.find(x => x.id === id);
+            return s ? `${s.first_name} ${s.last_name}` : 'Unknown Swimmer';
+        }
+
+        function eventLabel(id) {
+            const e = meetEventsList.value.find(x => x.id === id);
+            return e ? `#${e.event_number || '?'} ${e.gender} ${e.distance} ${e.stroke}` : 'Unknown Event';
+        }
+
+        async function approveMeetEntry(entryId) {
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const typedTime = overrideTimes.value[entryId];
+            const payload = { status: 'approved', approved_by: freshUser?.id };
+            if(typedTime) payload.seed_time_seconds = parseTimeToSeconds(typedTime);
+            const { error } = await client.from("meet_entries").update(payload).eq('id', entryId);
+            if(error) return alert("Error approving entry: " + error.message);
+            loadMeetEntries(selectedMeet.value.id);
+        }
+
+        async function declineMeetEntry(entryId) {
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            await client.from("meet_entries").update({ status: 'declined', approved_by: freshUser?.id }).eq('id', entryId);
+            loadMeetEntries(selectedMeet.value.id);
+        }
+
+        // ============================================================
+        // PARENT PORTAL
+        // ============================================================
+        async function loadMyLinkedSwimmers() {
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const { data: links } = await client.from("parent_links").select("swimmer_id").eq('parent_user_id', freshUser?.id);
+            const ids = (links || []).map(l => l.swimmer_id);
+            if(!ids.length) { myLinkedSwimmers.value = []; return; }
+            const { data } = await client.from("swimmers").select("*").in('id', ids);
+            myLinkedSwimmers.value = data || [];
+        }
+
+        async function openParentMeetEntry(meet, swimmer) {
+            parentMeetEntryTarget.value = { meet, swimmer };
+            const { data: events } = await client.from("meet_events").select("*").eq('meet_id', meet.id).order('event_number', {ascending: true});
+            parentMeetEntryEvents.value = events || [];
+            const { data: entries } = await client.from("meet_entries").select("*").eq('meet_id', meet.id).eq('swimmer_id', swimmer.id);
+            parentMeetEntries.value = entries || [];
+        }
+
+        function entryExistsFor(eventId) {
+            return parentMeetEntries.value.some(e => e.meet_event_id === eventId);
+        }
+
+        function entryStatusFor(eventId) {
+            const e = parentMeetEntries.value.find(x => x.meet_event_id === eventId);
+            return e ? e.status : null;
+        }
+
+        async function requestMeetEntry(event) {
+            const { swimmer, meet } = parentMeetEntryTarget.value;
+            const { error } = await client.from("meet_entries").insert({
+                meet_id: meet.id, meet_event_id: event.id, swimmer_id: swimmer.id
+            });
+            if(error) return alert("Error requesting entry: " + error.message);
+            openParentMeetEntry(meet, swimmer);
+        }
+
+        // ============================================================
+        // SMART IMPORT — reuses the same AI backend the PDF workout
+        // importer already calls. Reads whatever file is uploaded, asks
+        // the AI to classify + structure it, then shows an editable
+        // preview. Nothing writes to real tables until "Confirm Import".
+        // ============================================================
+        function triggerGenericImportUpload() { document.getElementById('genericImportUpload').click(); }
+
+        function resetImport() {
+            importState.value = { status: 'idle', message: '' };
+            importPreview.value = { detected_type: '', records: [] };
+            importColumns.value = [];
+        }
+
+        async function extractPdfTextGeneric(file) {
+            const pdfjsLib = window['pdfjs-dist/build/pdf'];
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = "";
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                fullText += "\n" + textContent.items.map(item => item.str).join(" ");
+            }
+            return fullText;
+        }
+
+        async function extractExcelTextGeneric(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const wb = XLSX.read(arrayBuffer, { type: 'array' });
+            let out = "";
+            wb.SheetNames.forEach(name => {
+                out += `\n--- SHEET: ${name} ---\n` + XLSX.utils.sheet_to_csv(wb.Sheets[name]);
+            });
+            return out;
+        }
+
+        async function handleGenericImport(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            importState.value = { status: 'reading', message: 'Reading file...' };
+
+            try {
+                const ext = file.name.split('.').pop().toLowerCase();
+                let text = '';
+                if(ext === 'pdf') text = await extractPdfTextGeneric(file);
+                else if(['xlsx','xls'].includes(ext)) text = await extractExcelTextGeneric(file);
+                else text = await file.text();
+
+                importState.value = { status: 'analyzing', message: 'Analyzing with AI...' };
+
+                const prompt = `You are a data extraction engine for a swim team app. Classify the attached file content into exactly ONE of these types: "roster" (swimmer names/birthdates/groups), "times" (swim times/results, one row per swim: swimmer name, distance, stroke, course SCY/SCM/LCM, time, date, meet name), "meet_events" (a meet's event list: event number, gender, distance, stroke, age range, qualifying time), or "attendance" (swimmer name, date, present/absent). If the file is a Hy-Tek HY3/CL2/EV3 fixed-width export, parse its record structure (A0/B1/B2/C1/C2/D0/D1/D3 style records) accordingly. Respond with ONLY a valid JSON object, no markdown, no intro text, in exactly this shape: {"detected_type": "roster|times|meet_events|attendance|unknown", "records": [ {...one object per row, using short lowercase snake_case keys appropriate to the type...} ]}. If you cannot confidently classify or parse the file, return {"detected_type": "unknown", "records": []}.`;
+                const context = `Existing team groups: ${teamGroupsList.value.map(g=>g.name).join(', ') || 'none'}. Existing roster: ${swimmers.value.map(s=>s.first_name+' '+s.last_name).join(', ') || 'none yet'}.`;
+
+                const { data: { session } } = await client.auth.getSession();
+                const response = await fetch("https://nzrzcbxxqxwktocrmplg.supabase.co/functions/v1/generate-workout", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${session?.access_token || ''}`,
+                        "apikey": "sb_publishable_IENWSv_n2kZ1yR2-VmV8ew_pljwvLdt"
+                    },
+                    body: JSON.stringify({ prompt, context, history: text.slice(0, 30000) })
+                });
+                if(!response.ok) throw new Error(`Server error ${response.status}`);
+                const data = await response.json();
+
+                let cleanStr = (data.result || '').replace(/```json/g, '').replace(/```/g, '').trim();
+                const startIdx = cleanStr.indexOf('{');
+                const endIdx = cleanStr.lastIndexOf('}');
+                if(startIdx !== -1 && endIdx !== -1) cleanStr = cleanStr.substring(startIdx, endIdx + 1);
+
+                let parsed;
+                try { parsed = JSON.parse(cleanStr); }
+                catch(e) { throw new Error("Couldn't understand this file's structure. Try a cleaner export, or enter this data manually."); }
+
+                if(!parsed.records || !parsed.records.length) throw new Error("No recognizable data found in this file.");
+
+                parsed.records.forEach(r => { r._include = true; });
+                importPreview.value = parsed;
+                importColumns.value = Object.keys(parsed.records[0]).filter(k => k !== '_include');
+                importState.value = { status: 'preview', message: '' };
+
+            } catch(err) {
+                importState.value = { status: 'error', message: err.message };
+            }
+            event.target.value = '';
+        }
+
+        async function confirmImport() {
+            const rows = importPreview.value.records.filter(r => r._include);
+            const type = importPreview.value.detected_type;
+            let inserted = 0, skipped = 0;
+
+            try {
+                if(type === 'roster') {
+                    const payloads = rows.map(r => ({
+                        team_id: myTeam.value,
+                        first_name: r.first_name || r.name?.split(' ')[0] || 'Unknown',
+                        last_name: r.last_name || r.name?.split(' ').slice(1).join(' ') || '',
+                        birthdate: r.birthdate || null,
+                        group_name: r.group_name || r.group || null
+                    }));
+                    const { error } = await client.from("swimmers").insert(payloads);
+                    if(error) throw error;
+                    inserted = payloads.length;
+
+                } else if(type === 'times' || type === 'attendance' || type === 'meet_events') {
+                    if(type === 'meet_events') {
+                        if(!selectedMeet.value) throw new Error("Open a meet first (Meets > select a meet) before importing its event list.");
+                        const payloads = rows.map(r => ({
+                            meet_id: selectedMeet.value.id,
+                            event_number: r.event_number || null,
+                            gender: r.gender || 'X',
+                            distance: parseInt(r.distance) || 0,
+                            stroke: r.stroke || 'Free',
+                            qual_time_seconds: parseTimeToSeconds(r.qual_time || r.qualifying_time || r.time)
+                        }));
+                        const { error } = await client.from("meet_events").insert(payloads);
+                        if(error) throw error;
+                        inserted = payloads.length;
+                        loadMeetEvents(selectedMeet.value.id);
+                    } else {
+                        // times / attendance need a swimmer match by name
+                        for(const r of rows) {
+                            const nameStr = (r.swimmer_name || r.name || '').toLowerCase().trim();
+                            const match = swimmers.value.find(s => `${s.first_name} ${s.last_name}`.toLowerCase().trim() === nameStr);
+                            if(!match) { skipped++; continue; }
+                            if(type === 'times') {
+                                const { error } = await client.from("swim_times").insert({
+                                    team_id: myTeam.value, swimmer_id: match.id,
+                                    distance: parseInt(r.distance) || 0, stroke: r.stroke || 'Free',
+                                    course: r.course || 'SCY', time_seconds: parseTimeToSeconds(r.time),
+                                    swim_date: r.date || r.swim_date || null, meet_name: r.meet_name || null,
+                                    source: 'import'
+                                });
+                                if(!error) inserted++; else skipped++;
+                            } else {
+                                const { error } = await client.from("attendance").upsert({
+                                    team_id: myTeam.value, swimmer_id: match.id,
+                                    practice_date: r.date, status: (r.status || 'present').toLowerCase()
+                                }, { onConflict: 'swimmer_id,practice_date' });
+                                if(!error) inserted++; else skipped++;
+                            }
+                        }
+                    }
+                } else {
+                    throw new Error("Unrecognized data type — nothing was imported.");
+                }
+
+                importState.value = { status: 'done', message: `Imported ${inserted} row(s)${skipped ? `, skipped ${skipped} (no matching swimmer found)` : ''}.` };
+                if(type === 'roster') loadSwimmers();
+
+            } catch(err) {
+                importState.value = { status: 'error', message: err.message };
+            }
+        }
+
         function formatPracticeDate(d) {
             if(!d) return "ARCHIVED";
             const options = { weekday: 'short', month: 'short', day: 'numeric' };
@@ -1738,12 +2402,18 @@ createApp({
                         currentView.value = 'onboarding';
                     }
                 } else {
-                    currentView.value = 'dashboard';
-                    loadTeamSettings(); 
-                    loadWorkouts(); 
-                    loadSeasonPlans(); 
-                    loadGroups(); 
-                    refreshMyRole();
+                    loadTeamSettings();
+                    loadGroups();
+                    if (isParent.value) {
+                        currentView.value = 'parent-home';
+                        loadMyLinkedSwimmers();
+                        loadMeets();
+                    } else {
+                        currentView.value = 'dashboard';
+                        loadWorkouts();
+                        loadSeasonPlans();
+                        refreshMyRole();
+                    }
                 }
             }
 
@@ -1757,8 +2427,9 @@ createApp({
                     user.value = session.user;
                     if(!myTeam.value && currentView.value !== 'onboarding') currentView.value = 'onboarding';
                     else if (myTeam.value && currentView.value === 'onboarding') { 
-                        currentView.value = 'dashboard'; 
-                        loadTeamSettings(); loadWorkouts(); loadSeasonPlans(); loadGroups(); 
+                        loadTeamSettings(); loadGroups();
+                        if (isParent.value) { currentView.value = 'parent-home'; loadMyLinkedSwimmers(); loadMeets(); }
+                        else { currentView.value = 'dashboard'; loadWorkouts(); loadSeasonPlans(); }
                     }
                 }
             });
@@ -2242,7 +2913,14 @@ createApp({
             isImportingPdf, pdfImportProgress, triggerPdfUpload, importPdf,
             selectedGroupSystems, addEnergySystem, removeEnergySystem, saveGroupSystems, calculateWeekTotal, seasonPlanTab,
             addAlias, removeAlias, saveGroupAliases, editorSystemTotals,
-            selectedGroupForEdit, openGroupDetails, dragStart, drop, draggedGroupIndex, importSourceGroup, importSystemsAndAliases
+            selectedGroupForEdit, openGroupDetails, dragStart, drop, draggedGroupIndex, importSourceGroup, importSystemsAndAliases,
+            joinAsRole, isParent, secToTime,
+            swimmers, newSwimmer, teamParents, parentLinksBySwimmer, loadSwimmers, addSwimmer, deleteSwimmer, linkParentToSwimmer, unlinkParent,
+            attendanceDate, attendanceGroupFilter, attendanceMap, filteredAttendanceSwimmers, loadAttendanceForDate, setAttendance,
+            meetsList, showNewMeetForm, newMeet, selectedMeet, meetDetailTab, meetEventsList, newMeetEvent, meetEntriesList, overrideTimes,
+            loadMeets, createMeet, openMeetDetail, addMeetEvent, deleteMeetEvent, pendingEntriesCount, swimmerName, eventLabel, approveMeetEntry, declineMeetEntry,
+            myLinkedSwimmers, parentMeetEntryTarget, parentMeetEntryEvents, openParentMeetEntry, entryExistsFor, entryStatusFor, requestMeetEntry,
+            importState, importPreview, importColumns, triggerGenericImportUpload, handleGenericImport, confirmImport, resetImport
         };
     }
 }).mount("#app");
