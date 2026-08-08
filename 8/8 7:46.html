@@ -903,20 +903,9 @@
             </div>
 
             <div v-if="currentView === 'roster'" class="max-w-5xl mx-auto space-y-8 mt-6">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 border-b border-slate-200 pb-6">
-                    <div>
-                        <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Roster</h2>
-                        <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">{{ swimmers.length }} Swimmers</p>
-                    </div>
-                    <div class="flex flex-col items-end gap-1.5">
-                        <div class="flex flex-wrap gap-2 items-center bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
-                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Attendance Period</span>
-                            <input type="date" v-model="attendanceAnalyticsStart" @change="loadRosterAttendanceSummary" class="bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs font-bold outline-none">
-                            <span class="text-slate-400 text-xs font-black">to</span>
-                            <input type="date" v-model="attendanceAnalyticsEnd" @change="loadRosterAttendanceSummary" class="bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs font-bold outline-none">
-                        </div>
-                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mr-1">{{ rosterAttendanceDebug }}</p>
-                    </div>
+                <div class="border-b border-slate-200 pb-6">
+                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Roster</h2>
+                    <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">{{ swimmers.length }} Swimmers</p>
                 </div>
 
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
@@ -941,15 +930,11 @@
 
                     <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
                         <div v-for="s in grp.swimmers" :key="s.id" class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div class="flex items-center gap-4">
-                                <div class="text-lg font-black w-14 text-center shrink-0" v-if="rosterSwimmerAttendance[s.id] !== undefined && rosterSwimmerAttendance[s.id] !== null" :class="rosterSwimmerAttendance[s.id] >= 90 ? 'text-emerald-500' : rosterSwimmerAttendance[s.id] >= 75 ? 'text-amber-500' : 'text-red-500'">{{rosterSwimmerAttendance[s.id]}}%</div>
-                                <div class="text-[9px] font-black text-slate-300 uppercase w-14 text-center shrink-0" v-else>No Data</div>
-                                <div>
-                                    <div class="font-black text-slate-900 uppercase">{{s.first_name}} {{s.last_name}}</div>
-                                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1"><span v-if="s.birthdate">{{s.birthdate}}</span></div>
-                                    <div class="flex flex-wrap gap-1 mt-2">
-                                        <span v-for="p in (parentLinksBySwimmer[s.id] || [])" :key="p.linkId" class="bg-blue-50 text-blue-700 text-[9px] font-bold px-2 py-1 rounded-md border border-blue-100">{{p.name || p.email}} <button @click="unlinkParent(p.linkId)" class="ml-1 text-blue-300 hover:text-red-500">×</button></span>
-                                    </div>
+                            <div>
+                                <div class="font-black text-slate-900 uppercase">{{s.first_name}} {{s.last_name}}</div>
+                                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1"><span v-if="s.birthdate">{{s.birthdate}}</span></div>
+                                <div class="flex flex-wrap gap-1 mt-2">
+                                    <span v-for="p in (parentLinksBySwimmer[s.id] || [])" :key="p.linkId" class="bg-blue-50 text-blue-700 text-[9px] font-bold px-2 py-1 rounded-md border border-blue-100">{{p.name || p.email}} <button @click="unlinkParent(p.linkId)" class="ml-1 text-blue-300 hover:text-red-500">×</button></span>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
@@ -965,11 +950,6 @@
                             </div>
                         </div>
                         <div v-if="!grp.swimmers.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No swimmers in this group yet</div>
-                    </div>
-
-                    <div class="rounded-[2rem] p-6 text-white text-center shadow-lg" :style="{ background: 'linear-gradient(to bottom right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
-                        <div class="text-[9px] font-black uppercase tracking-widest opacity-80 mb-1">{{grp.name}} Overall Attendance</div>
-                        <div class="text-4xl font-black tracking-tighter">{{ groupAttendanceSummary[grp.name] !== undefined && groupAttendanceSummary[grp.name] !== null ? groupAttendanceSummary[grp.name] + '%' : '—' }}</div>
                     </div>
                 </div>
 
@@ -1006,25 +986,43 @@
                     <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Attendance</h2>
                 </div>
 
-                <div v-if="!attendanceMarkGroup" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    <div v-for="g in postableGroups" :key="g" @click="openAttendanceMark(g)" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer transition-all">
-                        <div class="font-black text-xl uppercase text-slate-900">{{g}}</div>
-                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">{{ swimmers.filter(s => s.group_name === g).length }} Swimmers</div>
+                <div v-if="!attendanceMarkGroup" class="space-y-4">
+                    <div class="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-200 flex flex-wrap items-center gap-3">
+                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Analytics Period</span>
+                        <input type="date" v-model="attendanceAnalyticsStart" @change="loadAttendanceSummary" class="bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs font-bold outline-none">
+                        <span class="text-slate-400 text-xs font-black">to</span>
+                        <input type="date" v-model="attendanceAnalyticsEnd" @change="loadAttendanceSummary" class="bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs font-bold outline-none">
                     </div>
-                    <div v-if="!postableGroups.length" class="sm:col-span-2 md:col-span-3 text-center py-20 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2rem]">No groups assigned to you yet</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div v-for="g in postableGroups" :key="g" @click="openAttendanceMark(g)" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer transition-all flex justify-between items-start gap-3">
+                            <div>
+                                <div class="font-black text-xl uppercase text-slate-900">{{g}}</div>
+                                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">{{ swimmers.filter(s => s.group_name === g).length }} Swimmers</div>
+                            </div>
+                            <div v-if="groupAttendanceSummary[g] !== undefined && groupAttendanceSummary[g] !== null" class="text-2xl font-black shrink-0" :class="groupAttendanceSummary[g] >= 90 ? 'text-emerald-500' : groupAttendanceSummary[g] >= 75 ? 'text-amber-500' : 'text-red-500'">{{groupAttendanceSummary[g]}}%</div>
+                            <div v-else class="text-[9px] font-black text-slate-300 uppercase tracking-widest shrink-0">No data</div>
+                        </div>
+                        <div v-if="!postableGroups.length" class="sm:col-span-2 md:col-span-3 text-center py-20 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2rem]">No groups assigned to you yet</div>
+                    </div>
                 </div>
 
                 <div v-else class="space-y-6">
                     <div class="flex flex-wrap justify-between items-center gap-4">
                         <button @click="attendanceMarkGroup = null; attendanceGroupFilter = '';" class="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-slate-100 transition-colors">← Back to Groups</button>
                         <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1 mr-1 text-right">Marking Date</label>
                             <input type="date" v-model="attendanceDate" @change="loadAttendanceForDate" class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none">
                         </div>
                     </div>
                     <h3 class="text-2xl font-black uppercase text-slate-900">{{attendanceMarkGroup}}</h3>
+
                     <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
                         <div v-for="s in filteredAttendanceSwimmers" :key="s.id" class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div class="font-bold text-slate-800">{{s.first_name}} {{s.last_name}}</div>
+                            <div class="flex items-center gap-3">
+                                <div class="text-base font-black w-12 text-center shrink-0" v-if="swimmerAttendancePercent[s.id] !== undefined && swimmerAttendancePercent[s.id] !== null" :class="swimmerAttendancePercent[s.id] >= 90 ? 'text-emerald-500' : swimmerAttendancePercent[s.id] >= 75 ? 'text-amber-500' : 'text-red-500'">{{swimmerAttendancePercent[s.id]}}%</div>
+                                <div class="text-[8px] font-black text-slate-300 uppercase w-12 text-center shrink-0" v-else>No Data</div>
+                                <div class="font-bold text-slate-800">{{s.first_name}} {{s.last_name}}</div>
+                            </div>
                             <div class="flex gap-2">
                                 <button @click="setAttendance(s.id, 'present')" :class="attendanceMap[s.id] === 'present' ? 'bg-emerald-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Present</button>
                                 <button @click="setAttendance(s.id, 'excused')" :class="attendanceMap[s.id] === 'excused' ? 'bg-amber-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Excused</button>
@@ -1032,6 +1030,11 @@
                             </div>
                         </div>
                         <div v-if="!filteredAttendanceSwimmers.length" class="p-12 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No swimmers in this group</div>
+                    </div>
+
+                    <div class="rounded-[2rem] p-6 text-white text-center shadow-lg" :style="{ background: 'linear-gradient(to bottom right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
+                        <div class="text-[9px] font-black uppercase tracking-widest opacity-80 mb-1">{{attendanceMarkGroup}} Overall Attendance ({{formatPracticeDate(attendanceAnalyticsStart)}} – {{formatPracticeDate(attendanceAnalyticsEnd)}})</div>
+                        <div class="text-4xl font-black tracking-tighter">{{ groupAttendanceSummary[attendanceMarkGroup] !== undefined && groupAttendanceSummary[attendanceMarkGroup] !== null ? groupAttendanceSummary[attendanceMarkGroup] + '%' : '—' }}</div>
                     </div>
                 </div>
             </div>
@@ -1474,8 +1477,7 @@ createApp({
         const attendanceAnalyticsEnd = ref('');
         const attendanceAnalyticsData = ref([]);
         const groupAttendanceSummary = ref({}); // { groupName: percent|null }
-        const rosterSwimmerAttendance = ref({}); // { swimmerId: percent|null }
-        const rosterAttendanceDebug = ref('');
+        const swimmerAttendancePercent = ref({}); // { swimmerId: percent|null }
 
         // MEETS
         const meetsList = ref([]);
@@ -2515,7 +2517,7 @@ createApp({
             'season-planning': { label: 'Season', activeViews: ['season-planning','plan-builder'], onSelect: () => { currentView.value = 'season-planning'; } },
             'groups': { label: 'Groups', activeViews: ['groups','group-details'], onSelect: () => { currentView.value = 'groups'; selectedGroupForEdit.value = null; } },
             'roster': { label: 'Roster', activeViews: ['roster'], onSelect: () => { currentView.value = 'roster'; loadSwimmers(); } },
-            'attendance': { label: 'Attendance', activeViews: ['attendance'], onSelect: () => { currentView.value = 'attendance'; attendanceMarkGroup.value = null; loadSwimmers(); loadAttendanceForDate(); } },
+            'attendance': { label: 'Attendance', activeViews: ['attendance'], onSelect: () => { currentView.value = 'attendance'; attendanceMarkGroup.value = null; loadSwimmers(); loadAttendanceForDate(); loadAttendanceSummary(); } },
             'meets': { label: 'Meets', activeViews: ['meets','meet-detail'], onSelect: () => { currentView.value = 'meets'; loadMeets(); } },
             'import': { label: 'Import', activeViews: ['import'], onSelect: () => { currentView.value = 'import'; resetImport(); } },
             'calendar': { label: 'Calendar', activeViews: ['calendar'], onSelect: () => { currentView.value = 'calendar'; loadCalendarEvents(); loadMyAssignedGroups(); } },
@@ -2570,7 +2572,6 @@ createApp({
             swimmers.value = data || [];
             loadTeamParents();
             loadParentLinks();
-            loadRosterAttendanceSummary();
         }
 
         async function addSwimmer() {
@@ -2649,7 +2650,8 @@ createApp({
                 team_id: myTeam.value, swimmer_id: swimmerId, practice_date: attendanceDate.value,
                 status, marked_by: freshUser?.id
             }, { onConflict: 'swimmer_id,practice_date' });
-            if(error) alert("Error saving attendance: " + error.message);
+            if(error) { alert("Error saving attendance: " + error.message); return; }
+            loadAttendanceSummary();
         }
 
         // ============================================================
@@ -2721,27 +2723,21 @@ createApp({
 
         // Computes attendance % for every individual swimmer (for the
         // inline badge next to their name) AND the per-group aggregate
-        // (for the summary card at the bottom of each group section) in
-        // one pass, covering the whole roster rather than one group at a
-        // time.
-        async function loadRosterAttendanceSummary() {
+        // (for the summary card at the bottom of the drill-down), scoped
+        // to whichever swimmers are currently loaded.
+        async function loadAttendanceSummary() {
             if(!attendanceAnalyticsStart.value || !attendanceAnalyticsEnd.value) resetAttendanceAnalyticsDates();
             const swimmerIds = swimmers.value.map(s => s.id);
-            if(!swimmerIds.length) { rosterSwimmerAttendance.value = {}; groupAttendanceSummary.value = {}; rosterAttendanceDebug.value = 'No swimmers on roster yet.'; return; }
+            if(!swimmerIds.length) { swimmerAttendancePercent.value = {}; groupAttendanceSummary.value = {}; return; }
 
             const { data, error } = await client.from("attendance").select("*")
                 .eq('team_id', myTeam.value)
                 .in('swimmer_id', swimmerIds)
                 .gte('practice_date', attendanceAnalyticsStart.value)
                 .lte('practice_date', attendanceAnalyticsEnd.value);
-            if(error) {
-                rosterAttendanceDebug.value = 'Query error: ' + error.message;
-                alert("Error loading attendance summary: " + error.message);
-                return;
-            }
+            if(error) { alert("Error loading attendance summary: " + error.message); return; }
 
             const rows = data || [];
-            rosterAttendanceDebug.value = `Found ${rows.length} attendance record(s) across ${swimmerIds.length} swimmer(s) for ${attendanceAnalyticsStart.value} to ${attendanceAnalyticsEnd.value}.`;
 
             const perSwimmer = {};
             swimmers.value.forEach(s => {
@@ -2750,7 +2746,7 @@ createApp({
                 const total = sRows.length;
                 perSwimmer[s.id] = total > 0 ? Math.round((present / total) * 100) : null;
             });
-            rosterSwimmerAttendance.value = perSwimmer;
+            swimmerAttendancePercent.value = perSwimmer;
 
             const groupNames = [...new Set(swimmers.value.map(s => s.group_name).filter(Boolean))];
             const perGroup = {};
@@ -3682,7 +3678,7 @@ createApp({
             attendanceDate, attendanceGroupFilter, attendanceMap, filteredAttendanceSwimmers, loadAttendanceForDate, setAttendance,
             attendanceViewTab, attendanceMarkGroup, openAttendanceMark, attendanceAnalyticsGroup, attendanceAnalyticsStart, attendanceAnalyticsEnd, attendanceAnalyticsData,
             openAttendanceAnalytics, loadAttendanceAnalytics, groupAttendancePercent, groupAttendanceSummary, loadGroupAttendanceSummary,
-            swimmersByGroup, rosterSwimmerAttendance, loadRosterAttendanceSummary, rosterAttendanceDebug,
+            swimmersByGroup, swimmerAttendancePercent, loadAttendanceSummary,
             meetsList, showNewMeetForm, newMeet, selectedMeet, meetDetailTab, meetEventsList, newMeetEvent, meetEntriesList, overrideTimes,
             loadMeets, createMeet, openMeetDetail, addMeetEvent, deleteMeetEvent, pendingEntriesCount, swimmerName, eventLabel, approveMeetEntry, declineMeetEntry,
             myLinkedSwimmers, parentMeetEntryTarget, parentMeetEntryEvents, openParentMeetEntry, entryExistsFor, entryStatusFor, requestMeetEntry,
