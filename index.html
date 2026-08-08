@@ -2730,7 +2730,7 @@ createApp({
                 .in('swimmer_id', swimmerIds)
                 .gte('practice_date', attendanceAnalyticsStart.value)
                 .lte('practice_date', attendanceAnalyticsEnd.value);
-            if(error) { console.error("Error loading roster attendance summary:", error.message); return; }
+            if(error) { alert("Error loading attendance summary: " + error.message); return; }
 
             const rows = data || [];
             const perSwimmer = {};
