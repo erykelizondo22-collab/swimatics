@@ -1,1 +1,1 @@
-# swimwatics
+# swimatics
