@@ -1112,7 +1112,10 @@
                             <div class="flex items-center gap-3">
                                 <div class="text-base font-black w-12 text-center shrink-0" v-if="swimmerAttendancePercent[s.id] !== undefined && swimmerAttendancePercent[s.id] !== null" :class="swimmerAttendancePercent[s.id] >= 90 ? 'text-emerald-500' : swimmerAttendancePercent[s.id] >= 75 ? 'text-amber-500' : 'text-red-500'">{{swimmerAttendancePercent[s.id]}}%</div>
                                 <div class="text-[8px] font-black text-slate-300 uppercase w-12 text-center shrink-0" v-else>No Data</div>
-                                <div class="font-bold text-slate-800">{{s.first_name}} {{s.last_name}}</div>
+                                <div>
+                                    <div class="font-bold text-slate-800">{{s.first_name}} {{s.last_name}}</div>
+                                    <div class="text-[9px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded mt-1 inline-block">DEBUG id={{s.id}} | map value="{{attendanceMap[s.id]}}" | is-present={{attendanceMap[s.id] === 'present'}}</div>
+                                </div>
                             </div>
                             <div class="flex gap-2">
                                 <button @click="setAttendance(s.id, 'present')" :class="attendanceMap[s.id] === 'present' ? 'bg-emerald-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Present</button>
