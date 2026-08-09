@@ -2951,7 +2951,17 @@ createApp({
                 const reg = await navigator.serviceWorker.getRegistration();
                 if (!reg) { pushSubscribed.value = false; return; }
                 const sub = await reg.pushManager.getSubscription();
-                pushSubscribed.value = !!sub;
+                if (!sub) { pushSubscribed.value = false; return; }
+                // FIX: a browser can only hold one push subscription per
+                // device, not one per account -- if a DIFFERENT account was
+                // tested on this same device earlier, the browser still
+                // reports "subscribed" even though nobody ever registered
+                // that subscription for the account that's logged in right
+                // now. Only show "enabled" if the database row for this
+                // exact endpoint actually belongs to the current user.
+                const { data: { user: freshUser } } = await client.auth.getUser();
+                const { data: row } = await client.from('push_subscriptions').select('user_id').eq('endpoint', sub.endpoint).maybeSingle();
+                pushSubscribed.value = !!row && row.user_id === freshUser?.id;
             } catch(e) {
                 pushSubscribed.value = false;
             }
@@ -2966,9 +2976,25 @@ createApp({
             const reg = await registerSwimaticsServiceWorker();
             if (!reg) { alert("Could not set up notifications on this device."); return; }
 
+            const { data: { user: freshUser } } = await client.auth.getUser();
+
             let sub;
             try {
                 sub = await reg.pushManager.getSubscription();
+                // FIX: if this device already has a subscription, but it's
+                // registered to a DIFFERENT account in our own database
+                // (e.g. someone tested a different login on this same
+                // device earlier), reusing it would either silently fail to
+                // save under the new account or hijack the old one. Start
+                // fresh instead so this device cleanly belongs to whoever
+                // is enabling it right now.
+                if (sub) {
+                    const { data: existingRow } = await client.from('push_subscriptions').select('user_id').eq('endpoint', sub.endpoint).maybeSingle();
+                    if (existingRow && existingRow.user_id !== freshUser?.id) {
+                        await sub.unsubscribe();
+                        sub = null;
+                    }
+                }
                 if (!sub) {
                     sub = await reg.pushManager.subscribe({
                         userVisibleOnly: true,
@@ -2981,7 +3007,6 @@ createApp({
             }
 
             const subJson = sub.toJSON();
-            const { data: { user: freshUser } } = await client.auth.getUser();
             const { error } = await client.from('push_subscriptions').upsert({
                 team_id: myTeam.value,
                 user_id: freshUser?.id,
