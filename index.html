@@ -232,7 +232,7 @@
             </div>
 
             <div v-if="myTeam" class="flex items-center gap-1.5 sm:gap-3 shrink-0">
-                <span class="hidden sm:inline text-[10px] md:text-xs font-black bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm" :style="{ color: teamColors.primary }">{{myTeam}}</span>
+                <span class="text-[10px] md:text-xs font-black bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm" :style="{ color: teamColors.primary }">{{myTeam}}</span>
             </div>
             <div v-else class="flex items-center gap-2 sm:gap-4 shrink-0">
                 <span class="text-sm font-bold text-slate-600 bg-slate-100 px-4 py-2 rounded-full border border-slate-200">{{coachName}}</span>
@@ -1213,7 +1213,7 @@
                                 <div class="text-base font-black w-12 text-center shrink-0" v-if="swimmerAttendancePercent[s.id] !== undefined && swimmerAttendancePercent[s.id] !== null" :class="swimmerAttendancePercent[s.id] >= 90 ? 'text-emerald-500' : swimmerAttendancePercent[s.id] >= 75 ? 'text-amber-500' : 'text-red-500'">{{swimmerAttendancePercent[s.id]}}%</div>
                                 <div class="text-[8px] font-black text-slate-300 uppercase w-12 text-center shrink-0" v-else>No Data</div>
                                 <div>
-                                    <div class="font-bold text-slate-800">{{s.first_name}} {{s.last_name}}</div>
+                                    <button @click="openSwimmerHistory(s)" class="font-bold text-slate-800 hover:text-blue-600 hover:underline transition-colors text-left">{{s.first_name}} {{s.last_name}}</button>
                                 </div>
                             </div>
                             <div class="flex gap-2">
@@ -1223,6 +1223,29 @@
                             </div>
                         </div>
                         <div v-if="!filteredAttendanceSwimmers.length" class="p-12 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No swimmers in this group</div>
+
+                        <div v-if="showSwimmerHistoryFor" @click.self="closeSwimmerHistory" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                            <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+                                <div class="p-6 flex justify-between items-center text-white shrink-0" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
+                                    <div>
+                                        <h3 class="font-black text-xl leading-tight">{{showSwimmerHistoryFor.first_name}} {{showSwimmerHistoryFor.last_name}}</h3>
+                                        <p class="text-[10px] text-white/80 uppercase tracking-widest mt-1">{{selectedSeasonName}} Attendance</p>
+                                    </div>
+                                    <button @click="closeSwimmerHistory" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0">X</button>
+                                </div>
+                                <div class="overflow-y-auto divide-y divide-slate-100">
+                                    <div v-for="r in swimmerHistoryRecords" :key="r.practice_date" class="p-4 flex items-center justify-between gap-3">
+                                        <span class="font-bold text-slate-700 text-sm">{{formatPracticeDate(r.practice_date)}}</span>
+                                        <div class="flex gap-2">
+                                            <button @click="updateHistoricalAttendance(r, 'present')" :class="r.status === 'present' ? 'bg-emerald-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Present</button>
+                                            <button @click="updateHistoricalAttendance(r, 'excused')" :class="r.status === 'excused' ? 'bg-amber-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Excused</button>
+                                            <button @click="updateHistoricalAttendance(r, 'absent')" :class="r.status === 'absent' ? 'bg-red-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Absent</button>
+                                        </div>
+                                    </div>
+                                    <div v-if="!swimmerHistoryRecords.length" class="p-12 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No attendance marked yet this season</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="rounded-[2rem] p-6 text-white text-center shadow-lg" :style="{ background: 'linear-gradient(to bottom right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
@@ -1642,6 +1665,13 @@
                         <h3 class="text-2xl font-black uppercase text-slate-900">{{s.first_name}} {{s.last_name}}</h3>
                         <span class="text-[10px] font-black uppercase bg-slate-100 px-3 py-1.5 rounded-lg text-slate-500">{{s.group_name}}</span>
                     </div>
+                    <div class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl">
+                        <div>
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Attendance ({{selectedSeasonName}})</h4>
+                            <div class="text-2xl font-black mt-1" :class="swimmerAttendancePercent[s.id] >= 90 ? 'text-emerald-500' : swimmerAttendancePercent[s.id] >= 75 ? 'text-amber-500' : swimmerAttendancePercent[s.id] != null ? 'text-red-500' : 'text-slate-300'">{{ swimmerAttendancePercent[s.id] != null ? swimmerAttendancePercent[s.id] + '%' : 'No Data' }}</div>
+                        </div>
+                        <button @click="openSwimmerHistory(s)" class="text-[10px] font-black uppercase bg-slate-900 text-white px-4 py-2.5 rounded-lg">View History</button>
+                    </div>
                     <div>
                         <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Upcoming Meets</h4>
                         <div v-for="m in meetsList" :key="m.id" class="flex justify-between items-center bg-slate-50 p-4 rounded-xl mb-2">
@@ -1649,6 +1679,25 @@
                             <button @click="openParentMeetEntry(m, s)" class="text-[10px] font-black uppercase bg-slate-900 text-white px-3 py-2 rounded-lg">Enter Events</button>
                         </div>
                         <div v-if="!meetsList.length" class="text-xs text-slate-400 font-bold">No upcoming meets</div>
+                    </div>
+                </div>
+
+                <div v-if="showSwimmerHistoryFor" @click.self="closeSwimmerHistory" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+                        <div class="p-6 flex justify-between items-center text-white shrink-0" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
+                            <div>
+                                <h3 class="font-black text-xl leading-tight">{{showSwimmerHistoryFor.first_name}} {{showSwimmerHistoryFor.last_name}}</h3>
+                                <p class="text-[10px] text-white/80 uppercase tracking-widest mt-1">{{selectedSeasonName}} Attendance</p>
+                            </div>
+                            <button @click="closeSwimmerHistory" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0">X</button>
+                        </div>
+                        <div class="overflow-y-auto divide-y divide-slate-100">
+                            <div v-for="r in swimmerHistoryRecords" :key="r.practice_date" class="p-4 flex items-center justify-between gap-3">
+                                <span class="font-bold text-slate-700 text-sm">{{formatPracticeDate(r.practice_date)}}</span>
+                                <span class="text-[10px] font-black uppercase px-3 py-1.5 rounded-lg" :class="r.status === 'present' ? 'bg-emerald-50 text-emerald-600' : r.status === 'excused' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-500'">{{r.status}}</span>
+                            </div>
+                            <div v-if="!swimmerHistoryRecords.length" class="p-12 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No attendance marked yet this season</div>
+                        </div>
                     </div>
                 </div>
 
@@ -1861,6 +1910,8 @@ createApp({
         const attendanceAnalyticsData = ref([]);
         const groupAttendanceSummary = ref({}); // { groupName: percent|null }
         const swimmerAttendancePercent = ref({}); // { swimmerId: percent|null }
+        const showSwimmerHistoryFor = ref(null);
+        const swimmerHistoryRecords = ref([]);
         const seasonsList = ref([]);
         const selectedSeasonId = ref('');
         const showNewSeasonForm = ref(false);
@@ -3498,10 +3549,13 @@ createApp({
 
             const rows = data || [];
 
+            // A day with no record for a swimmer is neutral -- it just
+            // doesn't count toward their total at all, not present, not
+            // absent, simply not factored in.
             const perSwimmer = {};
             swimmers.value.forEach(s => {
                 const sRows = rows.filter(r => r.swimmer_id === s.id);
-                const present = sRows.filter(r => r.status === 'present').length;
+                const present = sRows.filter(r => r.status === 'present' || r.status === 'excused').length;
                 const total = sRows.length;
                 perSwimmer[s.id] = total > 0 ? Math.round((present / total) * 100) : null;
             });
@@ -3512,11 +3566,45 @@ createApp({
             groupNames.forEach(g => {
                 const idsInGroup = swimmers.value.filter(s => s.group_name === g).map(s => s.id);
                 const groupRows = rows.filter(r => idsInGroup.includes(r.swimmer_id));
-                const present = groupRows.filter(r => r.status === 'present').length;
+                const present = groupRows.filter(r => r.status === 'present' || r.status === 'excused').length;
                 const total = groupRows.length;
                 perGroup[g] = total > 0 ? Math.round((present / total) * 100) : null;
             });
             groupAttendanceSummary.value = perGroup;
+        }
+
+        // Season history modal for one swimmer -- click a name in the
+        // marking list to see every day they actually have a record for
+        // within the currently selected season (or all-time), and edit
+        // any past day directly. Days with no record simply don't show
+        // up here, same as they don't count toward the percentage.
+        async function openSwimmerHistory(swimmer) {
+            showSwimmerHistoryFor.value = swimmer;
+            const selectedSeason = seasonsList.value.find(s => s.id === selectedSeasonId.value);
+            let query = client.from("attendance").select("*")
+                .eq('team_id', myTeam.value)
+                .eq('swimmer_id', swimmer.id)
+                .lte('practice_date', getLocalTodayStr());
+            if (selectedSeason) {
+                query = query.gte('practice_date', selectedSeason.start_date).lte('practice_date', selectedSeason.end_date);
+            }
+            const { data, error } = await query.order('practice_date', { ascending: false });
+            if (error) { alert("Error loading history: " + error.message); return; }
+            swimmerHistoryRecords.value = data || [];
+        }
+
+        function closeSwimmerHistory() {
+            showSwimmerHistoryFor.value = null;
+            swimmerHistoryRecords.value = [];
+        }
+
+        async function updateHistoricalAttendance(record, status) {
+            const { error } = await client.from("attendance").update({ status }).eq('id', record.id);
+            if (error) { alert("Error updating attendance: " + error.message); return; }
+            record.status = status;
+            loadAttendanceSummary();
+            // In case the edited day is today, keep the marking buttons in sync too.
+            if (record.practice_date === attendanceDate.value) loadAttendanceForDate();
         }
 
         async function loadAttendanceAnalytics() {
@@ -3656,6 +3744,27 @@ createApp({
             if(!ids.length) { myLinkedSwimmers.value = []; return; }
             const { data } = await client.from("swimmers").select("*").in('id', ids);
             myLinkedSwimmers.value = data || [];
+            loadSeasons();
+            loadMyLinkedSwimmerAttendance();
+        }
+
+        async function loadMyLinkedSwimmerAttendance() {
+            const swimmerIds = myLinkedSwimmers.value.map(s => s.id);
+            if (!swimmerIds.length) return;
+            const selectedSeason = seasonsList.value.find(s => s.id === selectedSeasonId.value);
+            let query = client.from("attendance").select("*").in('swimmer_id', swimmerIds).lte('practice_date', getLocalTodayStr());
+            if (selectedSeason) query = query.gte('practice_date', selectedSeason.start_date).lte('practice_date', selectedSeason.end_date);
+            const { data, error } = await query;
+            if (error) { console.error("Error loading attendance:", error.message); return; }
+            const rows = data || [];
+            const perSwimmer = { ...swimmerAttendancePercent.value };
+            myLinkedSwimmers.value.forEach(s => {
+                const sRows = rows.filter(r => r.swimmer_id === s.id);
+                const present = sRows.filter(r => r.status === 'present' || r.status === 'excused').length;
+                const total = sRows.length;
+                perSwimmer[s.id] = total > 0 ? Math.round((present / total) * 100) : null;
+            });
+            swimmerAttendancePercent.value = perSwimmer;
         }
 
         async function openParentMeetEntry(meet, swimmer) {
@@ -4445,6 +4554,7 @@ createApp({
             attendanceViewTab, attendanceMarkGroup, openAttendanceMark, attendanceAnalyticsGroup, attendanceAnalyticsStart, attendanceAnalyticsEnd, attendanceAnalyticsData,
             openAttendanceAnalytics, loadAttendanceAnalytics, groupAttendancePercent, groupAttendanceSummary, loadGroupAttendanceSummary,
             swimmersByGroup, swimmerAttendancePercent, loadAttendanceSummary,
+            showSwimmerHistoryFor, swimmerHistoryRecords, openSwimmerHistory, closeSwimmerHistory, updateHistoricalAttendance,
             seasonsList, selectedSeasonId, selectedSeasonName, showNewSeasonForm, newSeasonName, newSeasonStart, newSeasonEnd, loadSeasons, addSeason,
             meetsList, showNewMeetForm, newMeet, selectedMeet, meetDetailTab, meetEventsList, newMeetEvent, meetEntriesList, overrideTimes,
             loadMeets, createMeet, openMeetDetail, addMeetEvent, deleteMeetEvent, pendingEntriesCount, swimmerName, eventLabel, approveMeetEntry, declineMeetEntry,
