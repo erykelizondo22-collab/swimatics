@@ -1656,10 +1656,13 @@
                             <button @click="messageTarget = 'family'" :class="messageTarget === 'family' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Family</button>
                         </div>
 
-                        <select v-if="messageTarget === 'group'" v-model="announcementGroup" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
-                            <option value="" disabled>Select Group</option>
-                            <option v-for="g in postableGroups" :key="g" :value="g">{{g}}</option>
-                        </select>
+                        <div v-if="messageTarget === 'group'" class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-wrap gap-2">
+                            <label v-for="g in postableGroups" :key="g" class="flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-2 rounded-lg cursor-pointer text-xs font-bold" :class="announcementGroups.includes(g) ? 'ring-2' : ''" :style="announcementGroups.includes(g) ? { borderColor: teamColors.primary } : {}">
+                                <input type="checkbox" :value="g" v-model="announcementGroups" class="accent-slate-900">
+                                {{g}}
+                            </label>
+                            <p v-if="!postableGroups.length" class="text-xs text-slate-400 font-bold">No groups available</p>
+                        </div>
                         <select v-if="messageTarget === 'family'" v-model="messageFamilyId" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
                             <option value="" disabled>Select Family</option>
                             <option v-for="p in teamParents" :key="p.id" :value="p.id">{{p.name || p.email}}</option>
@@ -1667,7 +1670,17 @@
 
                         <input v-if="messageTarget !== 'family'" v-model="announcementTitle" placeholder="Title" maxlength="80" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
                         <textarea v-model="announcementBody" placeholder="Message" rows="3" maxlength="500" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none resize-none"></textarea>
-                        <button @click="sendMessage" :disabled="sendingAnnouncement || !announcementBody.trim() || (messageTarget !== 'family' && !announcementTitle.trim()) || (messageTarget === 'family' && !messageFamilyId)" class="w-full bg-slate-900 text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">{{ sendingAnnouncement ? 'Sending...' : 'Send' }}</button>
+
+                        <div v-if="messageTarget !== 'family'">
+                            <input type="file" id="announcementFileInput" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,.m4v" @change="announcementFile = $event.target.files[0] || null" class="hidden">
+                            <div class="flex items-center gap-2">
+                                <label for="announcementFileInput" class="text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">📎 Attach File, Photo, or Video</label>
+                                <span v-if="announcementFile" class="text-xs font-bold text-slate-600 truncate max-w-[160px]">{{announcementFile.name}}</span>
+                                <button v-if="announcementFile" @click="announcementFile = null" class="text-slate-300 hover:text-red-500 text-xs font-black">×</button>
+                            </div>
+                        </div>
+
+                        <button @click="sendMessage" :disabled="sendingAnnouncement || !announcementBody.trim() || (messageTarget !== 'family' && !announcementTitle.trim()) || (messageTarget === 'family' && !messageFamilyId) || (messageTarget === 'group' && !announcementGroups.length)" class="w-full bg-slate-900 text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">{{ sendingAnnouncement ? (isUploadingAttachment ? 'Uploading...' : 'Sending...') : 'Send' }}</button>
                     </div>
 
                     <div>
@@ -1676,9 +1689,14 @@
                             <div v-for="a in broadcastHistory" :key="a.id" class="p-4">
                                 <div class="flex justify-between items-start gap-3">
                                     <span class="font-black text-slate-800 text-sm">{{a.title}}</span>
-                                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">{{a.group_name || 'Whole Team'}}</span>
+                                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">{{ (a.group_names && a.group_names.length) ? a.group_names.join(', ') : 'Whole Team' }}</span>
                                 </div>
                                 <p class="text-xs text-slate-500 font-medium mt-1">{{a.body}}</p>
+                                <div v-if="a.attachment_url" class="mt-2">
+                                    <img v-if="attachmentType(a.attachment_name) === 'image'" :src="a.attachment_url" class="max-w-full sm:max-w-xs rounded-xl border border-slate-200">
+                                    <video v-else-if="attachmentType(a.attachment_name) === 'video'" :src="a.attachment_url" controls class="max-w-full sm:max-w-xs rounded-xl border border-slate-200"></video>
+                                    <a v-else :href="a.attachment_url" target="_blank" class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors" :style="{ color: teamColors.primary }">📎 {{a.attachment_name}}</a>
+                                </div>
                                 <p class="text-[9px] text-slate-300 font-black uppercase tracking-widest mt-2">Sent by {{a.senderName}}</p>
                             </div>
                             <div v-if="!broadcastHistory.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No announcements sent yet</div>
@@ -1723,9 +1741,14 @@
                             <div v-for="a in broadcastHistory" :key="a.id" class="p-4">
                                 <div class="flex justify-between items-start gap-3">
                                     <span class="font-black text-slate-800 text-sm">{{a.title}}</span>
-                                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">{{a.group_name || 'Whole Team'}}</span>
+                                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">{{ (a.group_names && a.group_names.length) ? a.group_names.join(', ') : 'Whole Team' }}</span>
                                 </div>
                                 <p class="text-xs text-slate-500 font-medium mt-1">{{a.body}}</p>
+                                <div v-if="a.attachment_url" class="mt-2">
+                                    <img v-if="attachmentType(a.attachment_name) === 'image'" :src="a.attachment_url" class="max-w-full sm:max-w-xs rounded-xl border border-slate-200">
+                                    <video v-else-if="attachmentType(a.attachment_name) === 'video'" :src="a.attachment_url" controls class="max-w-full sm:max-w-xs rounded-xl border border-slate-200"></video>
+                                    <a v-else :href="a.attachment_url" target="_blank" class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors" :style="{ color: teamColors.primary }">📎 {{a.attachment_name}}</a>
+                                </div>
                                 <p class="text-[9px] text-slate-300 font-black uppercase tracking-widest mt-2">Sent by {{a.senderName}}</p>
                             </div>
                             <div v-if="!broadcastHistory.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No announcements yet</div>
@@ -2075,7 +2098,9 @@ createApp({
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
-        const announcementGroup = ref('');
+        const announcementGroups = ref([]);
+        const announcementFile = ref(null);
+        const isUploadingAttachment = ref(false);
         const announcementTitle = ref('');
         const announcementBody = ref('');
         const sendingAnnouncement = ref(false);
@@ -3583,19 +3608,73 @@ createApp({
                 return;
             }
 
+            const groupNames = messageTarget.value === 'group' ? announcementGroups.value : null;
+            const eligibleParentIds = await computeEligibleParentIds(groupNames);
+
+            let attachmentUrl = null, attachmentName = null;
+            if (announcementFile.value) {
+                isUploadingAttachment.value = true;
+                const uploaded = await uploadAnnouncementAttachment(announcementFile.value);
+                isUploadingAttachment.value = false;
+                if (!uploaded) { sendingAnnouncement.value = false; return; }
+                attachmentUrl = uploaded.url;
+                attachmentName = uploaded.name;
+            }
+
             const { error } = await client.from('coach_announcements').insert({
                 team_id: myTeam.value,
-                group_name: messageTarget.value === 'group' ? (announcementGroup.value || null) : null,
+                group_name: groupNames && groupNames.length === 1 ? groupNames[0] : null,
+                group_names: groupNames,
+                eligible_parent_ids: eligibleParentIds,
                 title: announcementTitle.value.trim(),
                 body: announcementBody.value.trim(),
+                attachment_url: attachmentUrl,
+                attachment_name: attachmentName,
                 created_by: freshUser?.id
             });
             sendingAnnouncement.value = false;
             if (error) { alert("Error sending message: " + error.message); return; }
             announcementTitle.value = '';
             announcementBody.value = '';
-            announcementGroup.value = '';
+            announcementGroups.value = [];
+            announcementFile.value = null;
             loadBroadcastHistory();
+        }
+
+        // Computes who should be able to see/get notified about a
+        // team or group announcement, at send time -- stored directly
+        // on the row so both the RLS visibility check and the push
+        // notification target list read from the exact same precomputed
+        // list, with no join required at read time (Realtime-safe).
+        async function computeEligibleParentIds(groupNames) {
+            if (!groupNames || !groupNames.length) {
+                const { data } = await client.rpc('get_team_members', { p_team_id: myTeam.value });
+                return (data || []).filter(m => m.role === 'parent').map(m => m.id);
+            }
+            const { data: swimmersInGroups } = await client.from('swimmers').select('id').eq('team_id', myTeam.value).in('group_name', groupNames);
+            const swimmerIds = (swimmersInGroups || []).map(s => s.id);
+            if (!swimmerIds.length) return [];
+            const { data: links } = await client.from('parent_links').select('parent_user_id').in('swimmer_id', swimmerIds);
+            return [...new Set((links || []).map(l => l.parent_user_id))];
+        }
+
+        // Classifies an attachment by extension so it can be shown as an
+        // actual image/video preview instead of a generic download link.
+        function attachmentType(filename) {
+            if (!filename) return 'file';
+            const ext = filename.split('.').pop().toLowerCase();
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
+            if (['mp4', 'mov', 'webm', 'm4v'].includes(ext)) return 'video';
+            return 'file';
+        }
+
+        async function uploadAnnouncementAttachment(file) {
+            const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const filePath = `${myTeam.value}/${Date.now()}_${safeName}`;
+            const { error } = await client.storage.from('announcement-attachments').upload(filePath, file);
+            if (error) { alert("Error uploading attachment: " + error.message); return null; }
+            const { data: urlData } = client.storage.from('announcement-attachments').getPublicUrl(filePath);
+            return { url: urlData.publicUrl, name: file.name };
         }
 
         async function loadBroadcastHistory() {
@@ -5098,7 +5177,7 @@ createApp({
             showSwimmerProfileFor, openSwimmerProfile, closeSwimmerProfile, paymentStatusForSwimmer, paymentStatusForAccount,
             teamModules, layoutDraft, draggedLayoutIndex, openLayoutEditor, toggleLayoutModule, layoutDragStart, layoutDrop, saveLayout,
             pushSupported, pushSubscribed, notificationPrefs, myNotificationTypes, enablePushNotifications, disablePushNotifications, toggleNotificationPref, openSettings,
-            announcementGroup, announcementTitle, announcementBody, sendingAnnouncement, sendMessage, openMessages,
+            announcementGroups, announcementFile, isUploadingAttachment, announcementTitle, announcementBody, sendingAnnouncement, sendMessage, openMessages, attachmentType,
             messageTarget, messageFamilyId, broadcastHistory, conversationsList, openConversationId, conversationThread, conversationReply,
             openConversationThread, sendConversationReply, unsubscribeFromConversation, unsubscribeFromAnnouncements,
             dmEnabledCoaches, myConversations, openParentConvoId, selectedCoachForNewConvo, loadDmEnabledCoaches, loadMyConversations, openParentConversationThread, closeParentConversation, startConversationWithCoach,
