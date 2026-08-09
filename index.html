@@ -1653,7 +1653,7 @@
                         <div class="flex gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
                             <button @click="messageTarget = 'team'" :class="messageTarget === 'team' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Team</button>
                             <button @click="messageTarget = 'group'" :class="messageTarget === 'group' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Group</button>
-                            <button @click="messageTarget = 'family'" :class="messageTarget === 'family' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Family</button>
+                            <button @click="messageTarget = 'family'" :class="messageTarget === 'family' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Direct</button>
                         </div>
 
                         <div v-if="messageTarget === 'group'" class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-wrap gap-2">
@@ -1671,7 +1671,7 @@
                         <input v-if="messageTarget !== 'family'" v-model="announcementTitle" placeholder="Title" maxlength="80" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
                         <textarea v-model="announcementBody" placeholder="Message" rows="3" maxlength="500" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none resize-none"></textarea>
 
-                        <div v-if="messageTarget !== 'family'">
+                        <div>
                             <input type="file" id="announcementFileInput" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,.m4v" @change="announcementFile = $event.target.files[0] || null" class="hidden">
                             <div class="flex items-center gap-2">
                                 <label for="announcementFileInput" class="text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">📎 Attach File, Photo, or Video</label>
@@ -1723,12 +1723,25 @@
                             </div>
                             <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
                                 <div v-for="m in conversationThread" :key="m.id" class="max-w-[80%]" :class="m.sender_role === 'coach' ? 'ml-auto text-right' : ''">
-                                    <div class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_role === 'coach' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
+                                    <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_role === 'coach' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
+                                    <div v-if="m.attachment_url" class="mt-1.5">
+                                        <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
+                                        <video v-else-if="attachmentType(m.attachment_name) === 'video'" :src="m.attachment_url" controls class="max-w-[200px] rounded-xl border border-slate-200 inline-block"></video>
+                                        <a v-else :href="m.attachment_url" target="_blank" class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">📎 {{m.attachment_name}}</a>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="p-4 border-t border-slate-100 flex gap-2">
-                                <input v-model="conversationReply" @keyup.enter="sendConversationReply" placeholder="Reply..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none">
-                                <button @click="sendConversationReply" class="bg-slate-900 text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
+                            <div class="p-4 border-t border-slate-100 space-y-2">
+                                <div v-if="conversationReplyFile" class="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-2 rounded-lg">
+                                    <span class="truncate">{{conversationReplyFile.name}}</span>
+                                    <button @click="conversationReplyFile = null" class="text-slate-300 hover:text-red-500 font-black shrink-0">×</button>
+                                </div>
+                                <div class="flex gap-2">
+                                    <input type="file" id="replyFileInputCoach" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,.m4v" @change="conversationReplyFile = $event.target.files[0] || null" class="hidden">
+                                    <label for="replyFileInputCoach" class="shrink-0 bg-slate-50 border border-slate-200 w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors text-sm">📎</label>
+                                    <input v-model="conversationReply" @keyup.enter="sendConversationReply" placeholder="Reply..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none">
+                                    <button @click="sendConversationReply" class="bg-slate-900 text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1786,13 +1799,26 @@
                             </div>
                             <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
                                 <div v-for="m in conversationThread" :key="m.id" class="max-w-[80%]" :class="m.sender_role === 'parent' ? 'ml-auto text-right' : ''">
-                                    <div class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_role === 'parent' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
+                                    <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_role === 'parent' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
+                                    <div v-if="m.attachment_url" class="mt-1.5">
+                                        <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
+                                        <video v-else-if="attachmentType(m.attachment_name) === 'video'" :src="m.attachment_url" controls class="max-w-[200px] rounded-xl border border-slate-200 inline-block"></video>
+                                        <a v-else :href="m.attachment_url" target="_blank" class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">📎 {{m.attachment_name}}</a>
+                                    </div>
                                 </div>
                                 <div v-if="!conversationThread.length" class="text-center text-slate-400 font-black uppercase tracking-widest text-xs py-6">No messages yet</div>
                             </div>
-                            <div class="p-4 border-t border-slate-100 flex gap-2">
-                                <input v-model="conversationReply" @keyup.enter="sendConversationReply" placeholder="Type a message..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none">
-                                <button @click="sendConversationReply" class="bg-slate-900 text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
+                            <div class="p-4 border-t border-slate-100 space-y-2">
+                                <div v-if="conversationReplyFile" class="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-2 rounded-lg">
+                                    <span class="truncate">{{conversationReplyFile.name}}</span>
+                                    <button @click="conversationReplyFile = null" class="text-slate-300 hover:text-red-500 font-black shrink-0">×</button>
+                                </div>
+                                <div class="flex gap-2">
+                                    <input type="file" id="replyFileInputParent" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,.m4v" @change="conversationReplyFile = $event.target.files[0] || null" class="hidden">
+                                    <label for="replyFileInputParent" class="shrink-0 bg-slate-50 border border-slate-200 w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors text-sm">📎</label>
+                                    <input v-model="conversationReply" @keyup.enter="sendConversationReply" placeholder="Type a message..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none">
+                                    <button @click="sendConversationReply" class="bg-slate-900 text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2111,6 +2137,7 @@ createApp({
         const openConversationId = ref(null);
         const conversationThread = ref([]);
         const conversationReply = ref('');
+        const conversationReplyFile = ref(null);
         const dmEnabledCoaches = ref([]);
         const myConversations = ref([]);
         const openParentConvoId = ref(null);
@@ -3596,13 +3623,26 @@ createApp({
                     if (createErr) { sendingAnnouncement.value = false; alert("Error starting conversation: " + createErr.message); return; }
                     convoId = created.id;
                 }
+
+                let directAttachmentUrl = null, directAttachmentName = null;
+                if (announcementFile.value) {
+                    isUploadingAttachment.value = true;
+                    const uploaded = await uploadMessageAttachment(announcementFile.value);
+                    isUploadingAttachment.value = false;
+                    if (!uploaded) { sendingAnnouncement.value = false; return; }
+                    directAttachmentUrl = uploaded.url;
+                    directAttachmentName = uploaded.name;
+                }
+
                 const { error } = await client.from('conversation_messages').insert({
                     conversation_id: convoId, team_id: myTeam.value, sender_id: freshUser?.id, sender_role: 'coach', body: announcementBody.value.trim(),
-                    parent_user_id: messageFamilyId.value, coach_user_id: freshUser?.id
+                    parent_user_id: messageFamilyId.value, coach_user_id: freshUser?.id,
+                    attachment_url: directAttachmentUrl, attachment_name: directAttachmentName
                 });
                 sendingAnnouncement.value = false;
                 if (error) { alert("Error sending message: " + error.message); return; }
                 announcementBody.value = '';
+                announcementFile.value = '';
                 messageFamilyId.value = '';
                 loadConversationsList();
                 return;
@@ -3614,7 +3654,7 @@ createApp({
             let attachmentUrl = null, attachmentName = null;
             if (announcementFile.value) {
                 isUploadingAttachment.value = true;
-                const uploaded = await uploadAnnouncementAttachment(announcementFile.value);
+                const uploaded = await uploadMessageAttachment(announcementFile.value);
                 isUploadingAttachment.value = false;
                 if (!uploaded) { sendingAnnouncement.value = false; return; }
                 attachmentUrl = uploaded.url;
@@ -3668,7 +3708,7 @@ createApp({
             return 'file';
         }
 
-        async function uploadAnnouncementAttachment(file) {
+        async function uploadMessageAttachment(file) {
             const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
             const filePath = `${myTeam.value}/${Date.now()}_${safeName}`;
             const { error } = await client.storage.from('announcement-attachments').upload(filePath, file);
@@ -3833,7 +3873,7 @@ createApp({
         }
 
         async function sendConversationReply() {
-            if (!conversationReply.value.trim()) return;
+            if (!conversationReply.value.trim() && !conversationReplyFile.value) return;
             await client.auth.refreshSession();
             const { data: { user: freshUser } } = await client.auth.getUser();
 
@@ -3853,10 +3893,20 @@ createApp({
             const bodyToSend = conversationReply.value.trim();
             conversationReply.value = '';
 
+            let replyAttachmentUrl = null, replyAttachmentName = null;
+            if (conversationReplyFile.value) {
+                const uploaded = await uploadMessageAttachment(conversationReplyFile.value);
+                if (!uploaded) return;
+                replyAttachmentUrl = uploaded.url;
+                replyAttachmentName = uploaded.name;
+            }
+            conversationReplyFile.value = null;
+
             const { data: inserted, error } = await client.from('conversation_messages').insert({
                 conversation_id: convoId, team_id: myTeam.value, sender_id: freshUser?.id,
                 sender_role: isParent.value ? 'parent' : 'coach', body: bodyToSend,
-                parent_user_id: parentUserIdForMessage, coach_user_id: coachUserIdForMessage
+                parent_user_id: parentUserIdForMessage, coach_user_id: coachUserIdForMessage,
+                attachment_url: replyAttachmentUrl, attachment_name: replyAttachmentName
             }).select().single();
             if (error) { alert("Error sending message: " + error.message); conversationReply.value = bodyToSend; return; }
 
@@ -5178,7 +5228,7 @@ createApp({
             teamModules, layoutDraft, draggedLayoutIndex, openLayoutEditor, toggleLayoutModule, layoutDragStart, layoutDrop, saveLayout,
             pushSupported, pushSubscribed, notificationPrefs, myNotificationTypes, enablePushNotifications, disablePushNotifications, toggleNotificationPref, openSettings,
             announcementGroups, announcementFile, isUploadingAttachment, announcementTitle, announcementBody, sendingAnnouncement, sendMessage, openMessages, attachmentType,
-            messageTarget, messageFamilyId, broadcastHistory, conversationsList, openConversationId, conversationThread, conversationReply,
+            messageTarget, messageFamilyId, broadcastHistory, conversationsList, openConversationId, conversationThread, conversationReply, conversationReplyFile,
             openConversationThread, sendConversationReply, unsubscribeFromConversation, unsubscribeFromAnnouncements,
             dmEnabledCoaches, myConversations, openParentConvoId, selectedCoachForNewConvo, loadDmEnabledCoaches, loadMyConversations, openParentConversationThread, closeParentConversation, startConversationWithCoach,
             coachGroupLinksMap, myAssignedGroups, toggleCoachGroup,
