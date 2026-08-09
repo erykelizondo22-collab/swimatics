@@ -3365,7 +3365,7 @@ createApp({
             checkUrlForInvite();
             checkDraft();
             resetAnalyticsDates();
-            registerServiceWorker();
+            registerSwimaticsServiceWorker();
             
             const { data } = await client.auth.getUser();
             user.value = data?.user;
