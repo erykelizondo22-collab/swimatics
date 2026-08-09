@@ -2199,7 +2199,7 @@
     </div>
 
     <div id="sheet" style="display:none; position: relative; overflow: hidden;" class="print-page" :class="{'no-print': !user, 'print-active': printTarget === 'workout'}">
-        <div v-if="teamLogoUrl" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 0; opacity: 0.08; pointer-events: none;">
+        <div v-for="topPx in printWatermarkPositions" :key="topPx" style="position: absolute; left: 0; right: 0; display: flex; align-items: center; justify-content: center; z-index: 0; opacity: 0.08; pointer-events: none;" :style="{ top: topPx + 'px', transform: 'translateY(-50%)' }">
             <img :src="teamLogoUrl" style="width: 70%; max-height: 70%; object-fit: contain; filter: grayscale(100%);">
         </div>
 
@@ -2508,6 +2508,7 @@ createApp({
 
         const currentWorkoutId = ref(null); 
         const fontSize = ref(22); 
+        const printWatermarkPositions = ref([]);
 
         const title = ref(""); 
         const group = ref(""); 
@@ -3102,31 +3103,55 @@ createApp({
             if (workoutToLoad) loadWorkout(workoutToLoad);
             printTarget.value = 'workout';
             document.documentElement.style.fontSize = '';
+            const baseContentFontSize = fontSize.value; // the coach's own slider setting -- restored after printing
+            printWatermarkPositions.value = [];
             await nextTick();
 
             const sheet = document.getElementById('sheet');
+            let scale = 1;
             if (workoutFontSize.value === 'auto' && sheet) {
-                // Measure at the default size first, then compute how
-                // much to grow or shrink the root font-size so the
-                // content fills (or fits within) an 8.5x11 page. Because
-                // the sheet's WIDTH is fixed (8.5in, not font-relative),
-                // growing the font makes text wrap onto more lines and
-                // use more vertical space -- it reflows within the page
-                // width rather than pushing content off the side, the
-                // way scaling the whole box would.
+                // Measure at the coach's current base size first, then
+                // compute how much to grow or shrink it so the content
+                // fills (or fits within) an 8.5x11 page. The sheet's
+                // WIDTH stays fixed (8.5in), so growing the font makes
+                // text wrap onto more lines and use more vertical space
+                // -- it reflows within the page width rather than
+                // pushing content off the side.
                 const naturalHeight = sheet.scrollHeight;
                 const targetHeight = 11 * 96; // 11in at the standard 96 CSS px/in browsers use for layout
-                const scale = Math.max(0.5, Math.min(2.5, targetHeight / naturalHeight));
-                document.documentElement.style.fontSize = (16 * scale) + 'px';
-                await nextTick();
-            } else {
-                const manualScale = workoutFontSize.value === 'small' ? 0.85 : workoutFontSize.value === 'large' ? 1.15 : 1;
-                document.documentElement.style.fontSize = (16 * manualScale) + 'px';
+                scale = Math.max(0.5, Math.min(2.5, targetHeight / naturalHeight));
+            } else if (workoutFontSize.value !== 'auto') {
+                scale = workoutFontSize.value === 'small' ? 0.85 : workoutFontSize.value === 'large' ? 1.15 : 1;
+            }
+
+            // Scale BOTH systems that control this sheet's text size:
+            // the root font-size affects the Tailwind rem-based header
+            // (title, date, yardage total), and fontSize itself is the
+            // separate ref that actually drives every set/rep/time line
+            // via its own inline style -- adjusting only one of these
+            // (as an earlier version of this function did) left the
+            // other completely unscaled.
+            document.documentElement.style.fontSize = (16 * scale) + 'px';
+            fontSize.value = Math.round(baseContentFontSize * scale);
+            await nextTick();
+
+            // Determine how many printed pages this will span, and give
+            // each one its own centered watermark -- position: fixed
+            // repeating reliably across printed pages is inconsistent
+            // across browsers, so instead this computes exact
+            // pixel offsets and places one watermark per page directly.
+            if (sheet && teamLogoUrl.value) {
+                const pageHeightPx = 11 * 96;
+                const finalHeight = sheet.scrollHeight;
+                const numPages = Math.max(1, Math.ceil(finalHeight / pageHeightPx));
+                printWatermarkPositions.value = Array.from({ length: numPages }, (_, i) => (i * pageHeightPx) + (pageHeightPx / 2));
                 await nextTick();
             }
 
             window.print();
             document.documentElement.style.fontSize = '';
+            fontSize.value = baseContentFontSize;
+            printWatermarkPositions.value = [];
             if (workoutToLoad && cameFromView !== 'editor') currentView.value = cameFromView;
         }
 
@@ -5755,7 +5780,7 @@ createApp({
             user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, drawerRef, printTarget, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
             hasPendingInvite, isProcessingInvite, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors, themeMode, themePreference, setThemePreference,
-            title, group, poolType, defaultStroke, workoutVisibility, workoutFontSize, printWorkoutSheet, printCalendarSheet, publicWorkouts, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
+            title, group, poolType, defaultStroke, workoutVisibility, workoutFontSize, printWorkoutSheet, printCalendarSheet, printWatermarkPositions, publicWorkouts, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
             seasonPlans, activePlanContext, teamGroupsList, staffList, planForm, newGroupName, myRole, myTeam,
             filterGroup, workoutsTab, pastRangeStart, pastRangeEnd, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
             formatTime, formattedStartTime, save, loadWorkout, startNewWorkout, formatPracticeDate, startNewPlan, editPlan, addWeek, savePlan, deletePlan, deleteWorkout,
