@@ -85,6 +85,7 @@
         [data-theme="dark"] .bg-white { background-color: #1e293b !important; }
         [data-theme="dark"] .bg-slate-50 { background-color: #0f172a !important; }
         [data-theme="dark"] .bg-slate-100 { background-color: #1e293b !important; }
+        [data-theme="dark"] .bg-slate-200 { background-color: #334155 !important; }
         [data-theme="dark"] .hover\:bg-slate-50:hover { background-color: #334155 !important; }
         [data-theme="dark"] .hover\:bg-slate-100:hover { background-color: #334155 !important; }
         [data-theme="dark"] .text-slate-900 { color: #f1f5f9 !important; }
@@ -94,6 +95,35 @@
         [data-theme="dark"] .text-slate-500 { color: #94a3b8 !important; }
         [data-theme="dark"] .text-slate-400 { color: #64748b !important; }
         [data-theme="dark"] .text-slate-300 { color: #475569 !important; }
+
+        /* Colored badges, alerts, and status chips (emerald/blue/amber/
+           red/purple/indigo) -- pastel light-mode backgrounds swap for
+           dark tinted ones, with brighter text for contrast. */
+        [data-theme="dark"] .bg-emerald-50, [data-theme="dark"] .bg-emerald-100 { background-color: rgba(16,185,129,0.15) !important; }
+        [data-theme="dark"] .bg-blue-50, [data-theme="dark"] .bg-blue-100, [data-theme="dark"] .bg-blue-200 { background-color: rgba(59,130,246,0.15) !important; }
+        [data-theme="dark"] .bg-amber-50, [data-theme="dark"] .bg-amber-100 { background-color: rgba(245,158,11,0.15) !important; }
+        [data-theme="dark"] .bg-red-50, [data-theme="dark"] .bg-red-100 { background-color: rgba(239,68,68,0.15) !important; }
+        [data-theme="dark"] .bg-purple-50, [data-theme="dark"] .bg-purple-100 { background-color: rgba(168,85,247,0.15) !important; }
+        [data-theme="dark"] .bg-indigo-50, [data-theme="dark"] .bg-indigo-100 { background-color: rgba(99,102,241,0.15) !important; }
+
+        [data-theme="dark"] .border-emerald-100, [data-theme="dark"] .border-emerald-200 { border-color: rgba(16,185,129,0.35) !important; }
+        [data-theme="dark"] .border-blue-100, [data-theme="dark"] .border-blue-200 { border-color: rgba(59,130,246,0.35) !important; }
+        [data-theme="dark"] .border-amber-100, [data-theme="dark"] .border-amber-200 { border-color: rgba(245,158,11,0.35) !important; }
+        [data-theme="dark"] .border-red-100, [data-theme="dark"] .border-red-200 { border-color: rgba(239,68,68,0.35) !important; }
+        [data-theme="dark"] .border-purple-100, [data-theme="dark"] .border-purple-200 { border-color: rgba(168,85,247,0.35) !important; }
+        [data-theme="dark"] .border-indigo-100, [data-theme="dark"] .border-indigo-200 { border-color: rgba(99,102,241,0.35) !important; }
+
+        [data-theme="dark"] .text-emerald-500, [data-theme="dark"] .text-emerald-600, [data-theme="dark"] .text-emerald-700 { color: #34d399 !important; }
+        [data-theme="dark"] .text-blue-500, [data-theme="dark"] .text-blue-600, [data-theme="dark"] .text-blue-700, [data-theme="dark"] .text-blue-900 { color: #60a5fa !important; }
+        [data-theme="dark"] .text-amber-500, [data-theme="dark"] .text-amber-600, [data-theme="dark"] .text-amber-700, [data-theme="dark"] .text-amber-800, [data-theme="dark"] .text-amber-900 { color: #fbbf24 !important; }
+        [data-theme="dark"] .text-red-500, [data-theme="dark"] .text-red-600, [data-theme="dark"] .text-red-700 { color: #f87171 !important; }
+        [data-theme="dark"] .text-purple-600, [data-theme="dark"] .text-purple-700 { color: #c084fc !important; }
+        [data-theme="dark"] .text-indigo-600, [data-theme="dark"] .text-indigo-700 { color: #818cf8 !important; }
+
+        [data-theme="dark"] .hover\:bg-emerald-100:hover { background-color: rgba(16,185,129,0.25) !important; }
+        [data-theme="dark"] .hover\:bg-blue-100:hover { background-color: rgba(59,130,246,0.25) !important; }
+        [data-theme="dark"] .hover\:bg-amber-100:hover { background-color: rgba(245,158,11,0.25) !important; }
+        [data-theme="dark"] .hover\:bg-red-100:hover { background-color: rgba(239,68,68,0.25) !important; }
         [data-theme="dark"] .border-slate-200 { border-color: #334155 !important; }
         [data-theme="dark"] .border-slate-100 { border-color: #1e293b !important; }
         [data-theme="dark"] .border-slate-300 { border-color: #475569 !important; }
@@ -192,13 +222,9 @@
 
             <div v-if="myTeam" class="flex items-center gap-1.5 sm:gap-3 shrink-0">
                 <span class="hidden sm:inline text-[10px] md:text-xs font-black bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm" :style="{ color: teamColors.primary }">{{myTeam}}</span>
-                <button @click="switchAccount" title="Switch Google account" class="text-[10px] md:text-xs font-bold text-slate-400 hover:text-blue-500 transition-colors bg-slate-50 hover:bg-blue-50 px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap"><span class="hidden sm:inline">SWITCH</span><span class="sm:hidden">⇄</span></button>
-                <button @click="logout" class="text-[10px] md:text-xs font-bold text-slate-400 hover:text-red-500 transition-colors bg-slate-50 hover:bg-red-50 px-3 py-1.5 rounded-lg whitespace-nowrap">LOGOUT</button>
             </div>
             <div v-else class="flex items-center gap-2 sm:gap-4 shrink-0">
                 <span class="text-sm font-bold text-slate-600 bg-slate-100 px-4 py-2 rounded-full border border-slate-200">{{coachName}}</span>
-                <button @click="switchAccount" title="Switch Google account" class="text-xs font-bold text-slate-400 hover:text-blue-500 transition-colors whitespace-nowrap"><span class="hidden sm:inline">SWITCH</span><span class="sm:hidden">⇄</span></button>
-                <button @click="logout" class="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors whitespace-nowrap">LOGOUT</button>
             </div>
         </div>
 
