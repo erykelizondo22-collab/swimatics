@@ -74,6 +74,40 @@
         .row { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; }
         .block-title { font-weight: 800; border-bottom: 2px solid black; text-transform: uppercase; }
 
+        /* ============================================================
+           DARK MODE — overrides Tailwind's utility classes directly
+           rather than requiring dark: variants on every element across
+           every view. Toggled by [data-theme="dark"] on <html>.
+           ============================================================ */
+        [data-theme="dark"] body {
+            background: radial-gradient(ellipse 60% 40% at 15% 0%, rgba(14,165,233,0.06), transparent), #0f172a !important;
+        }
+        [data-theme="dark"] .bg-white { background-color: #1e293b !important; }
+        [data-theme="dark"] .bg-slate-50 { background-color: #0f172a !important; }
+        [data-theme="dark"] .bg-slate-100 { background-color: #1e293b !important; }
+        [data-theme="dark"] .hover\:bg-slate-50:hover { background-color: #334155 !important; }
+        [data-theme="dark"] .hover\:bg-slate-100:hover { background-color: #334155 !important; }
+        [data-theme="dark"] .text-slate-900 { color: #f1f5f9 !important; }
+        [data-theme="dark"] .text-slate-800 { color: #e2e8f0 !important; }
+        [data-theme="dark"] .text-slate-700 { color: #cbd5e1 !important; }
+        [data-theme="dark"] .text-slate-600 { color: #94a3b8 !important; }
+        [data-theme="dark"] .text-slate-500 { color: #94a3b8 !important; }
+        [data-theme="dark"] .text-slate-400 { color: #64748b !important; }
+        [data-theme="dark"] .text-slate-300 { color: #475569 !important; }
+        [data-theme="dark"] .border-slate-200 { border-color: #334155 !important; }
+        [data-theme="dark"] .border-slate-100 { border-color: #1e293b !important; }
+        [data-theme="dark"] .border-slate-300 { border-color: #475569 !important; }
+        [data-theme="dark"] .divide-slate-100 > * + * { border-color: #1e293b !important; }
+        [data-theme="dark"] .glass-nav { background: rgba(15, 23, 42, 0.85) !important; }
+        [data-theme="dark"] .shadow-sm, [data-theme="dark"] .shadow-md, [data-theme="dark"] .shadow-lg,
+        [data-theme="dark"] .shadow-xl, [data-theme="dark"] .shadow-2xl {
+            box-shadow: 0 4px 24px rgba(0,0,0,0.5) !important;
+        }
+        [data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea {
+            color: #f1f5f9;
+        }
+        [data-theme="dark"] ::placeholder { color: #64748b; }
+
         @keyframes pageFadeIn {
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
@@ -226,10 +260,14 @@
                 </template>
             </div>
 
-            <div class="p-3 border-t border-slate-100 shrink-0">
-                <button @click="openNotifications(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'notifications' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'notifications' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
-                    <span class="text-lg w-6 text-center shrink-0">🔔</span>
-                    <span class="font-black uppercase tracking-widest text-xs">Notifications</span>
+            <div class="p-3 border-t border-slate-100 shrink-0 space-y-1">
+                <button v-if="!isOffice" @click="openMessages(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'messages' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'messages' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">💬</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Messages</span>
+                </button>
+                <button @click="openSettings(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'settings' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'settings' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">⚙️</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Settings</span>
                 </button>
             </div>
         </div>
@@ -1297,13 +1335,24 @@
                 <button @click="saveLayout" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-sm">Save Layout</button>
             </div>
 
-            <div v-if="currentView === 'notifications'" class="max-w-2xl mx-auto space-y-6 mt-6">
+            <div v-if="currentView === 'settings'" class="max-w-2xl mx-auto space-y-6 mt-6">
                 <div class="border-b border-slate-200 pb-6">
-                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Notifications</h2>
-                    <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Choose what you want to hear about</p>
+                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Settings</h2>
+                    <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Just for you, on this device</p>
                 </div>
 
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                    <h3 class="text-xl font-black uppercase tracking-tight text-slate-900 mb-1">Appearance</h3>
+                    <p class="text-xs text-slate-400 font-bold mb-4">Just for you — everyone else keeps their own choice.</p>
+                    <div class="flex gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 w-full sm:w-auto sm:inline-flex">
+                        <button @click="setThemePreference('auto')" :class="themePreference === 'auto' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">📱 Match Device</button>
+                        <button @click="setThemePreference('light')" :class="themePreference === 'light' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">☀️ Light</button>
+                        <button @click="setThemePreference('dark')" :class="themePreference === 'dark' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">🌙 Dark</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                    <h3 class="text-xl font-black uppercase tracking-tight text-slate-900 mb-4">Notifications</h3>
                     <div v-if="pushSubscribed" class="flex items-center justify-between gap-3">
                         <div class="flex items-center gap-3">
                             <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full shrink-0"></span>
@@ -1321,20 +1370,6 @@
                     </div>
                 </div>
 
-                <div v-if="!isParent && !isOffice" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 space-y-4">
-                    <div>
-                        <h3 class="text-xl font-black uppercase tracking-tight text-slate-900">Send an Announcement</h3>
-                        <p class="text-xs text-slate-400 font-bold mt-1">Sends a push notification directly to parents. They can turn these off individually if they don't want them.</p>
-                    </div>
-                    <select v-model="announcementGroup" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
-                        <option value="">Whole Team</option>
-                        <option v-for="g in postableGroups" :key="g" :value="g">{{g}}</option>
-                    </select>
-                    <input v-model="announcementTitle" placeholder="Title" maxlength="80" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
-                    <textarea v-model="announcementBody" placeholder="Message" rows="3" maxlength="500" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none resize-none"></textarea>
-                    <button @click="sendCoachAnnouncement" :disabled="!announcementTitle.trim() || !announcementBody.trim() || sendingAnnouncement" class="w-full bg-slate-900 text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">{{ sendingAnnouncement ? 'Sending...' : 'Send' }}</button>
-                </div>
-
                 <div v-if="pushSubscribed" class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
                     <div v-for="t in myNotificationTypes" :key="t.key" class="p-5 flex justify-between items-center gap-3">
                         <span class="font-bold text-slate-800 text-sm">{{t.label}}</span>
@@ -1343,6 +1378,118 @@
                         </button>
                     </div>
                 </div>
+
+                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                    <button @click="switchAccount" class="w-full text-left p-5 font-black uppercase tracking-widest text-sm text-slate-700 hover:bg-slate-50 transition-colors rounded-t-[2rem]">Switch Account</button>
+                    <button @click="logout" class="w-full text-left p-5 font-black uppercase tracking-widest text-sm text-red-500 hover:bg-red-50 transition-colors rounded-b-[2rem]">Log Out</button>
+                </div>
+            </div>
+
+            <div v-if="currentView === 'messages'" class="max-w-2xl mx-auto space-y-6 mt-6">
+                <div class="border-b border-slate-200 pb-6">
+                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Messages</h2>
+                    <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">{{ isParent ? 'Announcements and your conversation with coaches' : 'Send updates and talk with families' }}</p>
+                </div>
+
+                <template v-if="!isParent">
+                    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 space-y-4">
+                        <h3 class="text-xl font-black uppercase tracking-tight text-slate-900">New Message</h3>
+                        <div class="flex gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
+                            <button @click="messageTarget = 'team'" :class="messageTarget === 'team' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Team</button>
+                            <button @click="messageTarget = 'group'" :class="messageTarget === 'group' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Group</button>
+                            <button @click="messageTarget = 'family'" :class="messageTarget === 'family' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Family</button>
+                        </div>
+
+                        <select v-if="messageTarget === 'group'" v-model="announcementGroup" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                            <option value="" disabled>Select Group</option>
+                            <option v-for="g in postableGroups" :key="g" :value="g">{{g}}</option>
+                        </select>
+                        <select v-if="messageTarget === 'family'" v-model="messageFamilyId" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                            <option value="" disabled>Select Family</option>
+                            <option v-for="p in teamParents" :key="p.id" :value="p.id">{{p.name || p.email}}</option>
+                        </select>
+
+                        <input v-if="messageTarget !== 'family'" v-model="announcementTitle" placeholder="Title" maxlength="80" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                        <textarea v-model="announcementBody" placeholder="Message" rows="3" maxlength="500" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none resize-none"></textarea>
+                        <button @click="sendMessage" :disabled="sendingAnnouncement || !announcementBody.trim() || (messageTarget !== 'family' && !announcementTitle.trim()) || (messageTarget === 'family' && !messageFamilyId)" class="w-full bg-slate-900 text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">{{ sendingAnnouncement ? 'Sending...' : 'Send' }}</button>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-black uppercase tracking-tight text-slate-900 mb-3">Broadcast History</h3>
+                        <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                            <div v-for="a in broadcastHistory" :key="a.id" class="p-4">
+                                <div class="flex justify-between items-start gap-3">
+                                    <span class="font-black text-slate-800 text-sm">{{a.title}}</span>
+                                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">{{a.group_name || 'Whole Team'}}</span>
+                                </div>
+                                <p class="text-xs text-slate-500 font-medium mt-1">{{a.body}}</p>
+                            </div>
+                            <div v-if="!broadcastHistory.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No announcements sent yet</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-black uppercase tracking-tight text-slate-900 mb-3">Family Conversations</h3>
+                        <div v-if="!openConversationId" class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                            <div v-for="c in conversationsList" :key="c.id" @click="openConversationThread(c)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
+                                <div>
+                                    <div class="font-black text-slate-800 text-sm">{{c.parentName}}</div>
+                                    <div class="text-xs text-slate-400 font-medium truncate max-w-[280px]">{{c.lastMessage}}</div>
+                                </div>
+                                <span class="text-[9px] font-black text-slate-300 uppercase shrink-0">{{formatPracticeDate(c.updated_at ? c.updated_at.split('T')[0] : '')}}</span>
+                            </div>
+                            <div v-if="!conversationsList.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No conversations yet</div>
+                        </div>
+
+                        <div v-else class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+                            <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                                <span class="font-black text-slate-800 text-sm">{{ conversationsList.find(c => c.id === openConversationId)?.parentName }}</span>
+                                <button @click="openConversationId = null" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Close</button>
+                            </div>
+                            <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
+                                <div v-for="m in conversationThread" :key="m.id" class="max-w-[80%]" :class="m.sender_role === 'coach' ? 'ml-auto text-right' : ''">
+                                    <div class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_role === 'coach' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
+                                </div>
+                            </div>
+                            <div class="p-4 border-t border-slate-100 flex gap-2">
+                                <input v-model="conversationReply" @keyup.enter="sendConversationReply" placeholder="Reply..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none">
+                                <button @click="sendConversationReply" class="bg-slate-900 text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <template v-else>
+                    <div>
+                        <h3 class="text-lg font-black uppercase tracking-tight text-slate-900 mb-3">Announcements</h3>
+                        <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                            <div v-for="a in broadcastHistory" :key="a.id" class="p-4">
+                                <div class="flex justify-between items-start gap-3">
+                                    <span class="font-black text-slate-800 text-sm">{{a.title}}</span>
+                                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">{{a.group_name || 'Whole Team'}}</span>
+                                </div>
+                                <p class="text-xs text-slate-500 font-medium mt-1">{{a.body}}</p>
+                            </div>
+                            <div v-if="!broadcastHistory.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No announcements yet</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-black uppercase tracking-tight text-slate-900 mb-3">Message Coaches</h3>
+                        <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+                            <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
+                                <div v-for="m in conversationThread" :key="m.id" class="max-w-[80%]" :class="m.sender_role === 'parent' ? 'ml-auto text-right' : ''">
+                                    <div class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_role === 'parent' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
+                                </div>
+                                <div v-if="!conversationThread.length" class="text-center text-slate-400 font-black uppercase tracking-widest text-xs py-6">Send a message to start the conversation</div>
+                            </div>
+                            <div class="p-4 border-t border-slate-100 flex gap-2">
+                                <input v-model="conversationReply" @keyup.enter="sendConversationReply" placeholder="Message the coaching staff..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none">
+                                <button @click="sendConversationReply" class="bg-slate-900 text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
             </div>
 
             <div v-if="currentView === 'calendar'" class="max-w-5xl mx-auto space-y-6 mt-6">
@@ -1606,6 +1753,7 @@ createApp({
             { key: 'attendance_reminder', label: "Attendance Not Yet Taken", roles: ['coach', 'admin', 'owner'] },
             { key: 'new_workout', label: 'New Workout Posted', roles: ['coach', 'admin', 'owner'] },
             { key: 'coach_announcement', label: 'Coach Announcements', roles: ['parent'] },
+            { key: 'conversation_message', label: 'Direct Messages', roles: ['parent', 'coach', 'admin', 'owner'] },
         ];
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
@@ -1614,6 +1762,14 @@ createApp({
         const announcementTitle = ref('');
         const announcementBody = ref('');
         const sendingAnnouncement = ref(false);
+        const messageTarget = ref('team'); // 'team' | 'group' | 'family'
+        const messageFamilyId = ref('');
+        const broadcastHistory = ref([]);
+        const conversationsList = ref([]);
+        const openConversationId = ref(null);
+        const conversationThread = ref([]);
+        const conversationReply = ref('');
+        const myConversationId = ref(null);
 
         // ROSTER
         const swimmers = ref([]);
@@ -1715,6 +1871,50 @@ createApp({
         const teamLogoUrl = ref("");
         const isUploadingLogo = ref(false);
         const teamColors = ref({ primary: '#0ea5e9', secondary: '#0284c7' });
+
+        // THEME — a personal preference, not a team setting. Defaults to
+        // "auto" (follow the device's own light/dark setting) unless this
+        // specific person has explicitly chosen otherwise. Stored in
+        // localStorage per-browser, since a device's own dark mode setting
+        // is inherently a device-level thing, not something that should
+        // follow a person to a different device. Keyed per logged-in user
+        // so a shared family device doesn't leak one person's choice into
+        // another's session.
+        const themePreference = ref('auto'); // 'auto' | 'light' | 'dark'
+        const themeMode = ref('light'); // the actually-applied light/dark value
+
+        function systemPrefersDark() {
+            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+
+        function applyTheme() {
+            themeMode.value = themePreference.value === 'auto' ? (systemPrefersDark() ? 'dark' : 'light') : themePreference.value;
+            document.documentElement.setAttribute('data-theme', themeMode.value);
+        }
+
+        function loadThemePreference() {
+            const key = user.value ? `swimatics_theme_${user.value.id}` : 'swimatics_theme_anon';
+            themePreference.value = localStorage.getItem(key) || 'auto';
+            applyTheme();
+        }
+
+        function setThemePreference(pref) {
+            themePreference.value = pref;
+            const key = user.value ? `swimatics_theme_${user.value.id}` : 'swimatics_theme_anon';
+            localStorage.setItem(key, pref);
+            applyTheme();
+        }
+
+        // Apply immediately on script load (before login) so even the
+        // sign-in screen respects the device's dark mode setting, then
+        // re-apply once we know who's logged in (their own saved choice
+        // may differ from the anonymous default).
+        applyTheme();
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                if (themePreference.value === 'auto') applyTheme();
+            });
+        }
 
         const currentWorkoutId = ref(null); 
         const fontSize = ref(22); 
@@ -2669,10 +2869,21 @@ createApp({
             if (error) alert("Error saving preference: " + error.message);
         }
 
-        function openNotifications() {
-            currentView.value = 'notifications';
+        function openSettings() {
+            currentView.value = 'settings';
             checkExistingPushSubscription();
             loadNotificationPreferences();
+        }
+
+        async function openMessages() {
+            currentView.value = 'messages';
+            await loadBroadcastHistory();
+            if (isParent.value) {
+                await loadMyConversation();
+            } else {
+                await loadTeamParents();
+                await loadConversationsList();
+            }
         }
 
         // ============================================================
@@ -2864,22 +3075,109 @@ createApp({
             pushSubscribed.value = false;
         }
 
-        async function sendCoachAnnouncement() {
-            if (!announcementTitle.value.trim() || !announcementBody.value.trim()) return;
+        async function sendMessage() {
+            if (!announcementBody.value.trim()) return;
+            if (messageTarget.value !== 'family' && !announcementTitle.value.trim()) return;
+            if (messageTarget.value === 'family' && !messageFamilyId.value) return;
+
             sendingAnnouncement.value = true;
             const { data: { user: freshUser } } = await client.auth.getUser();
+
+            if (messageTarget.value === 'family') {
+                // Find or create that family's conversation, then post into it.
+                let convoId = null;
+                const { data: existing } = await client.from('conversations').select('id').eq('team_id', myTeam.value).eq('parent_user_id', messageFamilyId.value).maybeSingle();
+                if (existing) {
+                    convoId = existing.id;
+                } else {
+                    const { data: created, error: createErr } = await client.from('conversations').insert({ team_id: myTeam.value, parent_user_id: messageFamilyId.value }).select().single();
+                    if (createErr) { sendingAnnouncement.value = false; alert("Error starting conversation: " + createErr.message); return; }
+                    convoId = created.id;
+                }
+                const { error } = await client.from('conversation_messages').insert({
+                    conversation_id: convoId, team_id: myTeam.value, sender_id: freshUser?.id, sender_role: 'coach', body: announcementBody.value.trim()
+                });
+                sendingAnnouncement.value = false;
+                if (error) { alert("Error sending message: " + error.message); return; }
+                announcementBody.value = '';
+                messageFamilyId.value = '';
+                loadConversationsList();
+                return;
+            }
+
             const { error } = await client.from('coach_announcements').insert({
                 team_id: myTeam.value,
-                group_name: announcementGroup.value || null,
+                group_name: messageTarget.value === 'group' ? (announcementGroup.value || null) : null,
                 title: announcementTitle.value.trim(),
                 body: announcementBody.value.trim(),
                 created_by: freshUser?.id
             });
             sendingAnnouncement.value = false;
-            if (error) { alert("Error sending announcement: " + error.message); return; }
+            if (error) { alert("Error sending message: " + error.message); return; }
             announcementTitle.value = '';
             announcementBody.value = '';
             announcementGroup.value = '';
+            loadBroadcastHistory();
+        }
+
+        async function loadBroadcastHistory() {
+            const { data, error } = await client.from('coach_announcements').select('*').eq('team_id', myTeam.value).order('created_at', { ascending: false }).limit(30);
+            if (error) { console.error(error.message); return; }
+            broadcastHistory.value = data || [];
+        }
+
+        async function loadConversationsList() {
+            const { data, error } = await client.from('conversations').select('*').eq('team_id', myTeam.value).order('updated_at', { ascending: false });
+            if (error) { console.error(error.message); return; }
+            const convos = data || [];
+            const ids = convos.map(c => c.id);
+            let lastMessages = {};
+            if (ids.length) {
+                const { data: msgs } = await client.from('conversation_messages').select('*').in('conversation_id', ids).order('created_at', { ascending: false });
+                (msgs || []).forEach(m => { if (!lastMessages[m.conversation_id]) lastMessages[m.conversation_id] = m.body; });
+            }
+            conversationsList.value = convos.map(c => {
+                const parent = teamParents.value.find(p => p.id === c.parent_user_id);
+                return { ...c, parentName: parent ? (parent.name || parent.email) : 'Unknown Family', lastMessage: lastMessages[c.id] || '(no messages yet)' };
+            });
+        }
+
+        async function openConversationThread(convo) {
+            openConversationId.value = convo.id;
+            const { data } = await client.from('conversation_messages').select('*').eq('conversation_id', convo.id).order('created_at', { ascending: true });
+            conversationThread.value = data || [];
+        }
+
+        async function loadMyConversation() {
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const { data: convo } = await client.from('conversations').select('id').eq('team_id', myTeam.value).eq('parent_user_id', freshUser?.id).maybeSingle();
+            if (!convo) { myConversationId.value = null; conversationThread.value = []; return; }
+            myConversationId.value = convo.id;
+            const { data } = await client.from('conversation_messages').select('*').eq('conversation_id', convo.id).order('created_at', { ascending: true });
+            conversationThread.value = data || [];
+        }
+
+        async function sendConversationReply() {
+            if (!conversationReply.value.trim()) return;
+            const { data: { user: freshUser } } = await client.auth.getUser();
+
+            let convoId = isParent.value ? myConversationId.value : openConversationId.value;
+            if (isParent.value && !convoId) {
+                const { data: created, error: createErr } = await client.from('conversations').insert({ team_id: myTeam.value, parent_user_id: freshUser?.id }).select().single();
+                if (createErr) { alert("Error starting conversation: " + createErr.message); return; }
+                convoId = created.id;
+                myConversationId.value = convoId;
+            }
+            if (!convoId) return;
+
+            const { error } = await client.from('conversation_messages').insert({
+                conversation_id: convoId, team_id: myTeam.value, sender_id: freshUser?.id,
+                sender_role: isParent.value ? 'parent' : 'coach', body: conversationReply.value.trim()
+            });
+            if (error) { alert("Error sending message: " + error.message); return; }
+            conversationReply.value = '';
+            if (isParent.value) loadMyConversation();
+            else openConversationThread({ id: openConversationId.value });
         }
 
         // ============================================================
@@ -3534,6 +3832,7 @@ createApp({
             
             const { data } = await client.auth.getUser();
             user.value = data?.user;
+            loadThemePreference();
             
             if (user.value) {
                 if (!myTeam.value) {
@@ -4078,7 +4377,7 @@ createApp({
         return {
             user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, drawerRef, printTarget, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
             hasPendingInvite, isProcessingInvite, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
-            teamColors, saveColors,
+            teamColors, saveColors, themeMode, themePreference, setThemePreference,
             title, group, poolType, defaultStroke, workoutVisibility, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
             seasonPlans, activePlanContext, teamGroupsList, staffList, planForm, newGroupName, myRole, myTeam,
             filterGroup, filterDate, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
@@ -4095,8 +4394,10 @@ createApp({
             isParent, isOffice, secToTime,
             accountsList, accountSearchQuery, filteredAccounts, loadAccounts, promoteToCoach, promoteToOffice, demoteToParent,
             teamModules, layoutDraft, draggedLayoutIndex, openLayoutEditor, toggleLayoutModule, layoutDragStart, layoutDrop, saveLayout,
-            pushSupported, pushSubscribed, notificationPrefs, myNotificationTypes, enablePushNotifications, disablePushNotifications, toggleNotificationPref, openNotifications,
-            announcementGroup, announcementTitle, announcementBody, sendingAnnouncement, sendCoachAnnouncement,
+            pushSupported, pushSubscribed, notificationPrefs, myNotificationTypes, enablePushNotifications, disablePushNotifications, toggleNotificationPref, openSettings,
+            announcementGroup, announcementTitle, announcementBody, sendingAnnouncement, sendMessage, openMessages,
+            messageTarget, messageFamilyId, broadcastHistory, conversationsList, openConversationId, conversationThread, conversationReply, myConversationId,
+            openConversationThread, sendConversationReply,
             coachGroupLinksMap, myAssignedGroups, toggleCoachGroup,
             calendarEvents, newCalendarEvent, showNewCalendarEventForm, upcomingCalendarEvents, postableGroups, createCalendarEvent, deleteCalendarEvent,
             calendarViewDate, calendarVisibilityFilter, selectedCalendarDay, calendarMonthLabel, calendarGridDays, eventsByDate,
