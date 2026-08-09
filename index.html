@@ -389,7 +389,15 @@
                                 <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Birthday</div>
                                 <div class="font-bold text-slate-800 text-sm mt-0.5">{{showSwimmerProfileFor.birthdate || '—'}}</div>
                             </div>
-                            <div class="col-span-2">
+                            <div>
+                                <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gender</div>
+                                <select v-model="showSwimmerProfileFor.gender" @change="updateSwimmerDetails(showSwimmerProfileFor)" class="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg text-sm font-bold outline-none">
+                                    <option :value="null">—</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                </select>
+                            </div>
+                            <div>
                                 <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest">USA Swimming #</div>
                                 <div class="font-bold text-slate-800 text-sm mt-0.5">{{showSwimmerProfileFor.usa_swimming_number || '—'}}</div>
                             </div>
@@ -1335,10 +1343,15 @@
 
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
                     <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest mb-4">Add Swimmer</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
                         <input v-model="newSwimmer.first_name" placeholder="First Name" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
                         <input v-model="newSwimmer.last_name" placeholder="Last Name" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
                         <input v-model="newSwimmer.birthdate" type="date" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                        <select v-model="newSwimmer.gender" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                            <option value="">Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                        </select>
                         <select v-model="newSwimmer.group_name" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
                             <option value="" disabled>Group</option>
                             <option v-for="g in teamGroupsList" :key="g.id" :value="g.name">{{g.name}}</option>
@@ -2352,7 +2365,7 @@ createApp({
 
         // ROSTER
         const swimmers = ref([]);
-        const newSwimmer = ref({ first_name: '', last_name: '', birthdate: '', group_name: '' });
+        const newSwimmer = ref({ first_name: '', last_name: '', birthdate: '', group_name: '', gender: '' });
         const teamParents = ref([]); // team members with role 'parent'
         const accountsList = ref([]);
         const familyAccountsMap = ref({}); // parent_user_id -> family_accounts row
@@ -3517,7 +3530,7 @@ createApp({
             const { data: links } = await client.from('parent_links').select('swimmer_id').eq('parent_user_id', parentUserId);
             const swimmerIds = (links || []).map(l => l.swimmer_id);
             if (!swimmerIds.length) { accountSwimmersMap.value = { ...accountSwimmersMap.value, [parentUserId]: [] }; return; }
-            const { data } = await client.from('swimmers').select('*').in('id', swimmerIds);
+            const { data } = await client.from('swimmers').select('*').in('id', swimmerIds).order('last_name', { ascending: true });
             accountSwimmersMap.value = { ...accountSwimmersMap.value, [parentUserId]: data || [] };
         }
 
@@ -3544,7 +3557,8 @@ createApp({
         async function updateSwimmerDetails(swimmer) {
             const { error } = await client.from('swimmers').update({
                 birthdate: swimmer.birthdate || null,
-                usa_swimming_number: swimmer.usa_swimming_number || null
+                usa_swimming_number: swimmer.usa_swimming_number || null,
+                gender: swimmer.gender || null
             }).eq('id', swimmer.id);
             if (error) alert("Error saving swimmer details: " + error.message);
         }
@@ -4587,10 +4601,11 @@ createApp({
                 first_name: newSwimmer.value.first_name.trim(),
                 last_name: newSwimmer.value.last_name.trim(),
                 birthdate: newSwimmer.value.birthdate || null,
-                group_name: newSwimmer.value.group_name || null
+                group_name: newSwimmer.value.group_name || null,
+                gender: newSwimmer.value.gender || null
             });
             if(error) return alert("Error adding swimmer: " + error.message);
-            newSwimmer.value = { first_name: '', last_name: '', birthdate: '', group_name: '' };
+            newSwimmer.value = { first_name: '', last_name: '', birthdate: '', group_name: '', gender: '' };
             loadSwimmers();
         }
 
@@ -4985,7 +5000,7 @@ createApp({
                 ids = (links || []).map(l => l.swimmer_id);
             }
             if (ids.length) {
-                const { data } = await client.from("swimmers").select("*").in('id', ids);
+                const { data } = await client.from("swimmers").select("*").in('id', ids).order('last_name', { ascending: true });
                 myLinkedSwimmers.value = data || [];
                 loadSeasons();
                 loadMyLinkedSwimmerAttendance();
@@ -5127,6 +5142,10 @@ createApp({
                 if(!parsed.records || !parsed.records.length) throw new Error("No recognizable data found in this file.");
 
                 parsed.records.forEach(r => { r._include = true; });
+                if (parsed.detected_type === 'roster') {
+                    const sortKey = r => (r.last_name || (r.name ? r.name.split(' ').slice(-1)[0] : '') || r.first_name || '').toLowerCase();
+                    parsed.records.sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+                }
                 importPreview.value = parsed;
                 importColumns.value = Object.keys(parsed.records[0]).filter(k => k !== '_include');
                 importState.value = { status: 'preview', message: '' };
@@ -5144,12 +5163,19 @@ createApp({
 
             try {
                 if(type === 'roster') {
+                    const normalizeGender = g => {
+                        const v = (g || '').toLowerCase().trim();
+                        if (['m', 'male', 'boy'].includes(v)) return 'male';
+                        if (['f', 'female', 'girl'].includes(v)) return 'female';
+                        return null;
+                    };
                     const payloads = rows.map(r => ({
                         team_id: myTeam.value,
                         first_name: r.first_name || r.name?.split(' ')[0] || 'Unknown',
                         last_name: r.last_name || r.name?.split(' ').slice(1).join(' ') || '',
                         birthdate: r.birthdate || null,
-                        group_name: r.group_name || r.group || null
+                        group_name: r.group_name || r.group || null,
+                        gender: normalizeGender(r.gender || r.sex)
                     }));
                     const { error } = await client.from("swimmers").insert(payloads);
                     if(error) throw error;
