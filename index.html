@@ -274,7 +274,7 @@
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-3 space-y-1">
+            <div class="flex-1 overflow-y-auto overscroll-contain p-3 space-y-1">
                 <template v-if="isParent">
                 <button @click="currentView = 'parent-home'; mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'parent-home' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'parent-home' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
                     <span class="text-lg w-6 text-center shrink-0">🏠</span>
@@ -1990,6 +1990,13 @@ createApp({
         const user = ref(null);
         const currentView = ref('dashboard');
         const mobileNavOpen = ref(false);
+        // Belt-and-suspenders alongside overscroll-contain on the drawer's
+        // own scroll area: fully locks the page behind it from scrolling
+        // at all while the drawer is open, so there's no way for a scroll
+        // gesture inside the drawer to move the main page underneath it.
+        watch(mobileNavOpen, (isOpen) => {
+            document.body.style.overflow = isOpen ? 'hidden' : '';
+        });
         const navMenuRef = ref(null);
         const drawerRef = ref(null);
         const printTarget = ref('workout'); // 'workout' | 'calendar' -- which hidden print sheet is currently active
