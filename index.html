@@ -275,7 +275,7 @@
             </div>
 
             <div class="flex-1 overflow-y-auto overscroll-contain p-3 space-y-1">
-                <template v-if="isParent">
+                <template v-if="isParent || isAthlete">
                 <button @click="currentView = 'parent-home'; mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'parent-home' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'parent-home' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
                     <span class="text-lg w-6 text-center shrink-0">🏠</span>
                     <span class="font-black uppercase tracking-widest text-xs">Home</span>
@@ -417,8 +417,23 @@
                     <h2 class="text-2xl md:text-3xl font-black text-slate-900 mb-6 uppercase tracking-tight">Join a Team</h2>
                     <input v-model="joinCode" placeholder="Team Code" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 uppercase text-center text-lg tracking-widest mb-4 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all">
                     <input v-model="teamPassword" type="password" placeholder="Vault Password" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 text-center text-lg tracking-widest mb-4 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all">
-                    <p class="text-[11px] text-slate-400 font-bold mb-4 leading-relaxed">You'll join as a parent account. If you're a coach, ask an existing coach to promote you from the Accounts tab once you're in.</p>
-                    <button @click="joinTeam()" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-black hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm">Join Team</button>
+
+                    <button @click="joinAsAthlete = !joinAsAthlete" class="text-[10px] font-black uppercase tracking-widest mb-4" :class="joinAsAthlete ? 'text-blue-600' : 'text-slate-400'">{{ joinAsAthlete ? '✓ Registering as an athlete' : "I'm an athlete, not a parent" }}</button>
+
+                    <template v-if="joinAsAthlete">
+                        <p class="text-[11px] text-slate-400 font-bold mb-3 leading-relaxed">Athlete accounts require a birthdate on file and a minimum age of 13. You can view your own schedule and workouts, but messaging a coach always automatically includes your parent(s) — there's no way to message a coach privately.</p>
+                        <div class="relative mb-4">
+                            <input v-model="athleteSearchQuery" @input="searchForMyAthleteProfile" placeholder="Type your own name..." class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 text-center text-sm outline-none focus:border-blue-500 focus:bg-white transition-all">
+                            <div v-if="athleteSearchQuery && !selectedAthleteSwimmerId && athleteSearchResults.length" class="absolute z-10 top-full left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg mt-1 max-h-48 overflow-y-auto text-left">
+                                <div v-for="r in athleteSearchResults" :key="r.id" @click="selectedAthleteSwimmerId = r.id; athleteSearchQuery = r.first_name + ' ' + r.last_name" class="p-3 hover:bg-slate-50 cursor-pointer text-sm font-bold text-slate-800 border-b border-slate-100 last:border-0">{{r.first_name}} {{r.last_name}}</div>
+                            </div>
+                        </div>
+                        <button @click="submitAthleteRegistration" :disabled="!selectedAthleteSwimmerId || !joinCode || !teamPassword" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-blue-700 hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0">Register as Athlete</button>
+                    </template>
+                    <template v-else>
+                        <p class="text-[11px] text-slate-400 font-bold mb-4 leading-relaxed">You'll join as a parent account. If you're a coach, ask an existing coach to promote you from the Accounts tab once you're in.</p>
+                        <button @click="joinTeam()" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-black hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm">Join Team</button>
+                    </template>
                 </div>
                 <div class="bg-gradient-to-br from-blue-600 to-cyan-500 p-8 md:p-12 rounded-[2.5rem] shadow-xl shadow-blue-900/20 text-center text-white relative flex flex-col justify-center hover:shadow-2xl transition-shadow duration-300">
                     <h2 class="text-2xl md:text-3xl font-black mb-8 uppercase tracking-tight">Create a Vault</h2>
@@ -692,15 +707,36 @@
 
                     <div class="space-y-1.5">
                         <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Visibility</label>
-                        <div class="flex gap-2 bg-slate-50 border border-slate-200 p-1.5 rounded-2xl">
-                            <button @click="workoutVisibility = 'group'" :class="workoutVisibility === 'group' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all">Group Coaches</button>
-                            <button @click="workoutVisibility = 'private'" :class="workoutVisibility === 'private' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all">Private</button>
-                            <button @click="workoutVisibility = 'public'" :class="workoutVisibility === 'public' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all">All Your Team's Coaches</button>
+                        <div class="flex flex-wrap gap-2 bg-slate-50 border border-slate-200 p-1.5 rounded-2xl">
+                            <button @click="workoutVisibility = 'group'" :class="workoutVisibility === 'group' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all min-w-[45%]">Group Coaches</button>
+                            <button @click="workoutVisibility = 'private'" :class="workoutVisibility === 'private' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all min-w-[45%]">Private</button>
+                            <button @click="workoutVisibility = 'staff'" :class="workoutVisibility === 'staff' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all min-w-[45%]">Staff</button>
+                            <button @click="workoutVisibility = 'public'" :class="workoutVisibility === 'public' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all min-w-[45%]">Public</button>
                         </div>
                         <p class="text-[10px] text-slate-400 font-bold ml-2 leading-relaxed">
                             <span v-if="workoutVisibility === 'group'">Only coaches assigned to {{ group || 'this group' }} can see it.</span>
                             <span v-else-if="workoutVisibility === 'private'">Only you can see it.</span>
-                            <span v-else>Every coach on your team can see it — coaches on other teams never can, regardless of this setting.</span>
+                            <span v-else-if="workoutVisibility === 'staff'">Every coach on your team can see it (not office staff) — coaches on other teams never can.</span>
+                            <span v-else>The whole team can see it, including athletes and parents — they can view and print it.</span>
+                        </p>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Print Font Size</label>
+                        <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl p-3">
+                            <button @click="workoutFontSize = workoutFontSize === 'auto' ? 'medium' : 'auto'" :class="workoutFontSize === 'auto' ? 'bg-emerald-500' : 'bg-slate-300'" type="button" class="w-12 h-7 rounded-full relative transition-colors shrink-0">
+                                <span :class="workoutFontSize === 'auto' ? 'translate-x-6' : 'translate-x-1'" class="absolute top-1 w-5 h-5 bg-white rounded-full transition-transform"></span>
+                            </button>
+                            <span class="text-xs font-black uppercase tracking-widest text-slate-700 shrink-0">Auto-Fit</span>
+                            <select :value="workoutFontSize === 'auto' ? 'medium' : workoutFontSize" @change="workoutFontSize = $event.target.value" :disabled="workoutFontSize === 'auto'" class="flex-1 bg-white border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none disabled:opacity-40 disabled:cursor-not-allowed transition-opacity">
+                                <option value="small">Small</option>
+                                <option value="medium">Medium</option>
+                                <option value="large">Large</option>
+                            </select>
+                        </div>
+                        <p class="text-[10px] text-slate-400 font-bold ml-2 leading-relaxed">
+                            <span v-if="workoutFontSize === 'auto'">Automatically shrinks or enlarges to fill exactly one 8.5x11 page.</span>
+                            <span v-else>Fixed size, regardless of length — may overflow onto a second page.</span>
                         </p>
                     </div>
 
@@ -802,7 +838,7 @@
 
                     <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 space-y-4">
                         <button @click="save" class="w-full text-white font-black py-4 rounded-xl shadow-lg uppercase tracking-widest hover:scale-[1.02] hover:shadow-xl transition-all duration-300 text-sm" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">Save Workout</button>
-                        <button @click="printTarget = 'workout'; $nextTick(() => window.print())" class="w-full bg-slate-100 text-slate-700 py-4 rounded-xl font-black uppercase tracking-widest border border-slate-200 hover:bg-slate-200 hover:text-slate-900 transition-colors text-sm">Print Sheet</button>
+                        <button @click="printWorkoutSheet()" class="w-full bg-slate-100 text-slate-700 py-4 rounded-xl font-black uppercase tracking-widest border border-slate-200 hover:bg-slate-200 hover:text-slate-900 transition-colors text-sm">Print Sheet</button>
                         
                         <div class="border-t border-slate-100 pt-5 mt-2">
                             <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex justify-between">
@@ -1647,7 +1683,81 @@
                     <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">{{ isParent ? 'Announcements and your conversation with coaches' : 'Send updates and talk with families' }}</p>
                 </div>
 
-                <template v-if="!isParent">
+                <template v-if="isAthlete">
+                    <div>
+                        <h3 class="text-lg font-black uppercase tracking-tight text-slate-900 mb-3">Announcements</h3>
+                        <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                            <div v-for="a in broadcastHistory" :key="a.id" class="p-4">
+                                <div class="flex justify-between items-start gap-3">
+                                    <span class="font-black text-slate-800 text-sm">{{a.title}}</span>
+                                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">{{ (a.group_names && a.group_names.length) ? a.group_names.join(', ') : 'Whole Team' }}</span>
+                                </div>
+                                <p class="text-xs text-slate-500 font-medium mt-1">{{a.body}}</p>
+                                <div v-if="a.attachment_url" class="mt-2">
+                                    <img v-if="attachmentType(a.attachment_name) === 'image'" :src="a.attachment_url" class="max-w-full sm:max-w-xs rounded-xl border border-slate-200">
+                                    <video v-else-if="attachmentType(a.attachment_name) === 'video'" :src="a.attachment_url" controls class="max-w-full sm:max-w-xs rounded-xl border border-slate-200"></video>
+                                    <a v-else :href="a.attachment_url" target="_blank" class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors" :style="{ color: teamColors.primary }">📎 {{a.attachment_name}}</a>
+                                </div>
+                                <p class="text-[9px] text-slate-300 font-black uppercase tracking-widest mt-2">Sent by {{a.senderName}}</p>
+                            </div>
+                            <div v-if="!broadcastHistory.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No announcements yet</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-black uppercase tracking-tight text-slate-900 mb-3">Message a Coach</h3>
+                        <p class="text-xs text-slate-400 font-bold mb-3">Your parent is always included automatically — there's no way to message a coach privately.</p>
+
+                        <template v-if="!openGroupConvoId">
+                            <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100 mb-4">
+                                <div v-for="c in myGroupConversations" :key="c.id" @click="openGroupConversationThread(c)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
+                                    <div class="font-black text-slate-800 text-sm">{{c.coachName}} <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">+ Parent</span></div>
+                                </div>
+                                <div v-if="!myGroupConversations.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No conversations yet</div>
+                            </div>
+                            <div class="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-2">
+                                <select v-model="selectedCoachForNewConvo" class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                                    <option value="" disabled>Message a coach...</option>
+                                    <option v-for="c in dmEnabledCoaches" :key="c.id" :value="c.id">{{c.name || c.email}}</option>
+                                </select>
+                                <button @click="startGroupChatWithCoach" :disabled="!selectedCoachForNewConvo" class="bg-slate-900 text-white px-5 py-3 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">Start</button>
+                            </div>
+                        </template>
+
+                        <div v-else class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+                            <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                                <span class="font-black text-slate-800 text-sm">{{ myGroupConversations.find(c => c.id === openGroupConvoId)?.coachName }} <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">+ Parent</span></span>
+                                <button @click="closeGroupConversation" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Close</button>
+                            </div>
+                            <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
+                                <div v-for="m in groupConversationThread" :key="m.id" class="max-w-[85%]" :class="m.sender_id === user.id ? 'ml-auto text-right' : ''">
+                                    <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{{m.sender_name || m.sender_role}}</div>
+                                    <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_id === user.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
+                                    <div v-if="m.attachment_url" class="mt-1.5">
+                                        <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
+                                        <video v-else-if="attachmentType(m.attachment_name) === 'video'" :src="m.attachment_url" controls class="max-w-[200px] rounded-xl border border-slate-200 inline-block"></video>
+                                        <a v-else :href="m.attachment_url" target="_blank" class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">📎 {{m.attachment_name}}</a>
+                                    </div>
+                                </div>
+                                <div v-if="!groupConversationThread.length" class="text-center text-slate-400 font-black uppercase tracking-widest text-xs py-6">No messages yet</div>
+                            </div>
+                            <div class="p-4 border-t border-slate-100 space-y-2">
+                                <div v-if="conversationReplyFile" class="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-2 rounded-lg">
+                                    <span class="truncate">{{conversationReplyFile.name}}</span>
+                                    <button @click="conversationReplyFile = null" class="text-slate-300 hover:text-red-500 font-black shrink-0">×</button>
+                                </div>
+                                <div class="flex gap-2">
+                                    <input type="file" id="replyFileInputAthlete" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,.m4v" @change="conversationReplyFile = $event.target.files[0] || null" class="hidden">
+                                    <label for="replyFileInputAthlete" class="shrink-0 bg-slate-50 border border-slate-200 w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors text-sm">📎</label>
+                                    <input v-model="conversationReply" @keyup.enter="sendGroupMessage" placeholder="Type a message..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none">
+                                    <button @click="sendGroupMessage" class="bg-slate-900 text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <template v-else-if="!isParent">
                     <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 space-y-4">
                         <h3 class="text-xl font-black uppercase tracking-tight text-slate-900">New Message</h3>
                         <div class="flex gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
@@ -1663,10 +1773,13 @@
                             </label>
                             <p v-if="!postableGroups.length" class="text-xs text-slate-400 font-bold">No groups available</p>
                         </div>
-                        <select v-if="messageTarget === 'family'" v-model="messageFamilyId" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
-                            <option value="" disabled>Select Family</option>
-                            <option v-for="p in teamParents" :key="p.id" :value="p.id">{{p.name || p.email}}</option>
-                        </select>
+                        <div v-if="messageTarget === 'family'" class="relative">
+                            <input v-model="directRecipientSearch" @input="messageFamilyId = ''; messageAthleteSwimmerId = ''" placeholder="Type an athlete's or parent's name..." class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                            <div v-if="directRecipientSearch && !messageFamilyId && !messageAthleteSwimmerId" class="absolute z-10 top-full left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg mt-1 max-h-56 overflow-y-auto">
+                                <div v-for="r in directRecipientMatches" :key="r.type + r.id" @click="r.type === 'athlete' ? (messageAthleteSwimmerId = r.id) : (messageFamilyId = r.id); directRecipientSearch = r.label" class="p-3 hover:bg-slate-50 cursor-pointer text-sm font-bold text-slate-800 border-b border-slate-100 last:border-0">{{r.label}}</div>
+                                <div v-if="!directRecipientMatches.length" class="p-3 text-xs text-slate-400 font-bold">No matches</div>
+                            </div>
+                        </div>
 
                         <input v-if="messageTarget !== 'family'" v-model="announcementTitle" placeholder="Title" maxlength="80" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
                         <textarea v-model="announcementBody" placeholder="Message" rows="3" maxlength="500" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none resize-none"></textarea>
@@ -1680,7 +1793,7 @@
                             </div>
                         </div>
 
-                        <button @click="sendMessage" :disabled="sendingAnnouncement || !announcementBody.trim() || (messageTarget !== 'family' && !announcementTitle.trim()) || (messageTarget === 'family' && !messageFamilyId) || (messageTarget === 'group' && !announcementGroups.length)" class="w-full bg-slate-900 text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">{{ sendingAnnouncement ? (isUploadingAttachment ? 'Uploading...' : 'Sending...') : 'Send' }}</button>
+                        <button @click="sendMessage" :disabled="sendingAnnouncement || !announcementBody.trim() || (messageTarget !== 'family' && !announcementTitle.trim()) || (messageTarget === 'family' && !messageFamilyId && !messageAthleteSwimmerId) || (messageTarget === 'group' && !announcementGroups.length)" class="w-full bg-slate-900 text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">{{ sendingAnnouncement ? (isUploadingAttachment ? 'Uploading...' : 'Sending...') : 'Send' }}</button>
                     </div>
 
                     <div>
@@ -1741,6 +1854,47 @@
                                     <label for="replyFileInputCoach" class="shrink-0 bg-slate-50 border border-slate-200 w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors text-sm">📎</label>
                                     <input v-model="conversationReply" @keyup.enter="sendConversationReply" placeholder="Reply..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none">
                                     <button @click="sendConversationReply" class="bg-slate-900 text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-black uppercase tracking-tight text-slate-900 mb-3">Athlete Group Chats <span class="text-[9px] text-slate-400 normal-case">(parent always included)</span></h3>
+                        <div v-if="!openGroupConvoId" class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                            <div v-for="c in coachGroupConversations" :key="c.id" @click="openGroupConversationThread(c)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
+                                <div class="font-black text-slate-800 text-sm">{{c.athleteName}} <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">+ Parent</span></div>
+                            </div>
+                            <div v-if="!coachGroupConversations.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No athlete group chats yet</div>
+                        </div>
+
+                        <div v-else class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+                            <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                                <span class="font-black text-slate-800 text-sm">{{ coachGroupConversations.find(c => c.id === openGroupConvoId)?.athleteName }} <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">+ Parent</span></span>
+                                <button @click="closeGroupConversation" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Close</button>
+                            </div>
+                            <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
+                                <div v-for="m in groupConversationThread" :key="m.id" class="max-w-[85%]" :class="m.sender_id === user.id ? 'ml-auto text-right' : ''">
+                                    <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{{m.sender_name || m.sender_role}}</div>
+                                    <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_id === user.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
+                                    <div v-if="m.attachment_url" class="mt-1.5">
+                                        <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
+                                        <video v-else-if="attachmentType(m.attachment_name) === 'video'" :src="m.attachment_url" controls class="max-w-[200px] rounded-xl border border-slate-200 inline-block"></video>
+                                        <a v-else :href="m.attachment_url" target="_blank" class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">📎 {{m.attachment_name}}</a>
+                                    </div>
+                                </div>
+                                <div v-if="!groupConversationThread.length" class="text-center text-slate-400 font-black uppercase tracking-widest text-xs py-6">No messages yet</div>
+                            </div>
+                            <div class="p-4 border-t border-slate-100 space-y-2">
+                                <div v-if="conversationReplyFile" class="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-2 rounded-lg">
+                                    <span class="truncate">{{conversationReplyFile.name}}</span>
+                                    <button @click="conversationReplyFile = null" class="text-slate-300 hover:text-red-500 font-black shrink-0">×</button>
+                                </div>
+                                <div class="flex gap-2">
+                                    <input type="file" id="replyFileInputCoachGroup" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,.m4v" @change="conversationReplyFile = $event.target.files[0] || null" class="hidden">
+                                    <label for="replyFileInputCoachGroup" class="shrink-0 bg-slate-50 border border-slate-200 w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors text-sm">📎</label>
+                                    <input v-model="conversationReply" @keyup.enter="sendGroupMessage" placeholder="Reply..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none">
+                                    <button @click="sendGroupMessage" class="bg-slate-900 text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
                                 </div>
                             </div>
                         </div>
@@ -1929,6 +2083,17 @@
                     <button @click="currentView = 'calendar'" class="text-[10px] font-black uppercase text-slate-400 hover:text-slate-700 mt-3">View Full Calendar →</button>
                 </div>
 
+                <div v-if="publicWorkouts.length" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Team Workouts</h4>
+                    <div v-for="w in publicWorkouts" :key="w.id" class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                        <div>
+                            <div class="text-sm font-bold text-slate-800">{{w.title}}</div>
+                            <div class="text-[9px] font-black uppercase text-slate-400">{{formatPracticeDate(w.practice_date)}} {{w.group ? '• ' + w.group : ''}}</div>
+                        </div>
+                        <button @click="printWorkoutSheet(w)" class="text-[10px] font-black uppercase text-slate-500 hover:text-slate-900 bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">🖨️ Print</button>
+                    </div>
+                </div>
+
                 <div v-if="!myLinkedSwimmers.length" class="text-center py-20 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2rem]">
                     Not linked to a swimmer yet — ask your coach to link your account from the Roster page.
                 </div>
@@ -2083,7 +2248,7 @@
 </div>
 
 <script>
-const { createApp, ref, computed, onMounted, watch } = Vue;
+const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
 
 const client = window.supabase.createClient(
     "https://nzrzcbxxqxwktocrmplg.supabase.co",
@@ -2132,6 +2297,8 @@ createApp({
         const sendingAnnouncement = ref(false);
         const messageTarget = ref('team'); // 'team' | 'group' | 'family'
         const messageFamilyId = ref('');
+        const directRecipientSearch = ref('');
+        const messageAthleteSwimmerId = ref('');
         const broadcastHistory = ref([]);
         const conversationsList = ref([]);
         const openConversationId = ref(null);
@@ -2310,6 +2477,7 @@ createApp({
         const poolType = ref("SCY");
         const defaultStroke = ref("free");
         const workoutVisibility = ref("group");
+        const workoutFontSize = ref("auto");
         
         const cloudWorkouts = ref([]);
         const seasonPlans = ref([]);
@@ -2378,6 +2546,13 @@ createApp({
         const myRole = computed(() => myRoleLive.value || user.value?.user_metadata?.team_role || 'coach');
         const isParent = computed(() => myRole.value === 'parent');
         const isOffice = computed(() => myRole.value === 'office');
+        // Deliberately its own check, not merged into isParent -- isParent
+        // gates the regular 1:1 parent<->coach messaging flow, which an
+        // athlete must never have access to. Athletes get the same
+        // schedule/workout viewing access as parents (checked via
+        // isParent || isAthlete in those specific spots) but always route
+        // through the separate, mandatory group-chat messaging path.
+        const isAthlete = computed(() => myRole.value === 'athlete');
 
         async function refreshMyRole() {
             if (!myTeam.value || !user.value) return;
@@ -2435,6 +2610,40 @@ createApp({
             const weekData = plan.weeks.find(w => w.weekNum === currentWeekNum) || null;
 
             return { planTitle: plan.title, weekNum: currentWeekNum, weekData: weekData };
+        });
+
+        const directRecipientMatches = computed(() => {
+            const q = directRecipientSearch.value.toLowerCase().trim();
+            if (!q) return [];
+            const results = [];
+            const seenParentIds = new Set();
+
+            teamParents.value.forEach(p => {
+                const name = (p.name || p.email || '').toLowerCase();
+                if (name.includes(q) && !seenParentIds.has(p.id)) {
+                    seenParentIds.add(p.id);
+                    results.push({ type: 'parent', id: p.id, label: p.name || p.email });
+                }
+            });
+
+            swimmers.value.forEach(s => {
+                const fullName = `${s.first_name || ''} ${s.last_name || ''}`.toLowerCase();
+                if (fullName.includes(q)) {
+                    (parentLinksBySwimmer.value[s.id] || []).forEach(link => {
+                        if (!seenParentIds.has(link.parentUserId)) {
+                            seenParentIds.add(link.parentUserId);
+                            results.push({ type: 'parent', id: link.parentUserId, label: `${link.name || link.email} (${s.first_name} ${s.last_name}'s parent)` });
+                        }
+                    });
+                    // Only shown if this swimmer has their own athlete account (13+, registered).
+                    // Selecting this routes into the mandatory group chat, never a private 1:1.
+                    if (s.athlete_user_id) {
+                        results.push({ type: 'athlete', id: s.id, label: `${s.first_name} ${s.last_name} (Athlete — parent auto-included)` });
+                    }
+                }
+            });
+
+            return results.slice(0, 8);
         });
 
         const filteredWorkouts = computed(() => {
@@ -2542,6 +2751,32 @@ createApp({
             localStorage.removeItem('pending_invite_role');
             await client.auth.signOut(); 
             location.reload(); 
+        }
+
+        const joinAsAthlete = ref(false);
+        const athleteSearchQuery = ref('');
+        const athleteSearchResults = ref([]);
+        const selectedAthleteSwimmerId = ref('');
+
+        async function searchForMyAthleteProfile() {
+            selectedAthleteSwimmerId.value = '';
+            const code = (joinCode.value || '').trim().toUpperCase();
+            const q = athleteSearchQuery.value.trim();
+            if (!code || q.length < 2) { athleteSearchResults.value = []; return; }
+            const { data, error } = await client.rpc('search_unclaimed_swimmers', { p_team_id: code, p_search: q });
+            if (error) { console.error(error.message); return; }
+            athleteSearchResults.value = data || [];
+        }
+
+        async function submitAthleteRegistration() {
+            if (!selectedAthleteSwimmerId.value) return;
+            const code = (joinCode.value || '').trim().toUpperCase();
+            const pwdHash = await sha256Hex(teamPassword.value);
+            const { error } = await client.rpc('join_team_as_athlete', {
+                p_team_id: code, p_password_hash: pwdHash, p_swimmer_id: selectedAthleteSwimmerId.value
+            });
+            if (error) { alert(error.message); return; }
+            location.reload();
         }
 
         async function joinTeam(preHashedPassword, roleOverride) {
@@ -2769,6 +3004,7 @@ createApp({
                 start: start.value, 
                 base: base.value,
                 visibility: workoutVisibility.value,
+                font_size: workoutFontSize.value,
                 created_by: freshUser?.id
             };
             
@@ -2794,6 +3030,7 @@ createApp({
             poolType.value = "SCY"; 
             defaultStroke.value = "free";
             workoutVisibility.value = "group";
+            workoutFontSize.value = "auto";
             start.value = "17:00"; 
             base.value = "1:30";
             input.value = "Warmup:\n\nMain Set:\n\n"; 
@@ -2808,10 +3045,49 @@ createApp({
             poolType.value = w.pool_type || "SCY"; 
             defaultStroke.value = w.default_stroke || "free";
             workoutVisibility.value = w.visibility || "group";
+            workoutFontSize.value = w.font_size || "auto";
             start.value = w.start || "17:00"; 
             base.value = w.base || "1:30";
             input.value = w.content; 
             currentView.value = 'editor'; 
+        }
+
+        // Measures the sheet's natural, unscaled content height and
+        // computes a scale that shrinks it to fit an 8.5x11 page when
+        // font size is set to Auto -- never enlarges short workouts,
+        // and never shrinks below 0.5x (a long workout past that point
+        // prints across two pages rather than becoming illegible).
+        async function printWorkoutSheet(workoutToLoad) {
+            const cameFromView = currentView.value;
+            if (workoutToLoad) loadWorkout(workoutToLoad);
+            printTarget.value = 'workout';
+            document.documentElement.style.fontSize = '';
+            await nextTick();
+
+            const sheet = document.getElementById('sheet');
+            if (workoutFontSize.value === 'auto' && sheet) {
+                // Measure at the default size first, then compute how
+                // much to grow or shrink the root font-size so the
+                // content fills (or fits within) an 8.5x11 page. Because
+                // the sheet's WIDTH is fixed (8.5in, not font-relative),
+                // growing the font makes text wrap onto more lines and
+                // use more vertical space -- it reflows within the page
+                // width rather than pushing content off the side, the
+                // way scaling the whole box would.
+                const naturalHeight = sheet.scrollHeight;
+                const targetHeight = 11 * 96; // 11in at the standard 96 CSS px/in browsers use for layout
+                const scale = Math.max(0.5, Math.min(2.5, targetHeight / naturalHeight));
+                document.documentElement.style.fontSize = (16 * scale) + 'px';
+                await nextTick();
+            } else {
+                const manualScale = workoutFontSize.value === 'small' ? 0.85 : workoutFontSize.value === 'large' ? 1.15 : 1;
+                document.documentElement.style.fontSize = (16 * manualScale) + 'px';
+                await nextTick();
+            }
+
+            window.print();
+            document.documentElement.style.fontSize = '';
+            if (workoutToLoad && cameFromView !== 'editor') currentView.value = cameFromView;
         }
 
         function discardDraft() { 
@@ -3398,12 +3674,17 @@ createApp({
         async function openMessages() {
             currentView.value = 'messages';
             await loadBroadcastHistory();
-            if (isParent.value) {
+            if (isAthlete.value) {
+                await loadDmEnabledCoaches();
+                await loadMyGroupConversations();
+            } else if (isParent.value) {
                 await loadDmEnabledCoaches();
                 await loadMyConversations();
             } else {
                 await loadTeamParents();
+                if (!swimmers.value.length) await loadSwimmers();
                 await loadConversationsList();
+                await loadCoachGroupConversations();
             }
         }
 
@@ -3599,7 +3880,7 @@ createApp({
         async function sendMessage() {
             if (!announcementBody.value.trim()) return;
             if (messageTarget.value !== 'family' && !announcementTitle.value.trim()) return;
-            if (messageTarget.value === 'family' && !messageFamilyId.value) return;
+            if (messageTarget.value === 'family' && !messageFamilyId.value && !messageAthleteSwimmerId.value) return;
 
             sendingAnnouncement.value = true;
             // Force a fresh token before any RLS-checked write here, rather
@@ -3608,6 +3889,61 @@ createApp({
             // joining/being promoted, without needing a manual re-login.
             await client.auth.refreshSession();
             const { data: { user: freshUser } } = await client.auth.getUser();
+
+            if (messageTarget.value === 'family' && messageAthleteSwimmerId.value) {
+                // Coach messaging an athlete (13+, has their own account)
+                // directly. This ALWAYS routes into the same mandatory
+                // group-chat model athletes themselves use -- there is no
+                // path here that creates a private 1:1 with just the
+                // athlete. Every linked parent is resolved and included
+                // before the conversation is created.
+                const swimmer = swimmers.value.find(s => s.id === messageAthleteSwimmerId.value);
+                const athleteUserId = swimmer?.athlete_user_id;
+                if (!athleteUserId) { sendingAnnouncement.value = false; alert("This athlete's account link couldn't be found."); return; }
+
+                const { data: parentLinks } = await client.from('parent_links').select('parent_user_id').eq('swimmer_id', messageAthleteSwimmerId.value);
+                const parentIds = [...new Set((parentLinks || []).map(l => l.parent_user_id))];
+                if (!parentIds.length) { sendingAnnouncement.value = false; alert("This athlete has no parent linked yet, so a group chat can't be started. Link a parent to this swimmer first."); return; }
+
+                const participantIds = [...new Set([freshUser?.id, athleteUserId, ...parentIds])];
+
+                const { data: existing } = await client.from('conversations').select('id, participant_ids').eq('team_id', myTeam.value).eq('is_group', true).eq('athlete_user_id', athleteUserId).eq('coach_user_id', freshUser?.id).maybeSingle();
+                let convoId = null, fullParticipantIds = participantIds;
+                if (existing) {
+                    convoId = existing.id;
+                    fullParticipantIds = existing.participant_ids || participantIds;
+                } else {
+                    const { data: created, error: createErr } = await client.from('conversations').insert({
+                        team_id: myTeam.value, is_group: true, athlete_user_id: athleteUserId, coach_user_id: freshUser?.id, participant_ids: participantIds
+                    }).select().single();
+                    if (createErr) { sendingAnnouncement.value = false; alert("Error starting group chat: " + createErr.message); return; }
+                    convoId = created.id;
+                }
+
+                let groupAttachmentUrl = null, groupAttachmentName = null;
+                if (announcementFile.value) {
+                    isUploadingAttachment.value = true;
+                    const uploaded = await uploadMessageAttachment(announcementFile.value);
+                    isUploadingAttachment.value = false;
+                    if (!uploaded) { sendingAnnouncement.value = false; return; }
+                    groupAttachmentUrl = uploaded.url;
+                    groupAttachmentName = uploaded.name;
+                }
+
+                const { error } = await client.from('conversation_messages').insert({
+                    conversation_id: convoId, team_id: myTeam.value, sender_id: freshUser?.id, sender_role: 'coach',
+                    sender_name: coachName.value || freshUser?.email || 'Coach', body: announcementBody.value.trim(),
+                    participant_ids: fullParticipantIds, attachment_url: groupAttachmentUrl, attachment_name: groupAttachmentName
+                });
+                sendingAnnouncement.value = false;
+                if (error) { alert("Error sending message: " + error.message); return; }
+                announcementBody.value = '';
+                announcementFile.value = null;
+                messageAthleteSwimmerId.value = '';
+                directRecipientSearch.value = '';
+                loadCoachGroupConversations();
+                return;
+            }
 
             if (messageTarget.value === 'family') {
                 // Find or create THIS COACH's own conversation with that
@@ -3689,13 +4025,15 @@ createApp({
         async function computeEligibleParentIds(groupNames) {
             if (!groupNames || !groupNames.length) {
                 const { data } = await client.rpc('get_team_members', { p_team_id: myTeam.value });
-                return (data || []).filter(m => m.role === 'parent').map(m => m.id);
+                return (data || []).filter(m => m.role === 'parent' || m.role === 'athlete').map(m => m.id);
             }
-            const { data: swimmersInGroups } = await client.from('swimmers').select('id').eq('team_id', myTeam.value).in('group_name', groupNames);
+            const { data: swimmersInGroups } = await client.from('swimmers').select('id, athlete_user_id').eq('team_id', myTeam.value).in('group_name', groupNames);
             const swimmerIds = (swimmersInGroups || []).map(s => s.id);
-            if (!swimmerIds.length) return [];
+            const athleteIds = (swimmersInGroups || []).map(s => s.athlete_user_id).filter(Boolean);
+            if (!swimmerIds.length) return athleteIds;
             const { data: links } = await client.from('parent_links').select('parent_user_id').in('swimmer_id', swimmerIds);
-            return [...new Set((links || []).map(l => l.parent_user_id))];
+            const parentIds = (links || []).map(l => l.parent_user_id);
+            return [...new Set([...parentIds, ...athleteIds])];
         }
 
         // Classifies an attachment by extension so it can be shown as an
@@ -3870,6 +4208,138 @@ createApp({
             await loadMyConversations();
             const fullConvo = myConversations.value.find(c => c.id === convo.id) || convo;
             openParentConversationThread(fullConvo);
+        }
+
+        // ============================================================
+        // ATHLETE GROUP CHAT -- the mandatory-parent-included messaging
+        // path for the 'athlete' role. There is no function anywhere in
+        // this file that lets an athlete create or send into a
+        // conversation without every one of their linked parents also
+        // being a participant -- startGroupChatWithCoach() always
+        // resolves and includes them, and the RLS policies (see
+        // schema) only allow group-conversation access to users listed
+        // in participant_ids, which always includes the parent(s).
+        // ============================================================
+        const myGroupConversations = ref([]);
+        const openGroupConvoId = ref(null);
+        const groupConversationThread = ref([]);
+
+        async function loadMyGroupConversations() {
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const { data: convos } = await client.from('conversations').select('*').eq('team_id', myTeam.value).eq('is_group', true).eq('athlete_user_id', freshUser?.id).order('updated_at', { ascending: false });
+            const list = convos || [];
+            const { data: allMembers } = await client.rpc('get_team_members', { p_team_id: myTeam.value });
+            myGroupConversations.value = list.map(c => {
+                const coach = (allMembers || []).find(m => m.id === c.coach_user_id);
+                return { ...c, coachName: coach ? (coach.name || coach.email) : 'Coach' };
+            });
+        }
+
+        // Coach-side: their own group chats with athletes (each one
+        // always includes that athlete's linked parent(s) as well).
+        const coachGroupConversations = ref([]);
+        async function loadCoachGroupConversations() {
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const { data: convos } = await client.from('conversations').select('*').eq('team_id', myTeam.value).eq('is_group', true).eq('coach_user_id', freshUser?.id).order('updated_at', { ascending: false });
+            const list = convos || [];
+            const { data: allMembers } = await client.rpc('get_team_members', { p_team_id: myTeam.value });
+            coachGroupConversations.value = list.map(c => {
+                const athlete = (allMembers || []).find(m => m.id === c.athlete_user_id);
+                return { ...c, athleteName: athlete ? (athlete.name || athlete.email) : 'Athlete' };
+            });
+        }
+
+        async function startGroupChatWithCoach() {
+            if (!selectedCoachForNewConvo.value) return;
+            await client.auth.refreshSession();
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const coachId = selectedCoachForNewConvo.value;
+
+            // Always resolve every linked parent -- this is the actual
+            // safety mechanism, not just a UI convention. A group
+            // conversation with no parent participants is never created.
+            const myOwnSwimmer = myLinkedSwimmers.value[0];
+            if (!myOwnSwimmer) { alert("Your athlete profile isn't linked to a swimmer record yet -- ask your coach to check your account."); return; }
+            const { data: parentLinks } = await client.from('parent_links').select('parent_user_id').eq('swimmer_id', myOwnSwimmer.id);
+            const parentIds = [...new Set((parentLinks || []).map(l => l.parent_user_id))];
+            if (!parentIds.length) { alert("No parent is linked to your athlete profile yet, so a group chat can't be started. Ask your coach to link a parent account first."); return; }
+
+            const participantIds = [...new Set([freshUser?.id, coachId, ...parentIds])];
+
+            const { data: existing } = await client.from('conversations').select('*').eq('team_id', myTeam.value).eq('is_group', true).eq('athlete_user_id', freshUser?.id).eq('coach_user_id', coachId).maybeSingle();
+            let convo = existing;
+            if (!convo) {
+                const { data: created, error } = await client.from('conversations').insert({
+                    team_id: myTeam.value, is_group: true, athlete_user_id: freshUser?.id, coach_user_id: coachId, participant_ids: participantIds
+                }).select().single();
+                if (error) { alert("Error starting group chat: " + error.message); return; }
+                convo = created;
+            }
+            selectedCoachForNewConvo.value = '';
+            await loadMyGroupConversations();
+            const fullConvo = myGroupConversations.value.find(c => c.id === convo.id) || convo;
+            openGroupConversationThread(fullConvo);
+        }
+
+        async function openGroupConversationThread(convo) {
+            openGroupConvoId.value = convo.id;
+            const { data } = await client.from('conversation_messages').select('*').eq('conversation_id', convo.id).order('created_at', { ascending: true });
+            groupConversationThread.value = data || [];
+            subscribeToGroupConversation(convo.id);
+        }
+
+        function closeGroupConversation() {
+            openGroupConvoId.value = null;
+            unsubscribeFromConversation();
+        }
+
+        async function sendGroupMessage() {
+            if (!conversationReply.value.trim() && !conversationReplyFile.value) return;
+            await client.auth.refreshSession();
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const convo = myGroupConversations.value.find(c => c.id === openGroupConvoId.value) || coachGroupConversations.value.find(c => c.id === openGroupConvoId.value);
+            if (!convo || !convo.participant_ids) return;
+
+            const bodyToSend = conversationReply.value.trim();
+            conversationReply.value = '';
+
+            let replyAttachmentUrl = null, replyAttachmentName = null;
+            if (conversationReplyFile.value) {
+                const uploaded = await uploadMessageAttachment(conversationReplyFile.value);
+                if (!uploaded) return;
+                replyAttachmentUrl = uploaded.url;
+                replyAttachmentName = uploaded.name;
+            }
+            conversationReplyFile.value = null;
+
+            const senderRole = isAthlete.value ? 'athlete' : (isParent.value ? 'parent' : 'coach');
+            const senderDisplayName = coachName.value || user.value?.email || 'Someone';
+
+            const { data: inserted, error } = await client.from('conversation_messages').insert({
+                conversation_id: convo.id, team_id: myTeam.value, sender_id: freshUser?.id, sender_role: senderRole,
+                sender_name: senderDisplayName, body: bodyToSend, participant_ids: convo.participant_ids,
+                attachment_url: replyAttachmentUrl, attachment_name: replyAttachmentName
+            }).select().single();
+            if (error) { alert("Error sending message: " + error.message); conversationReply.value = bodyToSend; return; }
+
+            if (!groupConversationThread.value.some(m => m.id === inserted.id)) {
+                groupConversationThread.value = [...groupConversationThread.value, inserted];
+            }
+        }
+
+        let groupConversationRealtimeChannel = null;
+
+        function subscribeToGroupConversation(conversationId) {
+            unsubscribeFromConversation();
+            if (!conversationId) return;
+            groupConversationRealtimeChannel = client
+                .channel(`group-conversation-${conversationId}`)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversation_messages', filter: `conversation_id=eq.${conversationId}` }, (payload) => {
+                    if (!groupConversationThread.value.some(m => m.id === payload.new.id)) {
+                        groupConversationThread.value = [...groupConversationThread.value, payload.new];
+                    }
+                })
+                .subscribe();
         }
 
         async function sendConversationReply() {
@@ -4420,13 +4890,30 @@ createApp({
         // ============================================================
         async function loadMyLinkedSwimmers() {
             const { data: { user: freshUser } } = await client.auth.getUser();
-            const { data: links } = await client.from("parent_links").select("swimmer_id").eq('parent_user_id', freshUser?.id);
-            const ids = (links || []).map(l => l.swimmer_id);
-            if(!ids.length) { myLinkedSwimmers.value = []; return; }
-            const { data } = await client.from("swimmers").select("*").in('id', ids);
-            myLinkedSwimmers.value = data || [];
-            loadSeasons();
-            loadMyLinkedSwimmerAttendance();
+            let ids = [];
+            if (isAthlete.value) {
+                const { data: own } = await client.from("swimmers").select("id").eq('athlete_user_id', freshUser?.id).maybeSingle();
+                if (own) ids = [own.id];
+            } else {
+                const { data: links } = await client.from("parent_links").select("swimmer_id").eq('parent_user_id', freshUser?.id);
+                ids = (links || []).map(l => l.swimmer_id);
+            }
+            if (ids.length) {
+                const { data } = await client.from("swimmers").select("*").in('id', ids);
+                myLinkedSwimmers.value = data || [];
+                loadSeasons();
+                loadMyLinkedSwimmerAttendance();
+            } else {
+                myLinkedSwimmers.value = [];
+            }
+            loadPublicWorkouts();
+        }
+
+        const publicWorkouts = ref([]);
+        async function loadPublicWorkouts() {
+            const { data, error } = await client.from('workouts').select('*').eq('team_id', myTeam.value).eq('visibility', 'public').order('practice_date', { ascending: false }).limit(20);
+            if (error) { console.error(error.message); return; }
+            publicWorkouts.value = data || [];
         }
 
         async function loadMyLinkedSwimmerAttendance() {
@@ -4712,7 +5199,7 @@ createApp({
                     if(!myTeam.value && currentView.value !== 'onboarding') currentView.value = 'onboarding';
                     else if (myTeam.value && currentView.value === 'onboarding') { 
                         loadTeamSettings(); loadGroups(); loadTeamLayout();
-                        if (isParent.value) { currentView.value = 'parent-home'; loadMyLinkedSwimmers(); loadMeets(); loadCalendarEvents(); }
+                        if (isParent.value || isAthlete.value) { currentView.value = 'parent-home'; loadMyLinkedSwimmers(); loadMeets(); loadCalendarEvents(); }
                         else if (isOffice.value) { currentView.value = 'roster'; loadSwimmers(); }
                         else { currentView.value = 'dashboard'; loadWorkouts(); loadSeasonPlans(); loadMyAssignedGroups(); }
                     }
@@ -5207,7 +5694,7 @@ createApp({
             user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, drawerRef, printTarget, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
             hasPendingInvite, isProcessingInvite, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors, themeMode, themePreference, setThemePreference,
-            title, group, poolType, defaultStroke, workoutVisibility, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
+            title, group, poolType, defaultStroke, workoutVisibility, workoutFontSize, printWorkoutSheet, publicWorkouts, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
             seasonPlans, activePlanContext, teamGroupsList, staffList, planForm, newGroupName, myRole, myTeam,
             filterGroup, workoutsTab, pastRangeStart, pastRangeEnd, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
             formatTime, formattedStartTime, save, loadWorkout, startNewWorkout, formatPracticeDate, startNewPlan, editPlan, addWeek, savePlan, deletePlan, deleteWorkout,
@@ -5220,7 +5707,10 @@ createApp({
             selectedGroupSystems, addEnergySystem, removeEnergySystem, saveGroupSystems, calculateWeekTotal, seasonPlanTab,
             addAlias, removeAlias, saveGroupAliases, editorSystemTotals,
             selectedGroupForEdit, openGroupDetails, dragStart, drop, draggedGroupIndex, importSourceGroup, importSystemsAndAliases,
-            isParent, isOffice, secToTime,
+            isParent, isOffice, isAthlete, secToTime,
+            joinAsAthlete, athleteSearchQuery, athleteSearchResults, selectedAthleteSwimmerId, searchForMyAthleteProfile, submitAthleteRegistration,
+            myGroupConversations, openGroupConvoId, groupConversationThread, loadMyGroupConversations, startGroupChatWithCoach, openGroupConversationThread, closeGroupConversation, sendGroupMessage,
+            messageAthleteSwimmerId, coachGroupConversations, loadCoachGroupConversations,
             accountsList, accountSearchQuery, filteredAccounts, loadAccounts, promoteToCoach, promoteToOffice, demoteToParent,
             familyAccountsMap, expandedAccountId, accountSwimmersMap, swimmerToAddId, loadFamilyAccounts, toggleAccountExpand,
             unlinkedSwimmersFor, saveFamilyAccount, updateSwimmerDetails, addSwimmerToAccount, removeSwimmerFromAccount,
@@ -5228,7 +5718,7 @@ createApp({
             teamModules, layoutDraft, draggedLayoutIndex, openLayoutEditor, toggleLayoutModule, layoutDragStart, layoutDrop, saveLayout,
             pushSupported, pushSubscribed, notificationPrefs, myNotificationTypes, enablePushNotifications, disablePushNotifications, toggleNotificationPref, openSettings,
             announcementGroups, announcementFile, isUploadingAttachment, announcementTitle, announcementBody, sendingAnnouncement, sendMessage, openMessages, attachmentType,
-            messageTarget, messageFamilyId, broadcastHistory, conversationsList, openConversationId, conversationThread, conversationReply, conversationReplyFile,
+            messageTarget, messageFamilyId, directRecipientSearch, directRecipientMatches, broadcastHistory, conversationsList, openConversationId, conversationThread, conversationReply, conversationReplyFile,
             openConversationThread, sendConversationReply, unsubscribeFromConversation, unsubscribeFromAnnouncements,
             dmEnabledCoaches, myConversations, openParentConvoId, selectedCoachForNewConvo, loadDmEnabledCoaches, loadMyConversations, openParentConversationThread, closeParentConversation, startConversationWithCoach,
             coachGroupLinksMap, myAssignedGroups, toggleCoachGroup,
