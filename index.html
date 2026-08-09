@@ -19,7 +19,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -237,6 +237,8 @@
             </div>
             <div v-else class="flex items-center gap-2 sm:gap-4 shrink-0">
                 <span class="text-sm font-bold text-slate-600 bg-slate-100 px-4 py-2 rounded-full border border-slate-200">{{coachName}}</span>
+                <button @click="switchAccount" title="Switch Google account" class="text-xs font-bold text-slate-400 hover:text-blue-500 transition-colors whitespace-nowrap"><span class="hidden sm:inline">SWITCH</span><span class="sm:hidden">⇄</span></button>
+                <button @click="logout" class="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors whitespace-nowrap">LOGOUT</button>
             </div>
         </div>
 
@@ -285,6 +287,10 @@
                     <span class="text-lg w-6 text-center shrink-0">📅</span>
                     <span class="font-black uppercase tracking-widest text-xs">Calendar</span>
                 </button>
+                <button @click="currentView = 'registration'; mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'registration' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'registration' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">📝</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Registration</span>
+                </button>
                 </template>
                 <template v-else>
                 <button v-for="m in navModules" :key="m.key" @click="selectModule(m.key); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="isModuleActive(m.key) ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="isModuleActive(m.key) ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
@@ -312,6 +318,22 @@
 
         <div :key="currentView" class="page-transition max-w-[1200px] mx-auto p-4 md:p-6 mt-6 relative">
             
+            <div v-if="showQRCode" @click.self="closeQRCode" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl">
+                    <div class="p-6 flex justify-between items-center text-white" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
+                        <div>
+                            <h3 class="font-black text-lg leading-tight">Join {{myTeam}}</h3>
+                            <p class="text-[10px] text-white/80 uppercase tracking-widest mt-1">Scan to sign up as a parent</p>
+                        </div>
+                        <button @click="closeQRCode" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0">X</button>
+                    </div>
+                    <div class="p-6 flex flex-col items-center gap-3">
+                        <img :src="qrCodeDataUrl" alt="Invite QR code" class="rounded-2xl border border-slate-200">
+                        <p class="text-xs text-slate-400 font-bold text-center">Anyone who scans this and signs in with Google joins your team automatically as a parent — great to post at the pool or share in a team group chat.</p>
+                    </div>
+                </div>
+            </div>
+
             <div v-if="showAiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 transition-opacity">
                 <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col scale-100 transition-transform">
                     <div class="p-6 flex justify-between items-center text-white" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
@@ -353,6 +375,20 @@
                     <input v-model="newTeamId" placeholder="New Team Code" class="w-full bg-white/10 border border-white/20 p-4 rounded-2xl font-black text-white placeholder-blue-100/70 uppercase text-center text-lg tracking-widest mb-4 outline-none focus:bg-white/20 focus:border-white/50 transition-all backdrop-blur-sm">
                     <input v-model="newTeamPassword" type="password" placeholder="Create Password" class="w-full bg-white/10 border border-white/20 p-4 rounded-2xl font-black text-white placeholder-blue-100/70 text-center text-lg tracking-widest mb-8 outline-none focus:bg-white/20 focus:border-white/50 transition-all backdrop-blur-sm">
                     <button @click="createTeam" class="bg-white text-blue-600 font-black py-5 rounded-2xl shadow-lg hover:scale-[1.02] hover:shadow-xl transition-all duration-300 uppercase tracking-widest text-sm">Launch Vault</button>
+                </div>
+            </div>
+
+            <div v-if="currentView === 'registration' && isOffice" class="max-w-xl mx-auto space-y-6 mt-6">
+                <div class="border-b border-slate-200 pb-6">
+                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Registration</h2>
+                    <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Sign up new families</p>
+                </div>
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 text-center space-y-4">
+                    <p class="text-sm text-slate-500 font-medium max-w-sm mx-auto">Generate a QR code that signs a family up for {{myTeam}} automatically as a parent — hand someone your phone, or display it on a screen at check-in.</p>
+                    <button @click="showInviteQRCode" class="bg-slate-900 text-white px-8 py-4 rounded-xl font-black shadow-lg hover:bg-black transition-colors uppercase tracking-widest text-xs inline-flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-4v-4m8 0h2m-2 0h-2M4 12H2m2 0h2M9 4H4a1 1 0 00-1 1v4m6-5h6a1 1 0 011 1v4m-7 6v5m0 0H4a1 1 0 01-1-1v-5m0 0h5m6 0h6m0 0v5a1 1 0 01-1 1h-5"></path></svg>
+                        Show QR Code
+                    </button>
                 </div>
             </div>
 
@@ -853,22 +889,6 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                             Copy Coach Invite Link
                         </button>
-                    </div>
-                </div>
-
-                <div v-if="showQRCode" @click.self="closeQRCode" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                    <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl">
-                        <div class="p-6 flex justify-between items-center text-white" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
-                            <div>
-                                <h3 class="font-black text-lg leading-tight">Join {{myTeam}}</h3>
-                                <p class="text-[10px] text-white/80 uppercase tracking-widest mt-1">Scan to sign up as a parent</p>
-                            </div>
-                            <button @click="closeQRCode" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0">X</button>
-                        </div>
-                        <div class="p-6 flex flex-col items-center gap-3">
-                            <img :src="qrCodeDataUrl" alt="Invite QR code" class="rounded-2xl border border-slate-200">
-                            <p class="text-xs text-slate-400 font-bold text-center">Anyone who scans this and signs in with Google joins your team automatically as a parent — great to post at the pool or share in a team group chat.</p>
-                        </div>
                     </div>
                 </div>
 
