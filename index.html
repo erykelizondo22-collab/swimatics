@@ -3402,16 +3402,23 @@ createApp({
                 ? freshUser?.id
                 : conversationsList.value.find(c => c.id === openConversationId.value)?.parent_user_id;
 
-            const { error } = await client.from('conversation_messages').insert({
-                conversation_id: convoId, team_id: myTeam.value, sender_id: freshUser?.id,
-                sender_role: isParent.value ? 'parent' : 'coach', body: conversationReply.value.trim(),
-                parent_user_id: parentUserIdForMessage
-            });
-            if (error) { alert("Error sending message: " + error.message); return; }
+            const bodyToSend = conversationReply.value.trim();
             conversationReply.value = '';
-            // The realtime subscription above will pick up this same
-            // insert and add it to the thread -- no manual reload needed,
-            // it's already guarded against double-adding the same message.
+
+            const { data: inserted, error } = await client.from('conversation_messages').insert({
+                conversation_id: convoId, team_id: myTeam.value, sender_id: freshUser?.id,
+                sender_role: isParent.value ? 'parent' : 'coach', body: bodyToSend,
+                parent_user_id: parentUserIdForMessage
+            }).select().single();
+            if (error) { alert("Error sending message: " + error.message); conversationReply.value = bodyToSend; return; }
+
+            // Show it immediately rather than waiting on the realtime
+            // round-trip -- the realtime handler is guarded against
+            // double-adding, so this is safe even if that event also
+            // arrives moments later.
+            if (!conversationThread.value.some(m => m.id === inserted.id)) {
+                conversationThread.value = [...conversationThread.value, inserted];
+            }
         }
 
         // ============================================================
