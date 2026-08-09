@@ -298,6 +298,10 @@
                     <span class="text-lg w-6 text-center shrink-0">📝</span>
                     <span class="font-black uppercase tracking-widest text-xs">Registration</span>
                 </button>
+                <button @click="currentView = 'accounts'; loadStaff(); loadFamilyAccounts(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'accounts' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'accounts' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">👪</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Accounts</span>
+                </button>
                 </template>
                 <template v-else>
                 <button v-for="m in navModules" :key="m.key" @click="selectModule(m.key); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="isModuleActive(m.key) ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="isModuleActive(m.key) ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
@@ -325,6 +329,45 @@
 
         <div :key="currentView" class="page-transition max-w-[1200px] mx-auto p-4 md:p-6 mt-6 relative">
             
+            <div v-if="showSwimmerProfileFor" @click.self="closeSwimmerProfile" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+                    <div class="p-6 flex justify-between items-start text-white shrink-0" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
+                        <div>
+                            <h3 class="font-black text-2xl leading-tight">{{showSwimmerProfileFor.first_name}} {{showSwimmerProfileFor.last_name}}</h3>
+                            <p class="text-[10px] text-white/80 uppercase tracking-widest mt-1">{{showSwimmerProfileFor.group_name || 'No Group'}}</p>
+                        </div>
+                        <button @click="closeSwimmerProfile" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0">X</button>
+                    </div>
+                    <div class="p-6 space-y-5 overflow-y-auto">
+                        <div v-if="paymentStatusForSwimmer(showSwimmerProfileFor.id)">
+                            <span v-if="paymentStatusForSwimmer(showSwimmerProfileFor.id) === 'good'" class="text-[10px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-1.5 rounded-full">In Good Standing</span>
+                            <span v-else class="text-[10px] font-black uppercase bg-red-50 text-red-500 border border-red-100 px-3 py-1.5 rounded-full">Balance Due</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Group</div>
+                                <div class="font-bold text-slate-800 text-sm mt-0.5">{{showSwimmerProfileFor.group_name || '—'}}</div>
+                            </div>
+                            <div>
+                                <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Birthday</div>
+                                <div class="font-bold text-slate-800 text-sm mt-0.5">{{showSwimmerProfileFor.birthdate || '—'}}</div>
+                            </div>
+                            <div class="col-span-2">
+                                <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest">USA Swimming #</div>
+                                <div class="font-bold text-slate-800 text-sm mt-0.5">{{showSwimmerProfileFor.usa_swimming_number || '—'}}</div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Parent(s) On This Account</div>
+                            <div class="space-y-1.5">
+                                <div v-for="p in (parentLinksBySwimmer[showSwimmerProfileFor.id] || [])" :key="p.linkId" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-700">{{p.name || p.email}}</div>
+                                <div v-if="!(parentLinksBySwimmer[showSwimmerProfileFor.id] || []).length" class="text-xs text-slate-400 font-bold">No parent linked yet</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div v-if="showQRCode" @click.self="closeQRCode" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                 <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl">
                     <div class="p-6 flex justify-between items-center text-white" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
@@ -999,14 +1042,81 @@
                 </div>
 
                 <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
-                    <div v-for="acc in filteredAccounts" :key="acc.id" class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div>
-                            <div class="font-black uppercase text-slate-800">{{acc.name || acc.email}}</div>
-                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 bg-slate-50 inline-block px-2 py-0.5 rounded border border-slate-200">{{acc.role}}</div>
+                    <div v-for="acc in filteredAccounts" :key="acc.id">
+                        <div @click="toggleAccountExpand(acc)" class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-slate-50 transition-colors">
+                            <div>
+                                <div class="font-black uppercase text-slate-800">{{acc.name || acc.email}}</div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 inline-block px-2 py-0.5 rounded border border-slate-200">{{acc.role}}</span>
+                                    <span v-if="paymentStatusForAccount(acc.id) === 'good'" class="text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full">In Good Standing</span>
+                                    <span v-else-if="paymentStatusForAccount(acc.id) === 'due'" class="text-[9px] font-black uppercase bg-red-50 text-red-500 border border-red-100 px-2 py-0.5 rounded-full">Balance Due</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <template v-if="acc.id !== user.id && (myRole === 'owner' || myRole === 'admin')">
+                                    <button @click.stop="promoteToCoach(acc.id, acc.name || acc.email)" class="text-[10px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-2 rounded-lg hover:bg-emerald-100 transition-colors">Promote to Coach</button>
+                                    <button @click.stop="promoteToOffice(acc.id, acc.name || acc.email)" class="text-[10px] font-black uppercase bg-blue-50 text-blue-600 border border-blue-100 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors">Promote to Office</button>
+                                </template>
+                                <span class="text-slate-300 text-lg shrink-0" :class="{'rotate-180': expandedAccountId === acc.id}">▾</span>
+                            </div>
                         </div>
-                        <div v-if="acc.id !== user.id" class="flex gap-2">
-                            <button @click="promoteToCoach(acc.id, acc.name || acc.email)" class="text-[10px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-2 rounded-lg hover:bg-emerald-100 transition-colors">Promote to Coach</button>
-                            <button @click="promoteToOffice(acc.id, acc.name || acc.email)" class="text-[10px] font-black uppercase bg-blue-50 text-blue-600 border border-blue-100 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors">Promote to Office</button>
+
+                        <div v-if="expandedAccountId === acc.id" class="p-5 pt-0 space-y-5 bg-slate-50/50">
+                            <div>
+                                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Swimmers On This Account</h4>
+                                <div class="space-y-2">
+                                    <div v-for="s in (accountSwimmersMap[acc.id] || [])" :key="s.id" class="bg-white p-4 rounded-xl border border-slate-200 flex flex-wrap items-end gap-3">
+                                        <div class="font-black text-slate-800 text-sm w-full sm:w-auto sm:min-w-[140px]">{{s.first_name}} {{s.last_name}}</div>
+                                        <div>
+                                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Birthday</label>
+                                            <input type="date" v-model="s.birthdate" @change="updateSwimmerDetails(s)" class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
+                                        </div>
+                                        <div>
+                                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">USA Swimming #</label>
+                                            <input v-model="s.usa_swimming_number" @change="updateSwimmerDetails(s)" placeholder="e.g. 12345ABCDE" class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
+                                        </div>
+                                        <button @click="removeSwimmerFromAccount(acc.id, s.id)" class="text-[9px] font-black uppercase text-red-500 bg-red-50 border border-red-100 px-3 py-2 rounded-lg ml-auto">Remove</button>
+                                    </div>
+                                    <div v-if="!(accountSwimmersMap[acc.id] || []).length" class="text-xs text-slate-400 font-bold px-1">No swimmers linked yet</div>
+                                </div>
+                                <div class="flex gap-2 mt-3">
+                                    <select v-model="swimmerToAddId" class="flex-1 bg-white border border-slate-200 p-2.5 rounded-lg text-xs font-bold outline-none">
+                                        <option value="" disabled>Add a swimmer...</option>
+                                        <option v-for="s in unlinkedSwimmersFor(acc.id)" :key="s.id" :value="s.id">{{s.first_name}} {{s.last_name}}</option>
+                                    </select>
+                                    <button @click="addSwimmerToAccount(acc.id)" class="bg-slate-900 text-white px-4 rounded-lg font-black uppercase text-[10px] tracking-widest">Add</button>
+                                </div>
+                            </div>
+
+                            <div v-if="familyAccountsMap[acc.id]">
+                                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Account Details</h4>
+                                <div class="bg-white p-4 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Emergency Contact Name</label>
+                                        <input v-model="familyAccountsMap[acc.id].emergency_contact_name" @change="saveFamilyAccount(acc.id)" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-xs font-bold outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Emergency Contact Phone</label>
+                                        <input v-model="familyAccountsMap[acc.id].emergency_contact_phone" @change="saveFamilyAccount(acc.id)" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-xs font-bold outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Phone</label>
+                                        <input v-model="familyAccountsMap[acc.id].phone" @change="saveFamilyAccount(acc.id)" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-xs font-bold outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Contact Email</label>
+                                        <input v-model="familyAccountsMap[acc.id].contact_email" @change="saveFamilyAccount(acc.id)" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-xs font-bold outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Registration Date</label>
+                                        <input type="date" v-model="familyAccountsMap[acc.id].registration_date" @change="saveFamilyAccount(acc.id)" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-xs font-bold outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Paid Until</label>
+                                        <input type="date" v-model="familyAccountsMap[acc.id].paid_until" @change="saveFamilyAccount(acc.id)" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-xs font-bold outline-none">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div v-if="!filteredAccounts.length" class="p-12 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No matching accounts</div>
@@ -1155,7 +1265,11 @@
                     <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
                         <div v-for="s in grp.swimmers" :key="s.id" class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
-                                <div class="font-black text-slate-900 uppercase">{{s.first_name}} {{s.last_name}}</div>
+                                <div class="flex items-center gap-2">
+                                    <button @click="openSwimmerProfile(s)" class="font-black text-slate-900 uppercase hover:text-blue-600 hover:underline transition-colors text-left">{{s.first_name}} {{s.last_name}}</button>
+                                    <span v-if="paymentStatusForSwimmer(s.id) === 'good'" class="text-[8px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full">In Good Standing</span>
+                                    <span v-else-if="paymentStatusForSwimmer(s.id) === 'due'" class="text-[8px] font-black uppercase bg-red-50 text-red-500 border border-red-100 px-2 py-0.5 rounded-full">Balance Due</span>
+                                </div>
                                 <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1"><span v-if="s.birthdate">{{s.birthdate}}</span></div>
                                 <div class="flex flex-wrap gap-1 mt-2">
                                     <span v-for="p in (parentLinksBySwimmer[s.id] || [])" :key="p.linkId" class="bg-blue-50 text-blue-700 text-[9px] font-bold px-2 py-1 rounded-md border border-blue-100">{{p.name || p.email}} <button @click="unlinkParent(p.linkId)" class="ml-1 text-blue-300 hover:text-red-500">×</button></span>
@@ -1182,7 +1296,11 @@
                     <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
                         <div v-for="s in swimmersByGroup.unassigned" :key="s.id" class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
-                                <div class="font-black text-slate-900 uppercase">{{s.first_name}} {{s.last_name}}</div>
+                                <div class="flex items-center gap-2">
+                                    <button @click="openSwimmerProfile(s)" class="font-black text-slate-900 uppercase hover:text-blue-600 hover:underline transition-colors text-left">{{s.first_name}} {{s.last_name}}</button>
+                                    <span v-if="paymentStatusForSwimmer(s.id) === 'good'" class="text-[8px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full">In Good Standing</span>
+                                    <span v-else-if="paymentStatusForSwimmer(s.id) === 'due'" class="text-[8px] font-black uppercase bg-red-50 text-red-500 border border-red-100 px-2 py-0.5 rounded-full">Balance Due</span>
+                                </div>
                                 <div class="flex flex-wrap gap-1 mt-2">
                                     <span v-for="p in (parentLinksBySwimmer[s.id] || [])" :key="p.linkId" class="bg-blue-50 text-blue-700 text-[9px] font-bold px-2 py-1 rounded-md border border-blue-100">{{p.name || p.email}} <button @click="unlinkParent(p.linkId)" class="ml-1 text-blue-300 hover:text-red-500">×</button></span>
                                 </div>
@@ -1912,6 +2030,10 @@ createApp({
         const newSwimmer = ref({ first_name: '', last_name: '', birthdate: '', group_name: '' });
         const teamParents = ref([]); // team members with role 'parent'
         const accountsList = ref([]);
+        const familyAccountsMap = ref({}); // parent_user_id -> family_accounts row
+        const expandedAccountId = ref(null);
+        const accountSwimmersMap = ref({}); // parent_user_id -> [swimmer objects]
+        const swimmerToAddId = ref('');
 
         // LAYOUT CUSTOMIZATION
         const ALL_TOGGLEABLE_MODULES = [
@@ -1944,6 +2066,7 @@ createApp({
         const selectedCalendarDay = ref(null);
         const accountSearchQuery = ref('');
         const parentLinksBySwimmer = ref({}); // { swimmerId: [{linkId, parentUserId, name, email}] }
+        const showSwimmerProfileFor = ref(null);
 
         // ATTENDANCE
         const attendanceDate = ref((() => {
@@ -2881,6 +3004,115 @@ createApp({
             accountsList.value = data || [];
         }
 
+        // ============================================================
+        // FAMILY ACCOUNT DETAILS -- emergency contact, phone/email,
+        // registration date, and a plain "paid until" date (no
+        // automatic overdue/red styling -- payments aren't live yet,
+        // this is just a record office staff can keep updated by hand).
+        // ============================================================
+        async function loadFamilyAccounts() {
+            const { data } = await client.from('family_accounts').select('*').eq('team_id', myTeam.value);
+            const map = {};
+            (data || []).forEach(row => { map[row.parent_user_id] = row; });
+            familyAccountsMap.value = map;
+        }
+
+        async function toggleAccountExpand(acc) {
+            if (expandedAccountId.value === acc.id) { expandedAccountId.value = null; return; }
+            expandedAccountId.value = acc.id;
+            if (!swimmers.value.length) await loadSwimmers();
+            await loadAccountSwimmers(acc.id);
+            if (!familyAccountsMap.value[acc.id]) {
+                familyAccountsMap.value = { ...familyAccountsMap.value, [acc.id]: {
+                    parent_user_id: acc.id, team_id: myTeam.value,
+                    emergency_contact_name: '', emergency_contact_phone: '',
+                    phone: '', contact_email: '', registration_date: '', paid_until: ''
+                }};
+            }
+        }
+
+        async function loadAccountSwimmers(parentUserId) {
+            const { data: links } = await client.from('parent_links').select('swimmer_id').eq('parent_user_id', parentUserId);
+            const swimmerIds = (links || []).map(l => l.swimmer_id);
+            if (!swimmerIds.length) { accountSwimmersMap.value = { ...accountSwimmersMap.value, [parentUserId]: [] }; return; }
+            const { data } = await client.from('swimmers').select('*').in('id', swimmerIds);
+            accountSwimmersMap.value = { ...accountSwimmersMap.value, [parentUserId]: data || [] };
+        }
+
+        function unlinkedSwimmersFor(parentUserId) {
+            const linkedIds = new Set((accountSwimmersMap.value[parentUserId] || []).map(s => s.id));
+            return swimmers.value.filter(s => !linkedIds.has(s.id));
+        }
+
+        async function saveFamilyAccount(parentUserId) {
+            const fa = familyAccountsMap.value[parentUserId];
+            const { error } = await client.from('family_accounts').upsert({
+                team_id: myTeam.value,
+                parent_user_id: parentUserId,
+                emergency_contact_name: fa.emergency_contact_name || null,
+                emergency_contact_phone: fa.emergency_contact_phone || null,
+                phone: fa.phone || null,
+                contact_email: fa.contact_email || null,
+                registration_date: fa.registration_date || null,
+                paid_until: fa.paid_until || null
+            }, { onConflict: 'team_id,parent_user_id' });
+            if (error) alert("Error saving account details: " + error.message);
+        }
+
+        async function updateSwimmerDetails(swimmer) {
+            const { error } = await client.from('swimmers').update({
+                birthdate: swimmer.birthdate || null,
+                usa_swimming_number: swimmer.usa_swimming_number || null
+            }).eq('id', swimmer.id);
+            if (error) alert("Error saving swimmer details: " + error.message);
+        }
+
+        async function addSwimmerToAccount(parentUserId) {
+            if (!swimmerToAddId.value) return;
+            const { error } = await client.from('parent_links').insert({ parent_user_id: parentUserId, swimmer_id: swimmerToAddId.value });
+            if (error) { alert("Error linking swimmer: " + error.message); return; }
+            swimmerToAddId.value = '';
+            loadAccountSwimmers(parentUserId);
+        }
+
+        async function removeSwimmerFromAccount(parentUserId, swimmerId) {
+            if (!confirm("Remove this swimmer from the account? This doesn't delete the swimmer, just unlinks them from this family.")) return;
+            const { error } = await client.from('parent_links').delete().eq('parent_user_id', parentUserId).eq('swimmer_id', swimmerId);
+            if (error) { alert("Error unlinking swimmer: " + error.message); return; }
+            loadAccountSwimmers(parentUserId);
+        }
+
+        // "In Good Standing" (green) vs "Balance Due" (red) -- based on
+        // whichever linked family has a paid_until date set. A swimmer
+        // with no linked family, or a family with no paid_until entered
+        // yet, shows no badge at all rather than defaulting to either
+        // color -- there's nothing to judge yet.
+        function paymentStatusForSwimmer(swimmerId) {
+            const links = parentLinksBySwimmer.value[swimmerId] || [];
+            for (const link of links) {
+                const fa = familyAccountsMap.value[link.parentUserId];
+                if (fa && fa.paid_until) {
+                    return fa.paid_until >= getLocalTodayStr() ? 'good' : 'due';
+                }
+            }
+            return null;
+        }
+
+        function paymentStatusForAccount(parentUserId) {
+            const fa = familyAccountsMap.value[parentUserId];
+            if (!fa || !fa.paid_until) return null;
+            return fa.paid_until >= getLocalTodayStr() ? 'good' : 'due';
+        }
+
+        async function openSwimmerProfile(swimmer) {
+            showSwimmerProfileFor.value = swimmer;
+            if (!Object.keys(familyAccountsMap.value).length) await loadFamilyAccounts();
+        }
+
+        function closeSwimmerProfile() {
+            showSwimmerProfileFor.value = null;
+        }
+
         // Staff page only ever shows non-parent members. Demoting someone
         // back to 'parent' removes them from here the same way promoting
         // a parent removes them from Accounts -- staffList itself still
@@ -3437,7 +3669,7 @@ createApp({
             'import': { label: 'Import', icon: '📥', activeViews: ['import'], onSelect: () => { currentView.value = 'import'; resetImport(); } },
             'calendar': { label: 'Calendar', icon: '📅', activeViews: ['calendar'], onSelect: () => { currentView.value = 'calendar'; loadCalendarEvents(); loadMyAssignedGroups(); } },
             'staff': { label: 'Staff', icon: '🧑\u200d🏫', activeViews: ['staff'], onSelect: () => { currentView.value = 'staff'; loadStaff(); loadCoachGroupLinks(); } },
-            'accounts': { label: 'Accounts', icon: '👤', activeViews: ['accounts'], onSelect: () => { currentView.value = 'accounts'; loadAccounts(); } },
+            'accounts': { label: 'Accounts', icon: '👤', activeViews: ['accounts'], onSelect: () => { currentView.value = 'accounts'; loadAccounts(); loadFamilyAccounts(); } },
         };
 
         const navModules = computed(() => teamModules.value
@@ -3523,6 +3755,7 @@ createApp({
             swimmers.value = data || [];
             loadTeamParents();
             loadParentLinks();
+            loadFamilyAccounts();
         }
 
         async function addSwimmer() {
@@ -4723,6 +4956,9 @@ createApp({
             selectedGroupForEdit, openGroupDetails, dragStart, drop, draggedGroupIndex, importSourceGroup, importSystemsAndAliases,
             isParent, isOffice, secToTime,
             accountsList, accountSearchQuery, filteredAccounts, loadAccounts, promoteToCoach, promoteToOffice, demoteToParent,
+            familyAccountsMap, expandedAccountId, accountSwimmersMap, swimmerToAddId, loadFamilyAccounts, toggleAccountExpand,
+            unlinkedSwimmersFor, saveFamilyAccount, updateSwimmerDetails, addSwimmerToAccount, removeSwimmerFromAccount,
+            showSwimmerProfileFor, openSwimmerProfile, closeSwimmerProfile, paymentStatusForSwimmer, paymentStatusForAccount,
             teamModules, layoutDraft, draggedLayoutIndex, openLayoutEditor, toggleLayoutModule, layoutDragStart, layoutDrop, saveLayout,
             pushSupported, pushSubscribed, notificationPrefs, myNotificationTypes, enablePushNotifications, disablePushNotifications, toggleNotificationPref, openSettings,
             announcementGroup, announcementTitle, announcementBody, sendingAnnouncement, sendMessage, openMessages,
