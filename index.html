@@ -13,6 +13,10 @@
     <meta name="apple-mobile-web-app-title" content="Swimatics" />
     <meta name="theme-color" content="#0ea5e9" />
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -30,7 +34,7 @@
         
         body { 
             margin: 0; 
-            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            font-family: 'Poppins', system-ui, -apple-system, sans-serif; 
             background: radial-gradient(ellipse 60% 40% at 15% 0%, rgba(14,165,233,0.05), transparent), #f8fafc;
             background-attachment: fixed;
             -webkit-tap-highlight-color: transparent; 
@@ -38,7 +42,7 @@
         }
 
         h2, h3 {
-            font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+            font-family: 'Poppins', system-ui, sans-serif;
             letter-spacing: -0.02em;
         }
 
@@ -62,9 +66,22 @@
             }
         }
 
-        #sheet, #calendarSheet { 
+        #sheet { 
             width: 8.5in; 
             min-height: 11in; 
+            margin: 20px auto; 
+            background: white; 
+            padding: 0.5in; 
+            box-shadow: 0 10px 40px rgba(0,0,0,.15); 
+            box-sizing: border-box; 
+        }
+
+        /* Landscape -- a 7-column week grid is naturally wider than
+           tall, so this gets its own dimensions rather than sharing
+           the workout sheet's portrait box. */
+        #calendarSheet { 
+            width: 11in; 
+            min-height: 8.5in; 
             margin: 20px auto; 
             background: white; 
             padding: 0.5in; 
@@ -139,6 +156,7 @@
            own distinct class names in Tailwind, so the plain bg-slate-50
            rule above never touches them -- same idea, covered separately. */
         [data-theme="dark"] .bg-slate-50\/50, [data-theme="dark"] .bg-slate-50\/60 { background-color: rgba(30,41,59,0.5) !important; }
+        [data-theme="dark"] .bg-white\/90 { background-color: rgba(30,41,59,0.9) !important; }
         [data-theme="dark"] .bg-slate-200\/50 { background-color: rgba(51,65,85,0.5) !important; }
         [data-theme="dark"] .border-slate-200\/60 { border-color: rgba(51,65,85,0.6) !important; }
         [data-theme="dark"] .text-amber-700\/80 { color: rgba(251,191,36,0.8) !important; }
@@ -155,7 +173,22 @@
             color: #f1f5f9;
         }
         [data-theme="dark"] ::placeholder { color: #64748b; }
+
+        /* App-wide team logo watermark (not the print-sheet one, which
+           has its own separate element). Grayscale removes any brand
+           color clash; inverting in dark mode flips a typically-dark
+           logo to light so it stays visible against a dark background
+           regardless of the logo's own original coloring. */
+        [data-theme="dark"] .app-logo-watermark img {
+            filter: grayscale(100%) invert(1);
+            opacity: 0.07;
+        }
         } /* end @media screen (dark mode) */
+
+        .app-logo-watermark img {
+            filter: grayscale(100%);
+            opacity: 0.05;
+        }
 
         @keyframes pageFadeIn {
             from { opacity: 0; transform: translateY(8px); }
@@ -224,6 +257,10 @@
     </div>
 
     <div v-else class="no-print pb-20 min-h-screen">
+
+        <div v-if="teamLogoUrl" class="app-logo-watermark fixed inset-0 flex items-center justify-center pointer-events-none" style="z-index: 0;">
+            <img :src="teamLogoUrl" style="width: 45vw; max-width: 480px; object-fit: contain;">
+        </div>
         
         <div class="glass-nav border-b border-slate-200/60 px-4 md:px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm transition-all">
             <div class="flex items-center gap-2 shrink-0" ref="navMenuRef">
@@ -1989,7 +2026,7 @@
                         <button @click="prevMonth" class="w-10 h-10 bg-white border border-slate-200 rounded-xl font-black text-slate-600 hover:bg-slate-50">‹</button>
                         <button @click="goToToday" class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black uppercase text-[10px] tracking-widest text-slate-600 hover:bg-slate-50">Today</button>
                         <button @click="nextMonth" class="w-10 h-10 bg-white border border-slate-200 rounded-xl font-black text-slate-600 hover:bg-slate-50">›</button>
-                        <button @click="printTarget = 'calendar'; $nextTick(() => window.print())" class="px-4 py-2.5 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-colors">Print</button>
+                        <button @click="printCalendarSheet" class="px-4 py-2.5 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-colors">Print</button>
                     </div>
                 </div>
 
@@ -2026,13 +2063,16 @@
                     </div>
                 </div>
 
-                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="grid grid-cols-7 border-b border-slate-100">
+                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden relative">
+                    <div v-if="teamLogoUrl" class="absolute inset-0 flex items-center justify-center pointer-events-none" style="z-index: 0;">
+                        <img :src="teamLogoUrl" class="w-1/2 max-w-[280px] object-contain" style="filter: grayscale(100%); opacity: 0.06;">
+                    </div>
+                    <div class="grid grid-cols-7 border-b border-slate-100 relative" style="z-index: 1;">
                         <div v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d" class="p-2 text-center text-[9px] font-black text-slate-400 uppercase tracking-widest">{{d}}</div>
                     </div>
-                    <div class="grid grid-cols-7">
+                    <div class="grid grid-cols-7 relative" style="z-index: 1;">
                         <div v-for="cell in calendarGridDays" :key="cell.dateStr" @click="openCalendarDay(cell.dateStr)"
-                             :class="[cell.inMonth ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/60 hover:bg-slate-100', cell.isToday ? 'ring-2 ring-inset ring-blue-500' : '']"
+                             :class="[cell.inMonth ? 'bg-white/90 hover:bg-slate-50' : 'bg-slate-50/60 hover:bg-slate-100', cell.isToday ? 'ring-2 ring-inset ring-blue-500' : '']"
                              class="min-h-[80px] sm:min-h-[100px] border-b border-r border-slate-100 p-1.5 cursor-pointer transition-colors">
                             <div class="text-[10px] font-black" :class="cell.inMonth ? 'text-slate-700' : 'text-slate-300'">{{cell.dayNum}}</div>
                             <div class="space-y-0.5 mt-1">
@@ -2159,7 +2199,7 @@
     </div>
 
     <div id="sheet" style="display:none; position: relative; overflow: hidden;" class="print-page" :class="{'no-print': !user, 'print-active': printTarget === 'workout'}">
-        <div v-if="teamLogoUrl" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 0; opacity: 0.08; pointer-events: none;">
+        <div v-if="teamLogoUrl" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 0; opacity: 0.08; pointer-events: none;">
             <img :src="teamLogoUrl" style="width: 70%; max-height: 70%; object-fit: contain; filter: grayscale(100%);">
         </div>
 
@@ -2212,7 +2252,7 @@
     </div>
 
     <div id="calendarSheet" style="display:none; position: relative; overflow: hidden;" class="print-page" :class="{'no-print': !user, 'print-active': printTarget === 'calendar'}">
-        <div v-if="teamLogoUrl" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 0; opacity: 0.06; pointer-events: none;">
+        <div v-if="teamLogoUrl" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 0; opacity: 0.06; pointer-events: none;">
             <img :src="teamLogoUrl" style="width: 60%; max-height: 60%; object-fit: contain; filter: grayscale(100%);">
         </div>
 
@@ -3088,6 +3128,27 @@ createApp({
             window.print();
             document.documentElement.style.fontSize = '';
             if (workoutToLoad && cameFromView !== 'editor') currentView.value = cameFromView;
+        }
+
+        // Requests landscape orientation specifically for the calendar
+        // print job -- @page rules apply document-wide, so this can't
+        // just be a static CSS rule alongside the workout sheet's
+        // portrait one. Instead, a print-only stylesheet is inserted
+        // right before printing and removed right after, so it only
+        // affects this one print job and never leaks into printing a
+        // workout afterward.
+        async function printCalendarSheet() {
+            printTarget.value = 'calendar';
+            await nextTick();
+
+            const orientationStyle = document.createElement('style');
+            orientationStyle.id = 'calendar-print-orientation';
+            orientationStyle.textContent = '@media print { @page { size: landscape; margin: 0.5in; } }';
+            document.head.appendChild(orientationStyle);
+
+            window.print();
+
+            document.getElementById('calendar-print-orientation')?.remove();
         }
 
         function discardDraft() { 
@@ -5694,7 +5755,7 @@ createApp({
             user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, drawerRef, printTarget, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
             hasPendingInvite, isProcessingInvite, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors, themeMode, themePreference, setThemePreference,
-            title, group, poolType, defaultStroke, workoutVisibility, workoutFontSize, printWorkoutSheet, publicWorkouts, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
+            title, group, poolType, defaultStroke, workoutVisibility, workoutFontSize, printWorkoutSheet, printCalendarSheet, publicWorkouts, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
             seasonPlans, activePlanContext, teamGroupsList, staffList, planForm, newGroupName, myRole, myTeam,
             filterGroup, workoutsTab, pastRangeStart, pastRangeEnd, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
             formatTime, formattedStartTime, save, loadWorkout, startNewWorkout, formatPracticeDate, startNewPlan, editPlan, addWeek, savePlan, deletePlan, deleteWorkout,
