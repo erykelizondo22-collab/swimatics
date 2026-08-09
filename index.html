@@ -940,10 +940,26 @@
                 
                 <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200">
                     
-                    <div class="mb-8 pb-8 border-b border-slate-100">
+                    <div class="mb-8 pb-8 border-b border-slate-100 relative">
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Practice Start Time</label>
-                        <input type="time" v-model="selectedGroupForEdit.practice_start_time" @change="updateGroupStartTime(selectedGroupForEdit)" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                        <button @click="openTimeWheel(selectedGroupForEdit)" type="button" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none min-w-[140px] text-left hover:bg-slate-100 transition-colors">
+                            {{ formatTime12h(selectedGroupForEdit.practice_start_time) }}
+                        </button>
                         <p class="text-[10px] text-slate-400 font-bold mt-2 max-w-md">If set, coaches assigned to this group get a reminder notification 30 minutes after this time on any day attendance hasn't been taken yet.</p>
+
+                        <div v-if="showTimeWheelFor" @click="closeTimeWheel" class="fixed inset-0 z-40"></div>
+                        <div v-if="showTimeWheelFor" class="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 p-4 flex gap-2" style="width: 240px;">
+                            <div class="flex-1 h-40 overflow-y-auto rounded-xl bg-slate-50" style="scroll-snap-type: y mandatory;">
+                                <div v-for="h in 12" :key="h" @click="wheelHour = h" :class="wheelHour === h ? 'bg-slate-900 text-white font-black' : 'text-slate-500 font-bold hover:bg-slate-100'" class="text-center py-2.5 cursor-pointer text-sm transition-colors" style="scroll-snap-align: center;">{{h}}</div>
+                            </div>
+                            <div class="flex-1 h-40 overflow-y-auto rounded-xl bg-slate-50" style="scroll-snap-type: y mandatory;">
+                                <div v-for="m in [0,5,10,15,20,25,30,35,40,45,50,55]" :key="m" @click="wheelMinute = m" :class="wheelMinute === m ? 'bg-slate-900 text-white font-black' : 'text-slate-500 font-bold hover:bg-slate-100'" class="text-center py-2.5 cursor-pointer text-sm transition-colors" style="scroll-snap-align: center;">{{ String(m).padStart(2,'0') }}</div>
+                            </div>
+                            <div class="flex-1 h-40 overflow-y-auto rounded-xl bg-slate-50" style="scroll-snap-type: y mandatory;">
+                                <div v-for="ap in ['AM','PM']" :key="ap" @click="wheelAmPm = ap" :class="wheelAmPm === ap ? 'bg-slate-900 text-white font-black' : 'text-slate-500 font-bold hover:bg-slate-100'" class="text-center py-2.5 cursor-pointer text-sm transition-colors" style="scroll-snap-align: center;">{{ap}}</div>
+                            </div>
+                            <button @click="confirmTimeWheel(selectedGroupForEdit)" class="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-lg whitespace-nowrap">Set Time</button>
+                        </div>
                     </div>
 
                     <div class="bg-blue-50 border border-blue-200 p-4 rounded-2xl mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-sm gap-4">
@@ -2233,12 +2249,58 @@ createApp({
 
         async function loadGroups() {
             const { data } = await client.from("team_groups").select("*").eq('team_id', myTeam.value).order('sort_order', {ascending: true}).order('name', {ascending: true});
-            teamGroupsList.value = data || [];
+            // Postgres 'time' columns come back as "HH:MM:SS" -- an
+            // <input type="time"> strictly expects "HH:MM" and can
+            // silently fail to bind/update if given seconds too.
+            teamGroupsList.value = (data || []).map(g => ({
+                ...g,
+                practice_start_time: g.practice_start_time ? g.practice_start_time.slice(0, 5) : g.practice_start_time
+            }));
         }
 
         async function updateGroupStartTime(group) {
             const { error } = await client.from('team_groups').update({ practice_start_time: group.practice_start_time || null }).eq('id', group.id);
             if(error) alert("Error saving practice time: " + error.message);
+        }
+
+        // Custom wheel time picker -- replaces the native <input type="time">
+        // so the picking experience is consistent across every browser
+        // instead of varying wildly by platform.
+        const showTimeWheelFor = ref(null);
+        const wheelHour = ref(5);
+        const wheelMinute = ref(0);
+        const wheelAmPm = ref('PM');
+
+        function formatTime12h(time24) {
+            if (!time24) return 'Not Set';
+            const [h, m] = time24.split(':').map(Number);
+            const ap = h >= 12 ? 'PM' : 'AM';
+            const h12 = h % 12 === 0 ? 12 : h % 12;
+            return `${h12}:${String(m).padStart(2, '0')} ${ap}`;
+        }
+
+        function openTimeWheel(group) {
+            if (group.practice_start_time) {
+                const [h, m] = group.practice_start_time.split(':').map(Number);
+                wheelAmPm.value = h >= 12 ? 'PM' : 'AM';
+                wheelHour.value = h % 12 === 0 ? 12 : h % 12;
+                wheelMinute.value = Math.round(m / 5) * 5 % 60;
+            } else {
+                wheelHour.value = 5; wheelMinute.value = 0; wheelAmPm.value = 'PM';
+            }
+            showTimeWheelFor.value = group.id;
+        }
+
+        function closeTimeWheel() {
+            showTimeWheelFor.value = null;
+        }
+
+        function confirmTimeWheel(group) {
+            let h24 = wheelHour.value % 12;
+            if (wheelAmPm.value === 'PM') h24 += 12;
+            group.practice_start_time = `${String(h24).padStart(2, '0')}:${String(wheelMinute.value).padStart(2, '0')}`;
+            updateGroupStartTime(group);
+            showTimeWheelFor.value = null;
         }
 
         async function addGroup() {
@@ -4022,6 +4084,7 @@ createApp({
             filterGroup, filterDate, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
             formatTime, formattedStartTime, save, loadWorkout, startNewWorkout, formatPracticeDate, startNewPlan, editPlan, addWeek, savePlan, deletePlan, deleteWorkout,
             addGroup, updateGroupStartTime, deleteGroup, removeStaff, changeRole, copyInviteLink, joinTeam, createTeam, updateVaultPassword, discardDraft, loadStaff, visibleStaffList,
+            showTimeWheelFor, wheelHour, wheelMinute, wheelAmPm, formatTime12h, openTimeWheel, closeTimeWheel, confirmTimeWheel,
             hasDraft, resumeDraft, currentSetPace, updateCursor, stressScore, stressColor,
             analyticsGroup, analyticsStartDate, analyticsEndDate, analyticsStats, resetAnalyticsDates,
             showAiModal, aiPrompt, isAiLoading, generateWithAI,
