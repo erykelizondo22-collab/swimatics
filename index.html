@@ -3607,6 +3607,35 @@ createApp({
                 const sender = (allMembers || []).find(m => m.id === a.created_by);
                 return { ...a, senderName: sender ? (sender.name || sender.email) : 'A Coach' };
             });
+            subscribeToAnnouncements();
+        }
+
+        // Live updates for announcements -- a new one appears immediately
+        // for anyone with Messages open, no refresh needed. Separate
+        // channel from the conversation-thread subscription so opening a
+        // thread doesn't interrupt this one.
+        let announcementsRealtimeChannel = null;
+
+        function subscribeToAnnouncements() {
+            unsubscribeFromAnnouncements();
+            if (!myTeam.value) return;
+            announcementsRealtimeChannel = client
+                .channel(`announcements-${myTeam.value}`)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'coach_announcements', filter: `team_id=eq.${myTeam.value}` }, async (payload) => {
+                    if (broadcastHistory.value.some(a => a.id === payload.new.id)) return;
+                    const { data: allMembers } = await client.rpc('get_team_members', { p_team_id: myTeam.value });
+                    const sender = (allMembers || []).find(m => m.id === payload.new.created_by);
+                    const enriched = { ...payload.new, senderName: sender ? (sender.name || sender.email) : 'A Coach' };
+                    broadcastHistory.value = [enriched, ...broadcastHistory.value];
+                })
+                .subscribe();
+        }
+
+        function unsubscribeFromAnnouncements() {
+            if (announcementsRealtimeChannel) {
+                client.removeChannel(announcementsRealtimeChannel);
+                announcementsRealtimeChannel = null;
+            }
         }
 
         // A coach only ever sees conversations where THEY are the assigned
@@ -5071,7 +5100,7 @@ createApp({
             pushSupported, pushSubscribed, notificationPrefs, myNotificationTypes, enablePushNotifications, disablePushNotifications, toggleNotificationPref, openSettings,
             announcementGroup, announcementTitle, announcementBody, sendingAnnouncement, sendMessage, openMessages,
             messageTarget, messageFamilyId, broadcastHistory, conversationsList, openConversationId, conversationThread, conversationReply,
-            openConversationThread, sendConversationReply, unsubscribeFromConversation,
+            openConversationThread, sendConversationReply, unsubscribeFromConversation, unsubscribeFromAnnouncements,
             dmEnabledCoaches, myConversations, openParentConvoId, selectedCoachForNewConvo, loadDmEnabledCoaches, loadMyConversations, openParentConversationThread, closeParentConversation, startConversationWithCoach,
             coachGroupLinksMap, myAssignedGroups, toggleCoachGroup,
             calendarEvents, newCalendarEvent, showNewCalendarEventForm, upcomingCalendarEvents, postableGroups, createCalendarEvent, deleteCalendarEvent,
