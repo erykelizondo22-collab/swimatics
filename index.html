@@ -20,15 +20,32 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <style>
         [v-cloak] { display: none; }
         
         body { 
             margin: 0; 
-            font-family: system-ui, -apple-system, sans-serif; 
-            background: #f8fafc; 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            background: radial-gradient(ellipse 60% 40% at 15% 0%, rgba(14,165,233,0.05), transparent), #f8fafc;
+            background-attachment: fixed;
             -webkit-tap-highlight-color: transparent; 
+            -webkit-font-smoothing: antialiased;
         }
+
+        h2, h3 {
+            font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+            letter-spacing: -0.02em;
+        }
+
+        ::selection { background: #0ea5e955; }
+
+        * { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+        *::-webkit-scrollbar { width: 6px; height: 6px; }
+        *::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
 
         @media print {
             @page { margin: 0.5in; } 
@@ -56,6 +73,15 @@
         
         .row { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; }
         .block-title { font-weight: 800; border-bottom: 2px solid black; text-transform: uppercase; }
+
+        @keyframes pageFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .page-transition { animation: pageFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
+        @media (prefers-reduced-motion: reduce) {
+            .page-transition { animation: none; }
+        }
         .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 700; }
         
         .font-slider { 
@@ -89,8 +115,8 @@
 <body>
 <div id="app" v-cloak>
 
-    <div v-if="!user" class="min-h-screen flex items-center justify-center bg-slate-50 px-4 pb-20">
-        <div class="p-8 md:p-12 max-w-md w-full bg-white rounded-[2rem] shadow-2xl shadow-blue-900/5 text-center border border-slate-100">
+    <div v-if="!user" class="min-h-screen flex items-center justify-center px-4 pb-20 relative overflow-hidden" style="background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(14,165,233,0.12), transparent), radial-gradient(ellipse 60% 50% at 100% 100%, rgba(99,102,241,0.08), transparent), #f8fafc;">
+        <div class="p-8 md:p-12 max-w-md w-full bg-white rounded-[2rem] shadow-2xl shadow-blue-900/5 text-center border border-slate-100 relative z-10">
             <div class="mb-8">
                 <div class="w-24 h-24 mx-auto flex items-center justify-center bg-blue-50 rounded-3xl p-4 shadow-inner overflow-hidden">
                     <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain">
@@ -117,7 +143,7 @@
     <div v-else class="no-print pb-20 min-h-screen">
         
         <div class="glass-nav border-b border-slate-200/60 px-4 md:px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm transition-all">
-            <div class="flex items-center gap-2 shrink-0 relative" ref="navMenuRef">
+            <div class="flex items-center gap-2 shrink-0" ref="navMenuRef">
                 <button v-if="myTeam" @click.stop="mobileNavOpen = !mobileNavOpen" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-black transition-colors shrink-0" aria-label="Toggle menu">
                     <svg v-if="!mobileNavOpen" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     <svg v-else class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -127,21 +153,6 @@
                         <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain p-1">
                     </div>
                     <span class="font-black text-2xl tracking-tight hidden sm:inline-block text-slate-900 group-hover:opacity-80 transition-opacity">Swimatics</span>
-                </div>
-
-                <div v-if="mobileNavOpen" class="absolute top-full left-0 mt-2 w-64 bg-white border border-slate-200 shadow-xl rounded-2xl p-2 flex flex-col gap-1 z-50 max-h-[80vh] overflow-y-auto">
-                    <template v-if="isParent">
-                    <button @click="currentView = 'parent-home'; mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'parent-home', 'text-slate-600 hover:bg-slate-100': currentView !== 'parent-home'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Home</button>
-                    <button v-if="teamModules.includes('calendar')" @click="currentView = 'calendar'; loadCalendarEvents(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'calendar', 'text-slate-600 hover:bg-slate-100': currentView !== 'calendar'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Calendar</button>
-                    </template>
-                    <template v-else-if="isOffice">
-                    <button @click="currentView = 'roster'; loadSwimmers(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'roster', 'text-slate-600 hover:bg-slate-100': currentView !== 'roster'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Roster</button>
-                    <button @click="currentView = 'calendar'; loadCalendarEvents(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'calendar', 'text-slate-600 hover:bg-slate-100': currentView !== 'calendar'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Calendar</button>
-                    </template>
-                    <template v-else>
-                    <button v-for="m in navModules" :key="m.key" @click="selectModule(m.key); mobileNavOpen = false" :class="isModuleActive(m.key) ? 'bg-slate-900 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">{{m.label}}</button>
-                    <button v-if="myRole === 'owner' || myRole === 'admin'" @click="openLayoutEditor(); mobileNavOpen = false" :class="{'bg-slate-900 text-white shadow-md': currentView === 'layout', 'text-slate-600 hover:bg-slate-100': currentView !== 'layout'}" class="text-left text-sm font-black uppercase tracking-widest px-4 py-3 rounded-xl transition-colors">Site Layout</button>
-                    </template>
                 </div>
             </div>
 
@@ -157,7 +168,73 @@
             </div>
         </div>
 
-        <div class="max-w-[1200px] mx-auto p-4 md:p-6 mt-6 relative">
+        <div v-if="mobileNavOpen" @click="mobileNavOpen = false" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[55] transition-opacity"></div>
+
+        <div ref="drawerRef" class="fixed inset-y-0 left-0 z-[60] w-3/4 md:w-96 bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out" :class="mobileNavOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'">
+            <div class="p-6 text-white shrink-0 relative overflow-hidden" :style="{ background: 'linear-gradient(135deg, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
+                <button @click="mobileNavOpen = false" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center overflow-hidden shrink-0">
+                        <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain p-1.5">
+                    </div>
+                    <div class="min-w-0">
+                        <div class="font-black text-xl tracking-tight">Swimatics</div>
+                        <div class="text-[10px] font-bold uppercase tracking-widest opacity-80 truncate">{{myTeam}}</div>
+                    </div>
+                </div>
+                <div v-if="user" class="mt-5 pt-4 border-t border-white/20 flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-black shrink-0">{{ (coachName || user.email || '?').charAt(0).toUpperCase() }}</div>
+                    <div class="min-w-0">
+                        <div class="text-xs font-black truncate">{{coachName || user.email}}</div>
+                        <div class="text-[9px] font-bold uppercase tracking-widest opacity-70">{{myRole}}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-1">
+                <template v-if="isParent">
+                <button @click="currentView = 'parent-home'; mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'parent-home' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'parent-home' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">🏠</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Home</span>
+                </button>
+                <button v-if="teamModules.includes('calendar')" @click="currentView = 'calendar'; loadCalendarEvents(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'calendar' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'calendar' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">📅</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Calendar</span>
+                </button>
+                </template>
+                <template v-else-if="isOffice">
+                <button @click="currentView = 'roster'; loadSwimmers(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'roster' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'roster' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">📋</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Roster</span>
+                </button>
+                <button @click="currentView = 'calendar'; loadCalendarEvents(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'calendar' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'calendar' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">📅</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Calendar</span>
+                </button>
+                </template>
+                <template v-else>
+                <button v-for="m in navModules" :key="m.key" @click="selectModule(m.key); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="isModuleActive(m.key) ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="isModuleActive(m.key) ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">{{m.icon}}</span>
+                    <span class="font-black uppercase tracking-widest text-xs">{{m.label}}</span>
+                </button>
+                <button v-if="myRole === 'owner' || myRole === 'admin'" @click="openLayoutEditor(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'layout' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'layout' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">⚙️</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Site Layout</span>
+                </button>
+                </template>
+            </div>
+
+            <div class="p-3 border-t border-slate-100 shrink-0">
+                <button @click="openNotifications(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'notifications' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'notifications' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">🔔</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Notifications</span>
+                </button>
+            </div>
+        </div>
+
+        <div :key="currentView" class="page-transition max-w-[1200px] mx-auto p-4 md:p-6 mt-6 relative">
             
             <div v-if="showAiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 transition-opacity">
                 <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col scale-100 transition-transform">
@@ -1168,6 +1245,7 @@
                          class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl p-4 transition-opacity">
                         <div class="flex items-center gap-3">
                             <svg class="w-5 h-5 text-slate-400 cursor-grab active:cursor-grabbing" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                            <span class="text-lg">{{m.icon}}</span>
                             <span class="font-black uppercase text-sm text-slate-800">{{m.label}}</span>
                         </div>
                         <button @click="toggleLayoutModule(m.key)" :class="m.enabled ? 'bg-emerald-500' : 'bg-slate-300'" class="w-12 h-7 rounded-full relative transition-colors shrink-0">
@@ -1176,6 +1254,40 @@
                     </div>
                 </div>
                 <button @click="saveLayout" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-sm">Save Layout</button>
+            </div>
+
+            <div v-if="currentView === 'notifications'" class="max-w-2xl mx-auto space-y-6 mt-6">
+                <div class="border-b border-slate-200 pb-6">
+                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Notifications</h2>
+                    <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Choose what you want to hear about</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                    <div v-if="pushSubscribed" class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full shrink-0"></span>
+                            <span class="font-black uppercase text-xs tracking-widest text-emerald-600">Notifications enabled on this device</span>
+                        </div>
+                        <button @click="disablePushNotifications" class="bg-slate-50 border border-slate-200 text-slate-500 px-4 py-2 rounded-xl font-black uppercase tracking-widest text-[10px] shrink-0">Disable</button>
+                    </div>
+                    <div v-else-if="pushSupported" class="space-y-3">
+                        <p class="text-sm text-slate-500 font-medium">Turn on push notifications to get alerts even when Swimatics isn't open.</p>
+                        <button @click="enablePushNotifications" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs">Enable Notifications</button>
+                    </div>
+                    <div v-else class="space-y-2">
+                        <p class="text-xs font-bold text-red-500">Push notifications aren't available in this browser yet.</p>
+                        <p class="text-xs text-slate-400 font-medium">On iPhone: open Swimatics in Safari, tap Share, then "Add to Home Screen." Open it from that home screen icon (not a Safari tab) to enable notifications.</p>
+                    </div>
+                </div>
+
+                <div v-if="pushSubscribed" class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                    <div v-for="t in myNotificationTypes" :key="t.key" class="p-5 flex justify-between items-center gap-3">
+                        <span class="font-bold text-slate-800 text-sm">{{t.label}}</span>
+                        <button @click="toggleNotificationPref(t.key)" :class="notificationPrefs[t.key] !== false ? 'bg-emerald-500' : 'bg-slate-300'" class="w-12 h-7 rounded-full relative transition-colors shrink-0">
+                            <span :class="notificationPrefs[t.key] !== false ? 'translate-x-6' : 'translate-x-1'" class="absolute top-1 w-5 h-5 bg-white rounded-full transition-transform"></span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div v-if="currentView === 'calendar'" class="max-w-5xl mx-auto space-y-6 mt-6">
@@ -1423,7 +1535,25 @@ createApp({
         const currentView = ref('dashboard');
         const mobileNavOpen = ref(false);
         const navMenuRef = ref(null);
+        const drawerRef = ref(null);
         const printTarget = ref('workout'); // 'workout' | 'calendar' -- which hidden print sheet is currently active
+
+        // NOTIFICATIONS
+        // Your public VAPID key. Safe to embed in client code -- this is
+        // the "public" half of the pair; the private half never goes
+        // anywhere near the browser, only in the server-side sending
+        // function.
+        const VAPID_PUBLIC_KEY = 'BNfCRXU84RHblT0ImjqHbyDXnKdsj5Ib2LIsNz_XP29xoBMfTMlWvuF0g3uJfiJKWT5b7PJ43VVOaaw9hW59jCI';
+        const NOTIFICATION_TYPES = [
+            { key: 'calendar_event', label: 'New Calendar Events', roles: ['parent', 'coach', 'admin', 'owner', 'office'] },
+            { key: 'meet_entry_decision', label: 'Meet Entry Approved / Declined', roles: ['parent'] },
+            { key: 'meet_entry_override_needed', label: 'A Meet Entry Needs My Review', roles: ['coach', 'admin', 'owner'] },
+            { key: 'attendance_reminder', label: "Attendance Not Yet Taken", roles: ['coach', 'admin', 'owner'] },
+            { key: 'new_workout', label: 'New Workout Posted', roles: ['coach', 'admin', 'owner'] },
+        ];
+        const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
+        const pushSubscribed = ref(false);
+        const notificationPrefs = ref({});
 
         // ROSTER
         const swimmers = ref([]);
@@ -1433,17 +1563,17 @@ createApp({
 
         // LAYOUT CUSTOMIZATION
         const ALL_TOGGLEABLE_MODULES = [
-            { key: 'dashboard', label: 'Workouts' },
-            { key: 'analytics', label: 'Analytics' },
-            { key: 'season-planning', label: 'Season Planning' },
-            { key: 'groups', label: 'Groups' },
-            { key: 'roster', label: 'Roster' },
-            { key: 'attendance', label: 'Attendance' },
-            { key: 'meets', label: 'Meets' },
-            { key: 'import', label: 'Smart Import' },
-            { key: 'calendar', label: 'Calendar' },
-            { key: 'staff', label: 'Staff' },
-            { key: 'accounts', label: 'Accounts' },
+            { key: 'dashboard', label: 'Workouts', icon: '🏊' },
+            { key: 'analytics', label: 'Analytics', icon: '📊' },
+            { key: 'season-planning', label: 'Season Planning', icon: '🗓️' },
+            { key: 'groups', label: 'Groups', icon: '👥' },
+            { key: 'roster', label: 'Roster', icon: '📋' },
+            { key: 'attendance', label: 'Attendance', icon: '✅' },
+            { key: 'meets', label: 'Meets', icon: '🏆' },
+            { key: 'import', label: 'Smart Import', icon: '📥' },
+            { key: 'calendar', label: 'Calendar', icon: '📅' },
+            { key: 'staff', label: 'Staff', icon: '🧑\u200d🏫' },
+            { key: 'accounts', label: 'Accounts', icon: '👤' },
         ];
         const teamModules = ref(ALL_TOGGLEABLE_MODULES.map(m => m.key));
         const layoutDraft = ref([]);
@@ -2332,6 +2462,103 @@ createApp({
         }
 
         // ============================================================
+        // NOTIFICATIONS — push subscription + per-account preferences.
+        // ============================================================
+        const myNotificationTypes = computed(() => NOTIFICATION_TYPES.filter(t => t.roles.includes(myRole.value)));
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
+            return outputArray;
+        }
+
+        async function registerSwimaticsServiceWorker() {
+            if (!pushSupported.value) return null;
+            try {
+                return await navigator.serviceWorker.register('sw.js');
+            } catch(e) {
+                console.error('Service worker registration failed:', e);
+                return null;
+            }
+        }
+
+        async function checkExistingPushSubscription() {
+            if (!pushSupported.value) { pushSubscribed.value = false; return; }
+            try {
+                const reg = await navigator.serviceWorker.getRegistration();
+                if (!reg) { pushSubscribed.value = false; return; }
+                const sub = await reg.pushManager.getSubscription();
+                pushSubscribed.value = !!sub;
+            } catch(e) {
+                pushSubscribed.value = false;
+            }
+        }
+
+        async function enablePushNotifications() {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                alert("Notifications were blocked. You can re-enable them in your browser or phone's notification settings for this site.");
+                return;
+            }
+            const reg = await registerSwimaticsServiceWorker();
+            if (!reg) { alert("Could not set up notifications on this device."); return; }
+
+            let sub;
+            try {
+                sub = await reg.pushManager.getSubscription();
+                if (!sub) {
+                    sub = await reg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                    });
+                }
+            } catch(e) {
+                alert("Error subscribing to push: " + e.message);
+                return;
+            }
+
+            const subJson = sub.toJSON();
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const { error } = await client.from('push_subscriptions').upsert({
+                team_id: myTeam.value,
+                user_id: freshUser?.id,
+                endpoint: subJson.endpoint,
+                p256dh: subJson.keys.p256dh,
+                auth_key: subJson.keys.auth,
+                user_agent: navigator.userAgent
+            }, { onConflict: 'user_id,endpoint' });
+
+            if (error) { alert("Error saving subscription: " + error.message); return; }
+            pushSubscribed.value = true;
+        }
+
+        async function loadNotificationPreferences() {
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const { data } = await client.from('notification_preferences').select('prefs').eq('user_id', freshUser?.id).maybeSingle();
+            notificationPrefs.value = data?.prefs || {};
+        }
+
+        async function toggleNotificationPref(type) {
+            const current = notificationPrefs.value[type] !== false;
+            const updated = { ...notificationPrefs.value, [type]: !current };
+            notificationPrefs.value = updated;
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const { error } = await client.from('notification_preferences').upsert({
+                user_id: freshUser?.id, team_id: myTeam.value, prefs: updated
+            }, { onConflict: 'user_id' });
+            if (error) alert("Error saving preference: " + error.message);
+        }
+
+        function openNotifications() {
+            currentView.value = 'notifications';
+            checkExistingPushSubscription();
+            loadNotificationPreferences();
+        }
+
+        // ============================================================
         // LAYOUT CUSTOMIZATION — which nav modules a team shows, and
         // in what order. layoutDraft is a working copy edited while on
         // the Layout screen; saveLayout() writes it back.
@@ -2507,27 +2734,41 @@ createApp({
         }
 
         // ============================================================
+        // PUSH NOTIFICATIONS (unsubscribe)
+        // ============================================================
+        async function disablePushNotifications() {
+            if (!('serviceWorker' in navigator)) return;
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.getSubscription();
+            if (sub) {
+                await client.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+                await sub.unsubscribe();
+            }
+            pushSubscribed.value = false;
+        }
+
+        // ============================================================
         // NAV DISPATCH — maps each toggleable module key to a label
         // and an action, so the nav dropdown can be rendered from
         // teamModules (order + on/off) instead of being hardcoded.
         // ============================================================
         const MODULE_DEFS = {
-            'dashboard': { label: 'Workouts', activeViews: ['dashboard'], onSelect: () => { currentView.value = 'dashboard'; } },
-            'analytics': { label: 'Analytics', activeViews: ['analytics'], onSelect: () => { currentView.value = 'analytics'; } },
-            'season-planning': { label: 'Season', activeViews: ['season-planning','plan-builder'], onSelect: () => { currentView.value = 'season-planning'; } },
-            'groups': { label: 'Groups', activeViews: ['groups','group-details'], onSelect: () => { currentView.value = 'groups'; selectedGroupForEdit.value = null; } },
-            'roster': { label: 'Roster', activeViews: ['roster'], onSelect: () => { currentView.value = 'roster'; loadSwimmers(); } },
-            'attendance': { label: 'Attendance', activeViews: ['attendance'], onSelect: () => { currentView.value = 'attendance'; attendanceMarkGroup.value = null; loadSwimmers(); loadAttendanceForDate(); loadAttendanceSummary(); } },
-            'meets': { label: 'Meets', activeViews: ['meets','meet-detail'], onSelect: () => { currentView.value = 'meets'; loadMeets(); } },
-            'import': { label: 'Import', activeViews: ['import'], onSelect: () => { currentView.value = 'import'; resetImport(); } },
-            'calendar': { label: 'Calendar', activeViews: ['calendar'], onSelect: () => { currentView.value = 'calendar'; loadCalendarEvents(); loadMyAssignedGroups(); } },
-            'staff': { label: 'Staff', activeViews: ['staff'], onSelect: () => { currentView.value = 'staff'; loadStaff(); loadCoachGroupLinks(); } },
-            'accounts': { label: 'Accounts', activeViews: ['accounts'], onSelect: () => { currentView.value = 'accounts'; loadAccounts(); } },
+            'dashboard': { label: 'Workouts', icon: '🏊', activeViews: ['dashboard'], onSelect: () => { currentView.value = 'dashboard'; } },
+            'analytics': { label: 'Analytics', icon: '📊', activeViews: ['analytics'], onSelect: () => { currentView.value = 'analytics'; } },
+            'season-planning': { label: 'Season', icon: '🗓️', activeViews: ['season-planning','plan-builder'], onSelect: () => { currentView.value = 'season-planning'; } },
+            'groups': { label: 'Groups', icon: '👥', activeViews: ['groups','group-details'], onSelect: () => { currentView.value = 'groups'; selectedGroupForEdit.value = null; } },
+            'roster': { label: 'Roster', icon: '📋', activeViews: ['roster'], onSelect: () => { currentView.value = 'roster'; loadSwimmers(); } },
+            'attendance': { label: 'Attendance', icon: '✅', activeViews: ['attendance'], onSelect: () => { currentView.value = 'attendance'; attendanceMarkGroup.value = null; loadSwimmers(); loadAttendanceForDate(); loadAttendanceSummary(); } },
+            'meets': { label: 'Meets', icon: '🏆', activeViews: ['meets','meet-detail'], onSelect: () => { currentView.value = 'meets'; loadMeets(); } },
+            'import': { label: 'Import', icon: '📥', activeViews: ['import'], onSelect: () => { currentView.value = 'import'; resetImport(); } },
+            'calendar': { label: 'Calendar', icon: '📅', activeViews: ['calendar'], onSelect: () => { currentView.value = 'calendar'; loadCalendarEvents(); loadMyAssignedGroups(); } },
+            'staff': { label: 'Staff', icon: '🧑\u200d🏫', activeViews: ['staff'], onSelect: () => { currentView.value = 'staff'; loadStaff(); loadCoachGroupLinks(); } },
+            'accounts': { label: 'Accounts', icon: '👤', activeViews: ['accounts'], onSelect: () => { currentView.value = 'accounts'; loadAccounts(); } },
         };
 
         const navModules = computed(() => teamModules.value
             .filter(key => MODULE_DEFS[key] && (!MODULE_DEFS[key].ownerAdminOnly || myRole.value === 'owner' || myRole.value === 'admin'))
-            .map(key => ({ key, label: MODULE_DEFS[key].label })));
+            .map(key => ({ key, label: MODULE_DEFS[key].label, icon: MODULE_DEFS[key].icon })));
 
         function selectModule(key) {
             if(MODULE_DEFS[key]) MODULE_DEFS[key].onSelect();
@@ -2542,10 +2783,17 @@ createApp({
         // full-screen overlay div, which depends on CSS stacking-context
         // behavior that isn't reliable across every mobile browser. A
         // real document-level click listener works everywhere: if the
-        // menu is open and the tap/click landed outside the nav
-        // container (hamburger button + dropdown), close it.
+        // menu is open and the tap/click landed outside both the
+        // hamburger button AND the slide-out drawer itself, close it.
+        // (The drawer also has its own backdrop with a direct close
+        // handler -- this is the fallback for anything the backdrop
+        // doesn't cover.)
         function handleOutsideNavClick(e) {
-            if (mobileNavOpen.value && navMenuRef.value && !navMenuRef.value.contains(e.target)) {
+            if (
+                mobileNavOpen.value &&
+                navMenuRef.value && !navMenuRef.value.contains(e.target) &&
+                drawerRef.value && !drawerRef.value.contains(e.target)
+            ) {
                 mobileNavOpen.value = false;
             }
         }
@@ -3106,6 +3354,7 @@ createApp({
             checkUrlForInvite();
             checkDraft();
             resetAnalyticsDates();
+            registerServiceWorker();
             
             const { data } = await client.auth.getUser();
             user.value = data?.user;
@@ -3651,7 +3900,7 @@ createApp({
         }
 
         return {
-            user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, printTarget, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
+            user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, drawerRef, printTarget, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
             hasPendingInvite, isProcessingInvite, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors,
             title, group, poolType, defaultStroke, workoutVisibility, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
@@ -3669,6 +3918,7 @@ createApp({
             isParent, isOffice, secToTime,
             accountsList, accountSearchQuery, filteredAccounts, loadAccounts, promoteToCoach, promoteToOffice, demoteToParent,
             teamModules, layoutDraft, draggedLayoutIndex, openLayoutEditor, toggleLayoutModule, layoutDragStart, layoutDrop, saveLayout,
+            pushSupported, pushSubscribed, notificationPrefs, myNotificationTypes, enablePushNotifications, toggleNotificationPref, openNotifications,
             coachGroupLinksMap, myAssignedGroups, toggleCoachGroup,
             calendarEvents, newCalendarEvent, showNewCalendarEventForm, upcomingCalendarEvents, postableGroups, createCalendarEvent, deleteCalendarEvent,
             calendarViewDate, calendarVisibilityFilter, selectedCalendarDay, calendarMonthLabel, calendarGridDays, eventsByDate,
@@ -3679,6 +3929,7 @@ createApp({
             attendanceViewTab, attendanceMarkGroup, openAttendanceMark, attendanceAnalyticsGroup, attendanceAnalyticsStart, attendanceAnalyticsEnd, attendanceAnalyticsData,
             openAttendanceAnalytics, loadAttendanceAnalytics, groupAttendancePercent, groupAttendanceSummary, loadGroupAttendanceSummary,
             swimmersByGroup, swimmerAttendancePercent, loadAttendanceSummary,
+            pushSupported, pushSubscribed, notifPrefs, notifTypesForRole, enablePushNotifications, disablePushNotifications, loadNotificationPrefs, toggleNotifPref,
             meetsList, showNewMeetForm, newMeet, selectedMeet, meetDetailTab, meetEventsList, newMeetEvent, meetEntriesList, overrideTimes,
             loadMeets, createMeet, openMeetDetail, addMeetEvent, deleteMeetEvent, pendingEntriesCount, swimmerName, eventLabel, approveMeetEntry, declineMeetEntry,
             myLinkedSwimmers, parentMeetEntryTarget, parentMeetEntryEvents, openParentMeetEntry, entryExistsFor, entryStatusFor, requestMeetEntry,
