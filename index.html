@@ -19,6 +19,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -843,10 +844,32 @@
                         <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Coaching Staff</h2>
                         <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Vault Access & Security</p>
                     </div>
-                    <button @click="copyInviteLink" class="w-full sm:w-auto bg-slate-900 text-white px-6 py-3.5 rounded-xl font-black shadow-lg hover:bg-black transition-colors uppercase tracking-widest text-xs flex items-center justify-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                        Copy Invite Link
-                    </button>
+                    <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                        <button @click="showInviteQRCode" class="w-full sm:w-auto bg-white border border-slate-200 text-slate-700 px-6 py-3.5 rounded-xl font-black shadow-sm hover:bg-slate-50 transition-colors uppercase tracking-widest text-xs flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-4v-4m8 0h2m-2 0h-2M4 12H2m2 0h2M9 4H4a1 1 0 00-1 1v4m6-5h6a1 1 0 011 1v4m-7 6v5m0 0H4a1 1 0 01-1-1v-5m0 0h5m6 0h6m0 0v5a1 1 0 01-1 1h-5"></path></svg>
+                            Show QR Code
+                        </button>
+                        <button @click="copyInviteLink" class="w-full sm:w-auto bg-slate-900 text-white px-6 py-3.5 rounded-xl font-black shadow-lg hover:bg-black transition-colors uppercase tracking-widest text-xs flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                            Copy Coach Invite Link
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="showQRCode" @click.self="closeQRCode" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl">
+                        <div class="p-6 flex justify-between items-center text-white" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
+                            <div>
+                                <h3 class="font-black text-lg leading-tight">Join {{myTeam}}</h3>
+                                <p class="text-[10px] text-white/80 uppercase tracking-widest mt-1">Scan to sign up as a parent</p>
+                            </div>
+                            <button @click="closeQRCode" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0">X</button>
+                        </div>
+                        <div class="p-6 flex flex-col items-center gap-3">
+                            <img :src="qrCodeDataUrl" alt="Invite QR code" class="rounded-2xl border border-slate-200">
+                            <p class="text-xs text-slate-400 font-bold text-center">Anyone who scans this and signs in with Google joins your team automatically as a parent — great to post at the pool or share in a team group chat.</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div v-if="myRole === 'owner'" class="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] shadow-sm mb-6">
@@ -1952,6 +1975,8 @@ createApp({
         const filterGroup = ref(''); 
         const filterDate = ref('');
         const joinCode = ref(""); 
+        const showQRCode = ref(false);
+        const qrCodeDataUrl = ref('');
         const teamPassword = ref(""); 
         const newTeamId = ref(""); 
         const newTeamPassword = ref("");
@@ -2230,6 +2255,7 @@ createApp({
         async function switchAccount(){
             localStorage.removeItem('pending_invite_code');
             localStorage.removeItem('pending_invite_key');
+            localStorage.removeItem('pending_invite_role');
             await client.auth.signOut();
             await client.auth.signInWithOAuth({ 
                 provider: 'google', 
@@ -2243,21 +2269,23 @@ createApp({
         async function logout(){ 
             localStorage.removeItem('pending_invite_code');
             localStorage.removeItem('pending_invite_key');
+            localStorage.removeItem('pending_invite_role');
             await client.auth.signOut(); 
             location.reload(); 
         }
 
-        async function joinTeam(preHashedPassword) {
+        async function joinTeam(preHashedPassword, roleOverride) {
             const code = (joinCode.value || "").trim().toUpperCase();
             // FIX: invite links carry an already-hashed credential (see copyInviteLink) —
             // only hash here when the coach actually typed a password by hand.
             const pwdToCheck = preHashedPassword !== undefined ? preHashedPassword : await sha256Hex(teamPassword.value);
             const { data } = await client.from('teams').select('id').eq('id', code).eq('password', pwdToCheck);
             if (!data?.length) return alert("Invalid Team Credentials");
-            const roleToAssign = preHashedPassword !== undefined ? 'coach' : 'parent';
+            const roleToAssign = roleOverride || (preHashedPassword !== undefined ? 'coach' : 'parent');
             await client.auth.updateUser({ data: { team_id: code, team_role: roleToAssign } });
             localStorage.removeItem('pending_invite_code');
             localStorage.removeItem('pending_invite_key');
+            localStorage.removeItem('pending_invite_role');
             location.reload();
         }
 
@@ -3323,14 +3351,39 @@ createApp({
             document.addEventListener('click', handleOutsideNavClick);
         });
 
+        async function buildInviteLink(role) {
+            const { data, error } = await client.from('teams').select('password').eq('id', myTeam.value).single();
+            if (error) { alert("Error building invite link: " + error.message); return null; }
+            if (!data || !data.password) { alert("Couldn't find a vault password for this team yet -- set one under Vault Security first."); return null; }
+            const encodedPwd = btoa(data.password);
+            return `${window.location.origin}${window.location.pathname}?invite=${myTeam.value}&key=${encodedPwd}&role=${role}`;
+        }
+
         async function copyInviteLink() {
-            const { data } = await client.from('teams').select('password').eq('id', myTeam.value).single();
-            if(data) {
-                const encodedPwd = btoa(data.password);
-                const link = `${window.location.origin}${window.location.pathname}?invite=${myTeam.value}&key=${encodedPwd}`;
-                navigator.clipboard.writeText(link);
+            const link = await buildInviteLink('coach');
+            if (!link) return;
+            try {
+                await navigator.clipboard.writeText(link);
                 alert("Magic Invite Link copied! Text this to your assistant coaches.");
+            } catch (e) {
+                alert("Couldn't copy automatically -- here's the link to copy by hand:\n\n" + link);
             }
+        }
+
+        async function showInviteQRCode() {
+            const link = await buildInviteLink('parent');
+            if (!link) return;
+            try {
+                qrCodeDataUrl.value = await QRCode.toDataURL(link, { width: 320, margin: 2 });
+                showQRCode.value = true;
+            } catch (e) {
+                alert("Error generating QR code: " + e.message);
+            }
+        }
+
+        function closeQRCode() {
+            showQRCode.value = false;
+            qrCodeDataUrl.value = '';
         }
 
         // ============================================================
@@ -3963,6 +4016,7 @@ createApp({
             if(urlParams.get('invite') && urlParams.get('key')) {
                 localStorage.setItem('pending_invite_code', urlParams.get('invite'));
                 localStorage.setItem('pending_invite_key', urlParams.get('key'));
+                localStorage.setItem('pending_invite_role', urlParams.get('role') || 'coach');
                 hasPendingInvite.value = true;
                 window.history.replaceState({}, document.title, window.location.pathname);
             } else if (localStorage.getItem('pending_invite_code')) {
@@ -3991,7 +4045,8 @@ createApp({
                         // it in teamPassword.value, which would get hashed a second time
                         // and never match.
                         const inviteHash = atob(localStorage.getItem('pending_invite_key'));
-                        setTimeout(() => joinTeam(inviteHash), 1000); 
+                        const inviteRole = localStorage.getItem('pending_invite_role') || 'coach';
+                        setTimeout(() => joinTeam(inviteHash, inviteRole), 1000); 
                     } else {
                         currentView.value = 'onboarding';
                     }
@@ -4528,7 +4583,7 @@ createApp({
             seasonPlans, activePlanContext, teamGroupsList, staffList, planForm, newGroupName, myRole, myTeam,
             filterGroup, filterDate, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
             formatTime, formattedStartTime, save, loadWorkout, startNewWorkout, formatPracticeDate, startNewPlan, editPlan, addWeek, savePlan, deletePlan, deleteWorkout,
-            addGroup, updateGroupStartTime, deleteGroup, removeStaff, changeRole, copyInviteLink, joinTeam, createTeam, updateVaultPassword, discardDraft, loadStaff, visibleStaffList,
+            addGroup, updateGroupStartTime, deleteGroup, removeStaff, changeRole, copyInviteLink, showInviteQRCode, showQRCode, qrCodeDataUrl, closeQRCode, joinTeam, createTeam, updateVaultPassword, discardDraft, loadStaff, visibleStaffList,
             showTimeWheelFor, wheelHour, wheelMinute, wheelAmPm, formatTime12h, openTimeWheel, closeTimeWheel, confirmTimeWheel,
             hasDraft, resumeDraft, currentSetPace, updateCursor, stressScore, stressColor,
             analyticsGroup, analyticsStartDate, analyticsEndDate, analyticsStats, resetAnalyticsDates,
