@@ -1071,10 +1071,27 @@
 
                 <div v-if="!attendanceMarkGroup" class="space-y-4">
                     <div class="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-200 flex flex-wrap items-center gap-3">
-                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Analytics Period</span>
-                        <input type="date" v-model="attendanceAnalyticsStart" @change="loadAttendanceSummary" class="bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs font-bold outline-none">
-                        <span class="text-slate-400 text-xs font-black">to</span>
-                        <input type="date" v-model="attendanceAnalyticsEnd" @change="loadAttendanceSummary" class="bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs font-bold outline-none">
+                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Season</span>
+                        <select v-model="selectedSeasonId" @change="loadAttendanceSummary" class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none">
+                            <option value="">All-Time</option>
+                            <option v-for="s in seasonsList" :key="s.id" :value="s.id">{{s.name}}</option>
+                        </select>
+                        <button v-if="myRole === 'owner' || myRole === 'admin'" @click="showNewSeasonForm = !showNewSeasonForm" class="ml-auto text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl uppercase tracking-widest hover:bg-slate-100 transition-colors">+ New Season</button>
+                    </div>
+                    <div v-if="showNewSeasonForm" class="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-200 flex flex-wrap items-end gap-3">
+                        <div class="flex-1 min-w-[140px]">
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Name</label>
+                            <input v-model="newSeasonName" placeholder="Fall 2026" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Start</label>
+                            <input type="date" v-model="newSeasonStart" class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">End</label>
+                            <input type="date" v-model="newSeasonEnd" class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none">
+                        </div>
+                        <button @click="addSeason" class="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs">Add</button>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         <div v-for="g in postableGroups" :key="g" @click="openAttendanceMark(g)" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer transition-all flex justify-between items-start gap-3">
@@ -1099,14 +1116,6 @@
                     </div>
                     <h3 class="text-2xl font-black uppercase text-slate-900">{{attendanceMarkGroup}}</h3>
 
-                    <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-[10px] font-bold text-amber-800 space-y-1">
-                        <div>DEBUG — attendanceDate.value: <span class="font-black">{{attendanceDate}}</span></div>
-                        <div>DEBUG — swimmers in this group (filteredAttendanceSwimmers): <span class="font-black">{{filteredAttendanceSwimmers.length}}</span></div>
-                        <div>DEBUG — records loaded into attendanceMap: <span class="font-black">{{Object.keys(attendanceMap).length}}</span></div>
-                        <div>DEBUG — raw attendanceMap: <span class="font-black">{{ JSON.stringify(attendanceMap) }}</span></div>
-                        <div>DEBUG — first 3 swimmer IDs in this group: <span class="font-black">{{ filteredAttendanceSwimmers.slice(0,3).map(s => s.id).join(', ') }}</span></div>
-                    </div>
-
                     <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
                         <div v-for="s in filteredAttendanceSwimmers" :key="s.id" class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="flex items-center gap-3">
@@ -1114,7 +1123,6 @@
                                 <div class="text-[8px] font-black text-slate-300 uppercase w-12 text-center shrink-0" v-else>No Data</div>
                                 <div>
                                     <div class="font-bold text-slate-800">{{s.first_name}} {{s.last_name}}</div>
-                                    <div class="text-[9px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded mt-1 inline-block">DEBUG id={{s.id}} | map value="{{attendanceMap[s.id]}}" | is-present={{attendanceMap[s.id] === 'present'}}</div>
                                 </div>
                             </div>
                             <div class="flex gap-2">
@@ -1127,7 +1135,7 @@
                     </div>
 
                     <div class="rounded-[2rem] p-6 text-white text-center shadow-lg" :style="{ background: 'linear-gradient(to bottom right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
-                        <div class="text-[9px] font-black uppercase tracking-widest opacity-80 mb-1">{{attendanceMarkGroup}} Overall Attendance ({{formatPracticeDate(attendanceAnalyticsStart)}} – {{formatPracticeDate(attendanceAnalyticsEnd)}})</div>
+                        <div class="text-[9px] font-black uppercase tracking-widest opacity-80 mb-1">{{attendanceMarkGroup}} Overall Attendance ({{ selectedSeasonName }})</div>
                         <div class="text-4xl font-black tracking-tighter">{{ groupAttendanceSummary[attendanceMarkGroup] !== undefined && groupAttendanceSummary[attendanceMarkGroup] !== null ? groupAttendanceSummary[attendanceMarkGroup] + '%' : '—' }}</div>
                     </div>
                 </div>
@@ -1644,6 +1652,12 @@ createApp({
         const attendanceAnalyticsData = ref([]);
         const groupAttendanceSummary = ref({}); // { groupName: percent|null }
         const swimmerAttendancePercent = ref({}); // { swimmerId: percent|null }
+        const seasonsList = ref([]);
+        const selectedSeasonId = ref('');
+        const showNewSeasonForm = ref(false);
+        const newSeasonName = ref('');
+        const newSeasonStart = ref('');
+        const newSeasonEnd = ref('');
 
         // MEETS
         const meetsList = ref([]);
@@ -2817,7 +2831,7 @@ createApp({
             'season-planning': { label: 'Season', icon: '🗓️', activeViews: ['season-planning','plan-builder'], onSelect: () => { currentView.value = 'season-planning'; } },
             'groups': { label: 'Groups', icon: '👥', activeViews: ['groups','group-details'], onSelect: () => { currentView.value = 'groups'; selectedGroupForEdit.value = null; } },
             'roster': { label: 'Roster', icon: '📋', activeViews: ['roster'], onSelect: () => { currentView.value = 'roster'; loadSwimmers(); } },
-            'attendance': { label: 'Attendance', icon: '✅', activeViews: ['attendance'], onSelect: () => { currentView.value = 'attendance'; attendanceMarkGroup.value = null; loadSwimmers(); loadAttendanceForDate(); loadAttendanceSummary(); } },
+            'attendance': { label: 'Attendance', icon: '✅', activeViews: ['attendance'], onSelect: async () => { currentView.value = 'attendance'; attendanceMarkGroup.value = null; loadSwimmers(); loadAttendanceForDate(); await loadSeasons(); loadAttendanceSummary(); } },
             'meets': { label: 'Meets', icon: '🏆', activeViews: ['meets','meet-detail'], onSelect: () => { currentView.value = 'meets'; loadMeets(); } },
             'import': { label: 'Import', icon: '📥', activeViews: ['import'], onSelect: () => { currentView.value = 'import'; resetImport(); } },
             'calendar': { label: 'Calendar', icon: '📅', activeViews: ['calendar'], onSelect: () => { currentView.value = 'calendar'; loadCalendarEvents(); loadMyAssignedGroups(); } },
@@ -2939,6 +2953,11 @@ createApp({
         // ============================================================
         // ATTENDANCE
         // ============================================================
+        const selectedSeasonName = computed(() => {
+            const s = seasonsList.value.find(s => s.id === selectedSeasonId.value);
+            return s ? s.name : 'All-Time';
+        });
+
         const filteredAttendanceSwimmers = computed(() => {
             return swimmers.value.filter(s => !attendanceGroupFilter.value || s.group_name === attendanceGroupFilter.value);
         });
@@ -2977,6 +2996,7 @@ createApp({
             attendanceMarkGroup.value = groupName;
             attendanceGroupFilter.value = groupName;
             loadAttendanceForDate();
+            loadAttendanceSummary();
         }
 
         async function openAttendanceAnalytics(groupName) {
@@ -3033,16 +3053,50 @@ createApp({
         // inline badge next to their name) AND the per-group aggregate
         // (for the summary card at the bottom of the drill-down), scoped
         // to whichever swimmers are currently loaded.
+        async function loadSeasons() {
+            const { data } = await client.from("seasons").select("*").eq('team_id', myTeam.value).order('start_date', {ascending: false});
+            seasonsList.value = data || [];
+            // Auto-select whichever season's range contains today, if any --
+            // otherwise leave it on All-Time.
+            if (!selectedSeasonId.value) {
+                const today = getLocalTodayStr();
+                const current = seasonsList.value.find(s => s.start_date <= today && s.end_date >= today);
+                if (current) selectedSeasonId.value = current.id;
+            }
+        }
+
+        async function addSeason() {
+            if (!newSeasonName.value.trim() || !newSeasonStart.value || !newSeasonEnd.value) return alert("Fill out a name, start date, and end date.");
+            const { error } = await client.from("seasons").insert({
+                team_id: myTeam.value,
+                name: newSeasonName.value.trim(),
+                start_date: newSeasonStart.value,
+                end_date: newSeasonEnd.value
+            });
+            if (error) return alert("Error adding season: " + error.message);
+            newSeasonName.value = ''; newSeasonStart.value = ''; newSeasonEnd.value = '';
+            showNewSeasonForm.value = false;
+            await loadSeasons();
+            loadAttendanceSummary();
+        }
+
         async function loadAttendanceSummary() {
-            if(!attendanceAnalyticsStart.value || !attendanceAnalyticsEnd.value) resetAttendanceAnalyticsDates();
             const swimmerIds = swimmers.value.map(s => s.id);
             if(!swimmerIds.length) { swimmerAttendancePercent.value = {}; groupAttendanceSummary.value = {}; return; }
 
-            const { data, error } = await client.from("attendance").select("*")
+            // Scoped to the selected season's date range, if one is picked --
+            // otherwise it's a true all-time running total. Switching to a
+            // new season just changes which window of records get counted;
+            // nothing is ever deleted.
+            const selectedSeason = seasonsList.value.find(s => s.id === selectedSeasonId.value);
+            let query = client.from("attendance").select("*")
                 .eq('team_id', myTeam.value)
                 .in('swimmer_id', swimmerIds)
-                .gte('practice_date', attendanceAnalyticsStart.value)
-                .lte('practice_date', attendanceAnalyticsEnd.value);
+                .lte('practice_date', getLocalTodayStr());
+            if (selectedSeason) {
+                query = query.gte('practice_date', selectedSeason.start_date).lte('practice_date', selectedSeason.end_date);
+            }
+            const { data, error } = await query;
             if(error) { alert("Error loading attendance summary: " + error.message); return; }
 
             const rows = data || [];
@@ -3990,6 +4044,7 @@ createApp({
             attendanceViewTab, attendanceMarkGroup, openAttendanceMark, attendanceAnalyticsGroup, attendanceAnalyticsStart, attendanceAnalyticsEnd, attendanceAnalyticsData,
             openAttendanceAnalytics, loadAttendanceAnalytics, groupAttendancePercent, groupAttendanceSummary, loadGroupAttendanceSummary,
             swimmersByGroup, swimmerAttendancePercent, loadAttendanceSummary,
+            seasonsList, selectedSeasonId, selectedSeasonName, showNewSeasonForm, newSeasonName, newSeasonStart, newSeasonEnd, loadSeasons, addSeason,
             meetsList, showNewMeetForm, newMeet, selectedMeet, meetDetailTab, meetEventsList, newMeetEvent, meetEntriesList, overrideTimes,
             loadMeets, createMeet, openMeetDetail, addMeetEvent, deleteMeetEvent, pendingEntriesCount, swimmerName, eventLabel, approveMeetEntry, declineMeetEntry,
             myLinkedSwimmers, parentMeetEntryTarget, parentMeetEntryEvents, openParentMeetEntry, entryExistsFor, entryStatusFor, requestMeetEntry,
