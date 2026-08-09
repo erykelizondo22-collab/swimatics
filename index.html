@@ -1099,6 +1099,14 @@
                     </div>
                     <h3 class="text-2xl font-black uppercase text-slate-900">{{attendanceMarkGroup}}</h3>
 
+                    <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-[10px] font-bold text-amber-800 space-y-1">
+                        <div>DEBUG — attendanceDate.value: <span class="font-black">{{attendanceDate}}</span></div>
+                        <div>DEBUG — swimmers in this group (filteredAttendanceSwimmers): <span class="font-black">{{filteredAttendanceSwimmers.length}}</span></div>
+                        <div>DEBUG — records loaded into attendanceMap: <span class="font-black">{{Object.keys(attendanceMap).length}}</span></div>
+                        <div>DEBUG — raw attendanceMap: <span class="font-black">{{ JSON.stringify(attendanceMap) }}</span></div>
+                        <div>DEBUG — first 3 swimmer IDs in this group: <span class="font-black">{{ filteredAttendanceSwimmers.slice(0,3).map(s => s.id).join(', ') }}</span></div>
+                    </div>
+
                     <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
                         <div v-for="s in filteredAttendanceSwimmers" :key="s.id" class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="flex items-center gap-3">
