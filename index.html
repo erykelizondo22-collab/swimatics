@@ -79,7 +79,13 @@
            DARK MODE — overrides Tailwind's utility classes directly
            rather than requiring dark: variants on every element across
            every view. Toggled by [data-theme="dark"] on <html>.
+           Scoped to @media screen so it never bleeds into printing --
+           without this, a print job started while in dark mode would
+           get dark backgrounds and light text forced onto the sheet by
+           these same !important rules, since they'd otherwise apply
+           regardless of print vs screen context.
            ============================================================ */
+        @media screen {
         [data-theme="dark"] body {
             background: radial-gradient(ellipse 60% 40% at 15% 0%, rgba(14,165,233,0.06), transparent), #0f172a !important;
         }
@@ -149,6 +155,7 @@
             color: #f1f5f9;
         }
         [data-theme="dark"] ::placeholder { color: #64748b; }
+        } /* end @media screen (dark mode) */
 
         @keyframes pageFadeIn {
             from { opacity: 0; transform: translateY(8px); }
@@ -3231,7 +3238,7 @@ createApp({
                     convoId = created.id;
                 }
                 const { error } = await client.from('conversation_messages').insert({
-                    conversation_id: convoId, team_id: myTeam.value, sender_id: freshUser?.id, sender_role: 'coach', body: announcementBody.value.trim()
+                    conversation_id: convoId, team_id: myTeam.value, sender_id: freshUser?.id, sender_role: 'coach', body: announcementBody.value.trim(), parent_user_id: messageFamilyId.value
                 });
                 sendingAnnouncement.value = false;
                 if (error) { alert("Error sending message: " + error.message); return; }
@@ -3298,6 +3305,26 @@ createApp({
                 .subscribe();
         }
 
+        // Parents subscribe by their OWN user id instead of a specific
+        // conversation id -- if a coach starts a brand new conversation,
+        // there's no conversation id to subscribe to yet at page-load
+        // time, so subscribing to "any message meant for me" catches
+        // that first message too, not just replies in an existing thread.
+        function subscribeToMyMessages(userId) {
+            unsubscribeFromConversation();
+            if (!userId) return;
+            conversationRealtimeChannel = client
+                .channel(`my-messages-${userId}`)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversation_messages', filter: `parent_user_id=eq.${userId}` }, (payload) => {
+                    if (!myConversationId.value) myConversationId.value = payload.new.conversation_id;
+                    if (payload.new.conversation_id !== myConversationId.value) return;
+                    if (!conversationThread.value.some(m => m.id === payload.new.id)) {
+                        conversationThread.value = [...conversationThread.value, payload.new];
+                    }
+                })
+                .subscribe();
+        }
+
         function unsubscribeFromConversation() {
             if (conversationRealtimeChannel) {
                 client.removeChannel(conversationRealtimeChannel);
@@ -3315,11 +3342,15 @@ createApp({
         async function loadMyConversation() {
             const { data: { user: freshUser } } = await client.auth.getUser();
             const { data: convo } = await client.from('conversations').select('id').eq('team_id', myTeam.value).eq('parent_user_id', freshUser?.id).maybeSingle();
-            if (!convo) { myConversationId.value = null; conversationThread.value = []; return; }
-            myConversationId.value = convo.id;
-            const { data } = await client.from('conversation_messages').select('*').eq('conversation_id', convo.id).order('created_at', { ascending: true });
-            conversationThread.value = data || [];
-            subscribeToConversation(convo.id);
+            if (convo) {
+                myConversationId.value = convo.id;
+                const { data } = await client.from('conversation_messages').select('*').eq('conversation_id', convo.id).order('created_at', { ascending: true });
+                conversationThread.value = data || [];
+            } else {
+                myConversationId.value = null;
+                conversationThread.value = [];
+            }
+            subscribeToMyMessages(freshUser?.id);
         }
 
         async function sendConversationReply() {
@@ -3336,9 +3367,14 @@ createApp({
             }
             if (!convoId) return;
 
+            const parentUserIdForMessage = isParent.value
+                ? freshUser?.id
+                : conversationsList.value.find(c => c.id === openConversationId.value)?.parent_user_id;
+
             const { error } = await client.from('conversation_messages').insert({
                 conversation_id: convoId, team_id: myTeam.value, sender_id: freshUser?.id,
-                sender_role: isParent.value ? 'parent' : 'coach', body: conversationReply.value.trim()
+                sender_role: isParent.value ? 'parent' : 'coach', body: conversationReply.value.trim(),
+                parent_user_id: parentUserIdForMessage
             });
             if (error) { alert("Error sending message: " + error.message); return; }
             conversationReply.value = '';
