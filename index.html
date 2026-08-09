@@ -3249,6 +3249,11 @@ createApp({
             if (messageTarget.value === 'family' && !messageFamilyId.value) return;
 
             sendingAnnouncement.value = true;
+            // Force a fresh token before any RLS-checked write here, rather
+            // than waiting on the background refresh timer -- avoids a
+            // stale team_role claim rejecting the insert right after
+            // joining/being promoted, without needing a manual re-login.
+            await client.auth.refreshSession();
             const { data: { user: freshUser } } = await client.auth.getUser();
 
             if (messageTarget.value === 'family') {
@@ -3380,6 +3385,7 @@ createApp({
 
         async function sendConversationReply() {
             if (!conversationReply.value.trim()) return;
+            await client.auth.refreshSession();
             const { data: { user: freshUser } } = await client.auth.getUser();
 
             let convoId = isParent.value ? myConversationId.value : openConversationId.value;
