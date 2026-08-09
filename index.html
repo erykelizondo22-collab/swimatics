@@ -1679,6 +1679,7 @@
                                     <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">{{a.group_name || 'Whole Team'}}</span>
                                 </div>
                                 <p class="text-xs text-slate-500 font-medium mt-1">{{a.body}}</p>
+                                <p class="text-[9px] text-slate-300 font-black uppercase tracking-widest mt-2">Sent by {{a.senderName}}</p>
                             </div>
                             <div v-if="!broadcastHistory.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No announcements sent yet</div>
                         </div>
@@ -1725,6 +1726,7 @@
                                     <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">{{a.group_name || 'Whole Team'}}</span>
                                 </div>
                                 <p class="text-xs text-slate-500 font-medium mt-1">{{a.body}}</p>
+                                <p class="text-[9px] text-slate-300 font-black uppercase tracking-widest mt-2">Sent by {{a.senderName}}</p>
                             </div>
                             <div v-if="!broadcastHistory.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No announcements yet</div>
                         </div>
@@ -3599,7 +3601,12 @@ createApp({
         async function loadBroadcastHistory() {
             const { data, error } = await client.from('coach_announcements').select('*').eq('team_id', myTeam.value).order('created_at', { ascending: false }).limit(30);
             if (error) { console.error(error.message); return; }
-            broadcastHistory.value = data || [];
+            const rows = data || [];
+            const { data: allMembers } = await client.rpc('get_team_members', { p_team_id: myTeam.value });
+            broadcastHistory.value = rows.map(a => {
+                const sender = (allMembers || []).find(m => m.id === a.created_by);
+                return { ...a, senderName: sender ? (sender.name || sender.email) : 'A Coach' };
+            });
         }
 
         // A coach only ever sees conversations where THEY are the assigned
