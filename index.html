@@ -19,7 +19,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1547,7 +1547,7 @@
                         <div v-else class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
                             <div class="p-4 border-b border-slate-100 flex justify-between items-center">
                                 <span class="font-black text-slate-800 text-sm">{{ conversationsList.find(c => c.id === openConversationId)?.parentName }}</span>
-                                <button @click="openConversationId = null" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Close</button>
+                                <button @click="openConversationId = null; unsubscribeFromConversation();" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Close</button>
                             </div>
                             <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
                                 <div v-for="m in conversationThread" :key="m.id" class="max-w-[80%]" :class="m.sender_role === 'coach' ? 'ml-auto text-right' : ''">
@@ -3278,10 +3278,38 @@ createApp({
             });
         }
 
+        // Live updates for whichever conversation thread is currently
+        // open -- a new message from the other side appears immediately,
+        // no refresh needed. Only one subscription is ever active at a
+        // time; opening a different thread swaps it out.
+        let conversationRealtimeChannel = null;
+
+        function subscribeToConversation(conversationId) {
+            unsubscribeFromConversation();
+            if (!conversationId) return;
+            conversationRealtimeChannel = client
+                .channel(`conversation-${conversationId}`)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversation_messages', filter: `conversation_id=eq.${conversationId}` }, (payload) => {
+                    if (!conversationThread.value.some(m => m.id === payload.new.id)) {
+                        conversationThread.value = [...conversationThread.value, payload.new];
+                    }
+                    if (!isParent.value) loadConversationsList();
+                })
+                .subscribe();
+        }
+
+        function unsubscribeFromConversation() {
+            if (conversationRealtimeChannel) {
+                client.removeChannel(conversationRealtimeChannel);
+                conversationRealtimeChannel = null;
+            }
+        }
+
         async function openConversationThread(convo) {
             openConversationId.value = convo.id;
             const { data } = await client.from('conversation_messages').select('*').eq('conversation_id', convo.id).order('created_at', { ascending: true });
             conversationThread.value = data || [];
+            subscribeToConversation(convo.id);
         }
 
         async function loadMyConversation() {
@@ -3291,6 +3319,7 @@ createApp({
             myConversationId.value = convo.id;
             const { data } = await client.from('conversation_messages').select('*').eq('conversation_id', convo.id).order('created_at', { ascending: true });
             conversationThread.value = data || [];
+            subscribeToConversation(convo.id);
         }
 
         async function sendConversationReply() {
@@ -3303,6 +3332,7 @@ createApp({
                 if (createErr) { alert("Error starting conversation: " + createErr.message); return; }
                 convoId = created.id;
                 myConversationId.value = convoId;
+                subscribeToConversation(convoId);
             }
             if (!convoId) return;
 
@@ -3312,8 +3342,9 @@ createApp({
             });
             if (error) { alert("Error sending message: " + error.message); return; }
             conversationReply.value = '';
-            if (isParent.value) loadMyConversation();
-            else openConversationThread({ id: openConversationId.value });
+            // The realtime subscription above will pick up this same
+            // insert and add it to the thread -- no manual reload needed,
+            // it's already guarded against double-adding the same message.
         }
 
         // ============================================================
@@ -3391,6 +3422,10 @@ createApp({
         }
 
         async function showInviteQRCode() {
+            if (typeof QRCode === 'undefined') {
+                alert("The QR code library didn't load, likely a connection hiccup or an ad-blocker. Check your internet connection, then hard-refresh the page (Cmd+Shift+R) and try again.");
+                return;
+            }
             const link = await buildInviteLink('parent');
             if (!link) return;
             try {
@@ -4618,7 +4653,7 @@ createApp({
             pushSupported, pushSubscribed, notificationPrefs, myNotificationTypes, enablePushNotifications, disablePushNotifications, toggleNotificationPref, openSettings,
             announcementGroup, announcementTitle, announcementBody, sendingAnnouncement, sendMessage, openMessages,
             messageTarget, messageFamilyId, broadcastHistory, conversationsList, openConversationId, conversationThread, conversationReply, myConversationId,
-            openConversationThread, sendConversationReply,
+            openConversationThread, sendConversationReply, unsubscribeFromConversation,
             coachGroupLinksMap, myAssignedGroups, toggleCoachGroup,
             calendarEvents, newCalendarEvent, showNewCalendarEventForm, upcomingCalendarEvents, postableGroups, createCalendarEvent, deleteCalendarEvent,
             calendarViewDate, calendarVisibilityFilter, selectedCalendarDay, calendarMonthLabel, calendarGridDays, eventsByDate,
