@@ -386,8 +386,8 @@
                                 <div class="font-bold text-slate-800 text-sm mt-0.5">{{showSwimmerProfileFor.group_name || '—'}}</div>
                             </div>
                             <div>
-                                <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Birthday</div>
-                                <div class="font-bold text-slate-800 text-sm mt-0.5">{{showSwimmerProfileFor.birthdate || '—'}}</div>
+                                <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Birthday</div>
+                                <input type="date" v-model="showSwimmerProfileFor.birthdate" @change="updateSwimmerDetails(showSwimmerProfileFor)" class="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg text-sm font-bold outline-none">
                             </div>
                             <div>
                                 <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gender</div>
@@ -398,8 +398,8 @@
                                 </select>
                             </div>
                             <div>
-                                <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest">USA Swimming #</div>
-                                <div class="font-bold text-slate-800 text-sm mt-0.5">{{showSwimmerProfileFor.usa_swimming_number || '—'}}</div>
+                                <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">USA Swimming #</div>
+                                <input type="text" v-model="showSwimmerProfileFor.usa_swimming_number" @change="updateSwimmerDetails(showSwimmerProfileFor)" placeholder="—" class="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg text-sm font-bold outline-none">
                             </div>
                         </div>
                         <div>
