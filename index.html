@@ -477,34 +477,52 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/60 flex flex-wrap gap-5 items-center">
+                <div class="bg-white p-2 rounded-2xl shadow-sm border border-slate-200/60 flex gap-1">
+                    <button @click="workoutsTab = 'today'" :class="workoutsTab === 'today' ? 'text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-colors" :style="workoutsTab === 'today' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">Today's Workouts</button>
+                    <button @click="workoutsTab = 'upcoming'" :class="workoutsTab === 'upcoming' ? 'text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-colors" :style="workoutsTab === 'upcoming' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">Upcoming Workouts</button>
+                    <button @click="workoutsTab = 'past'" :class="workoutsTab === 'past' ? 'text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-colors" :style="workoutsTab === 'past' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">Past Workouts</button>
+                </div>
+
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/60 flex flex-wrap gap-5 items-end">
                     <div class="flex-1 min-w-[150px]">
                         <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5 ml-2">Filter by Group</label>
-                        <select v-model="filterGroup" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs font-bold uppercase outline-none transition-all cursor-pointer">
+                        <select v-model="filterGroup" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs font-bold uppercase outline-none transition cursor-pointer">
                             <option value="">All Groups</option>
                             <option v-for="g in teamGroupsList" :key="g.id" :value="g.name">{{g.name}}</option>
                         </select>
                     </div>
-                    <div class="flex-1 min-w-[150px]">
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5 ml-2">Practice Date</label>
-                        <input type="date" v-model="filterDate" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs font-bold outline-none transition-all cursor-pointer">
-                    </div>
-                    <button @click="filterDate = ''; filterGroup = '';" class="text-[10px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest mt-4 px-2 transition-colors">Clear Filter</button>
+                    <template v-if="workoutsTab === 'past'">
+                        <div class="flex-1 min-w-[150px]">
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5 ml-2">From</label>
+                            <input type="date" v-model="pastRangeStart" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs font-bold outline-none transition cursor-pointer">
+                        </div>
+                        <div class="flex-1 min-w-[150px]">
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5 ml-2">To</label>
+                            <input type="date" v-model="pastRangeEnd" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs font-bold outline-none transition cursor-pointer">
+                        </div>
+                    </template>
+                    <button @click="filterGroup = ''; pastRangeStart = ''; pastRangeEnd = '';" class="text-[10px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest px-2 py-3 transition-colors">Clear Filter</button>
                 </div>
 
-                <div v-if="!filteredWorkouts.length" class="text-center py-32 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2.5rem]">
-                    No workouts found
+                <div v-if="workoutsTab === 'today' && !todaysWorkouts.length" class="text-center py-32 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2.5rem]">
+                    No workouts today
                 </div>
-                
+                <div v-else-if="workoutsTab === 'upcoming' && !upcomingWorkouts.length" class="text-center py-32 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2.5rem]">
+                    No upcoming workouts
+                </div>
+                <div v-else-if="workoutsTab === 'past' && !pastWorkouts.length" class="text-center py-32 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2.5rem]">
+                    No past workouts found
+                </div>
+
                 <div v-else class="space-y-16">
                     
-                    <div v-if="todaysWorkouts.length">
+                    <div v-if="workoutsTab === 'today'">
                         <div class="flex items-center gap-4 mb-6">
                             <h3 class="text-xl md:text-2xl font-black uppercase tracking-tight text-slate-900">Today's Workouts</h3>
                             <div class="h-1 flex-1 rounded-full opacity-20" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', transparent)' }"></div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-                            <div v-for="w in todaysWorkouts" :key="w.id" @click="loadWorkout(w)" class="p-6 bg-white border border-slate-200 rounded-[2rem] hover:shadow-xl hover:-translate-y-1 cursor-pointer transition-all duration-300 group relative flex flex-col">
+                            <div v-for="w in todaysWorkouts" :key="w.id" @click="loadWorkout(w)" class="p-6 bg-white border border-slate-200 rounded-[2rem] hover:shadow-xl hover:-translate-y-1 cursor-pointer transition duration-300 group relative flex flex-col">
                                 <button @click.stop="deleteWorkout(w.id)" class="absolute top-5 right-5 text-slate-300 hover:text-red-500 hover:bg-red-50 z-10 bg-slate-50 p-2.5 rounded-xl transition-all duration-200 opacity-0 group-hover:opacity-100">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
@@ -522,13 +540,13 @@
                         </div>
                     </div>
 
-                    <div v-if="upcomingWorkouts.length">
+                    <div v-if="workoutsTab === 'upcoming'">
                         <div class="flex items-center gap-4 mb-6">
                             <h3 class="text-xl md:text-2xl font-black uppercase tracking-tight text-slate-900">Upcoming</h3>
                             <div class="h-1 flex-1 bg-gradient-to-r from-amber-400 to-transparent rounded-full opacity-20"></div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-                            <div v-for="w in upcomingWorkouts" :key="w.id" @click="loadWorkout(w)" class="p-6 bg-white border border-slate-200 rounded-[2rem] hover:border-amber-400 hover:shadow-xl hover:-translate-y-1 cursor-pointer transition-all duration-300 group relative flex flex-col">
+                            <div v-for="w in upcomingWorkouts" :key="w.id" @click="loadWorkout(w)" class="p-6 bg-white border border-slate-200 rounded-[2rem] hover:border-amber-400 hover:shadow-xl hover:-translate-y-1 cursor-pointer transition duration-300 group relative flex flex-col">
                                 <button @click.stop="deleteWorkout(w.id)" class="absolute top-5 right-5 text-slate-300 hover:text-red-500 hover:bg-red-50 z-10 bg-slate-50 p-2.5 rounded-xl transition-all duration-200 opacity-0 group-hover:opacity-100">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
@@ -546,13 +564,13 @@
                         </div>
                     </div>
 
-                    <div v-if="pastWorkouts.length">
+                    <div v-if="workoutsTab === 'past'">
                         <div class="flex items-center gap-4 mb-6">
                             <h3 class="text-xl md:text-2xl font-black uppercase tracking-tight text-slate-400">Past Archive</h3>
                             <div class="h-1 flex-1 bg-gradient-to-r from-slate-200 to-transparent rounded-full opacity-50"></div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-                            <div v-for="w in pastWorkouts" :key="w.id" @click="loadWorkout(w)" class="p-6 bg-slate-50/50 border border-slate-200/60 rounded-[2rem] hover:bg-white hover:border-slate-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer transition-all duration-300 group relative flex flex-col grayscale-[20%] hover:grayscale-0">
+                            <div v-for="w in pastWorkouts" :key="w.id" @click="loadWorkout(w)" class="p-6 bg-slate-50/50 border border-slate-200/60 rounded-[2rem] hover:bg-white hover:border-slate-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer transition duration-300 group relative flex flex-col grayscale-[20%] hover:grayscale-0">
                                 <button @click.stop="deleteWorkout(w.id)" class="absolute top-5 right-5 text-slate-300 hover:text-red-500 hover:bg-red-50 z-10 bg-white p-2.5 rounded-xl shadow-sm transition-all duration-200 opacity-0 group-hover:opacity-100">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
@@ -1598,6 +1616,16 @@
                     </div>
                 </div>
 
+                <div v-if="!isParent && !isOffice" class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200 flex justify-between items-center gap-3">
+                    <div>
+                        <span class="font-bold text-slate-800 text-sm block">Allow Parents to Message You</span>
+                        <span class="text-xs text-slate-400 font-medium">When off, parents can't select you when starting a new conversation.</span>
+                    </div>
+                    <button @click="toggleNotificationPref('dm_enabled')" :class="notificationPrefs['dm_enabled'] !== false ? 'bg-emerald-500' : 'bg-slate-300'" class="w-12 h-7 rounded-full relative transition-colors shrink-0">
+                        <span :class="notificationPrefs['dm_enabled'] !== false ? 'translate-x-6' : 'translate-x-1'" class="absolute top-1 w-5 h-5 bg-white rounded-full transition-transform"></span>
+                    </button>
+                </div>
+
                 <div v-if="pushSubscribed" class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
                     <div v-for="t in myNotificationTypes" :key="t.key" class="p-5 flex justify-between items-center gap-3">
                         <span class="font-bold text-slate-800 text-sm">{{t.label}}</span>
@@ -1704,15 +1732,41 @@
 
                     <div>
                         <h3 class="text-lg font-black uppercase tracking-tight text-slate-900 mb-3">Message Coaches</h3>
-                        <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+
+                        <template v-if="!openParentConvoId">
+                            <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100 mb-4">
+                                <div v-for="c in myConversations" :key="c.id" @click="openParentConversationThread(c)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
+                                    <div>
+                                        <div class="font-black text-slate-800 text-sm">{{c.coachName}}</div>
+                                        <div class="text-xs text-slate-400 font-medium truncate max-w-[280px]">{{c.lastMessage}}</div>
+                                    </div>
+                                </div>
+                                <div v-if="!myConversations.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No conversations yet</div>
+                            </div>
+
+                            <div class="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-2">
+                                <select v-model="selectedCoachForNewConvo" class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                                    <option value="" disabled>Message a coach...</option>
+                                    <option v-for="c in dmEnabledCoaches" :key="c.id" :value="c.id">{{c.name || c.email}}</option>
+                                </select>
+                                <button @click="startConversationWithCoach" :disabled="!selectedCoachForNewConvo" class="bg-slate-900 text-white px-5 py-3 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">Start</button>
+                            </div>
+                            <p v-if="!dmEnabledCoaches.length" class="text-[10px] text-slate-400 font-bold mt-2 ml-1">No coaches are accepting direct messages right now.</p>
+                        </template>
+
+                        <div v-else class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+                            <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                                <span class="font-black text-slate-800 text-sm">{{ myConversations.find(c => c.id === openParentConvoId)?.coachName }}</span>
+                                <button @click="closeParentConversation" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Close</button>
+                            </div>
                             <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
                                 <div v-for="m in conversationThread" :key="m.id" class="max-w-[80%]" :class="m.sender_role === 'parent' ? 'ml-auto text-right' : ''">
                                     <div class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_role === 'parent' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
                                 </div>
-                                <div v-if="!conversationThread.length" class="text-center text-slate-400 font-black uppercase tracking-widest text-xs py-6">Send a message to start the conversation</div>
+                                <div v-if="!conversationThread.length" class="text-center text-slate-400 font-black uppercase tracking-widest text-xs py-6">No messages yet</div>
                             </div>
                             <div class="p-4 border-t border-slate-100 flex gap-2">
-                                <input v-model="conversationReply" @keyup.enter="sendConversationReply" placeholder="Message the coaching staff..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none">
+                                <input v-model="conversationReply" @keyup.enter="sendConversationReply" placeholder="Type a message..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none">
                                 <button @click="sendConversationReply" class="bg-slate-900 text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
                             </div>
                         </div>
@@ -2030,7 +2084,10 @@ createApp({
         const openConversationId = ref(null);
         const conversationThread = ref([]);
         const conversationReply = ref('');
-        const myConversationId = ref(null);
+        const dmEnabledCoaches = ref([]);
+        const myConversations = ref([]);
+        const openParentConvoId = ref(null);
+        const selectedCoachForNewConvo = ref('');
 
         // ROSTER
         const swimmers = ref([]);
@@ -2130,7 +2187,9 @@ createApp({
         const todayStr = ref(getLocalTodayStr());
 
         const filterGroup = ref(''); 
-        const filterDate = ref('');
+        const workoutsTab = ref('today'); // 'today' | 'upcoming' | 'past'
+        const pastRangeStart = ref('');
+        const pastRangeEnd = ref('');
         const joinCode = ref(""); 
         const showQRCode = ref(false);
         const qrCodeDataUrl = ref('');
@@ -2325,16 +2384,16 @@ createApp({
         });
 
         const filteredWorkouts = computed(() => {
-            return cloudWorkouts.value.filter(w => {
-                const matchesGroup = filterGroup.value ? w.group === filterGroup.value : true;
-                const matchesDate = filterDate.value ? w.practice_date === filterDate.value : true;
-                return matchesGroup && matchesDate;
-            });
+            return cloudWorkouts.value.filter(w => filterGroup.value ? w.group === filterGroup.value : true);
         });
 
         const todaysWorkouts = computed(() => filteredWorkouts.value.filter(w => w.practice_date === todayStr.value));
         const upcomingWorkouts = computed(() => filteredWorkouts.value.filter(w => w.practice_date && w.practice_date > todayStr.value).sort((a,b) => (a.practice_date || "").localeCompare(b.practice_date || ""))); 
-        const pastWorkouts = computed(() => filteredWorkouts.value.filter(w => !w.practice_date || w.practice_date < todayStr.value).sort((a,b) => (b.practice_date || "").localeCompare(a.practice_date || "")));
+        const pastWorkouts = computed(() => filteredWorkouts.value
+            .filter(w => !w.practice_date || w.practice_date < todayStr.value)
+            .filter(w => pastRangeStart.value ? (w.practice_date && w.practice_date >= pastRangeStart.value) : true)
+            .filter(w => pastRangeEnd.value ? (w.practice_date && w.practice_date <= pastRangeEnd.value) : true)
+            .sort((a,b) => (b.practice_date || "").localeCompare(a.practice_date || "")));
 
         function getWeekDateRange(startDateStr, weekIndex) {
             if (!startDateStr) return "";
@@ -3286,7 +3345,8 @@ createApp({
             currentView.value = 'messages';
             await loadBroadcastHistory();
             if (isParent.value) {
-                await loadMyConversation();
+                await loadDmEnabledCoaches();
+                await loadMyConversations();
             } else {
                 await loadTeamParents();
                 await loadConversationsList();
@@ -3496,18 +3556,22 @@ createApp({
             const { data: { user: freshUser } } = await client.auth.getUser();
 
             if (messageTarget.value === 'family') {
-                // Find or create that family's conversation, then post into it.
+                // Find or create THIS COACH's own conversation with that
+                // family -- each coach who messages a family gets their own
+                // separate thread now, not one shared thread for the whole
+                // coaching staff.
                 let convoId = null;
-                const { data: existing } = await client.from('conversations').select('id').eq('team_id', myTeam.value).eq('parent_user_id', messageFamilyId.value).maybeSingle();
+                const { data: existing } = await client.from('conversations').select('id').eq('team_id', myTeam.value).eq('parent_user_id', messageFamilyId.value).eq('coach_user_id', freshUser?.id).maybeSingle();
                 if (existing) {
                     convoId = existing.id;
                 } else {
-                    const { data: created, error: createErr } = await client.from('conversations').insert({ team_id: myTeam.value, parent_user_id: messageFamilyId.value }).select().single();
+                    const { data: created, error: createErr } = await client.from('conversations').insert({ team_id: myTeam.value, parent_user_id: messageFamilyId.value, coach_user_id: freshUser?.id }).select().single();
                     if (createErr) { sendingAnnouncement.value = false; alert("Error starting conversation: " + createErr.message); return; }
                     convoId = created.id;
                 }
                 const { error } = await client.from('conversation_messages').insert({
-                    conversation_id: convoId, team_id: myTeam.value, sender_id: freshUser?.id, sender_role: 'coach', body: announcementBody.value.trim(), parent_user_id: messageFamilyId.value
+                    conversation_id: convoId, team_id: myTeam.value, sender_id: freshUser?.id, sender_role: 'coach', body: announcementBody.value.trim(),
+                    parent_user_id: messageFamilyId.value, coach_user_id: freshUser?.id
                 });
                 sendingAnnouncement.value = false;
                 if (error) { alert("Error sending message: " + error.message); return; }
@@ -3538,6 +3602,10 @@ createApp({
             broadcastHistory.value = data || [];
         }
 
+        // A coach only ever sees conversations where THEY are the assigned
+        // coach (RLS enforces this automatically now -- owner/admin see
+        // every conversation on the team, everyone else only their own),
+        // so this query doesn't need any extra filtering beyond team_id.
         async function loadConversationsList() {
             const { data, error } = await client.from('conversations').select('*').eq('team_id', myTeam.value).order('updated_at', { ascending: false });
             if (error) { console.error(error.message); return; }
@@ -3574,26 +3642,6 @@ createApp({
                 .subscribe();
         }
 
-        // Parents subscribe by their OWN user id instead of a specific
-        // conversation id -- if a coach starts a brand new conversation,
-        // there's no conversation id to subscribe to yet at page-load
-        // time, so subscribing to "any message meant for me" catches
-        // that first message too, not just replies in an existing thread.
-        function subscribeToMyMessages(userId) {
-            unsubscribeFromConversation();
-            if (!userId) return;
-            conversationRealtimeChannel = client
-                .channel(`my-messages-${userId}`)
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversation_messages', filter: `parent_user_id=eq.${userId}` }, (payload) => {
-                    if (!myConversationId.value) myConversationId.value = payload.new.conversation_id;
-                    if (payload.new.conversation_id !== myConversationId.value) return;
-                    if (!conversationThread.value.some(m => m.id === payload.new.id)) {
-                        conversationThread.value = [...conversationThread.value, payload.new];
-                    }
-                })
-                .subscribe();
-        }
-
         function unsubscribeFromConversation() {
             if (conversationRealtimeChannel) {
                 client.removeChannel(conversationRealtimeChannel);
@@ -3608,18 +3656,65 @@ createApp({
             subscribeToConversation(convo.id);
         }
 
-        async function loadMyConversation() {
+        // ============================================================
+        // PARENT SIDE -- a parent can have several separate conversations,
+        // one per coach they've chosen to message (not one shared thread
+        // with the whole staff). loadDmEnabledCoaches() drives who they
+        // can start a NEW conversation with; existing conversations stay
+        // visible and repliable even if that coach later opts out.
+        // ============================================================
+        async function loadDmEnabledCoaches() {
+            const { data, error } = await client.rpc('get_dm_enabled_coaches', { p_team_id: myTeam.value });
+            if (error) { console.error(error.message); return; }
+            dmEnabledCoaches.value = data || [];
+        }
+
+        async function loadMyConversations() {
             const { data: { user: freshUser } } = await client.auth.getUser();
-            const { data: convo } = await client.from('conversations').select('id').eq('team_id', myTeam.value).eq('parent_user_id', freshUser?.id).maybeSingle();
-            if (convo) {
-                myConversationId.value = convo.id;
-                const { data } = await client.from('conversation_messages').select('*').eq('conversation_id', convo.id).order('created_at', { ascending: true });
-                conversationThread.value = data || [];
-            } else {
-                myConversationId.value = null;
-                conversationThread.value = [];
+            const { data: convos } = await client.from('conversations').select('*').eq('team_id', myTeam.value).eq('parent_user_id', freshUser?.id).order('updated_at', { ascending: false });
+            const list = convos || [];
+            const ids = list.map(c => c.id);
+            let lastMessages = {};
+            if (ids.length) {
+                const { data: msgs } = await client.from('conversation_messages').select('*').in('conversation_id', ids).order('created_at', { ascending: false });
+                (msgs || []).forEach(m => { if (!lastMessages[m.conversation_id]) lastMessages[m.conversation_id] = m.body; });
             }
-            subscribeToMyMessages(freshUser?.id);
+            const { data: allMembers } = await client.rpc('get_team_members', { p_team_id: myTeam.value });
+            myConversations.value = list.map(c => {
+                const coach = (allMembers || []).find(m => m.id === c.coach_user_id);
+                return { ...c, coachName: coach ? (coach.name || coach.email) : 'Coach', lastMessage: lastMessages[c.id] || '(no messages yet)' };
+            });
+        }
+
+        async function openParentConversationThread(convo) {
+            openParentConvoId.value = convo.id;
+            const { data } = await client.from('conversation_messages').select('*').eq('conversation_id', convo.id).order('created_at', { ascending: true });
+            conversationThread.value = data || [];
+            subscribeToConversation(convo.id);
+        }
+
+        function closeParentConversation() {
+            openParentConvoId.value = null;
+            unsubscribeFromConversation();
+        }
+
+        async function startConversationWithCoach() {
+            if (!selectedCoachForNewConvo.value) return;
+            await client.auth.refreshSession();
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const coachId = selectedCoachForNewConvo.value;
+
+            const { data: existing } = await client.from('conversations').select('*').eq('team_id', myTeam.value).eq('parent_user_id', freshUser?.id).eq('coach_user_id', coachId).maybeSingle();
+            let convo = existing;
+            if (!convo) {
+                const { data: created, error } = await client.from('conversations').insert({ team_id: myTeam.value, parent_user_id: freshUser?.id, coach_user_id: coachId }).select().single();
+                if (error) { alert("Error starting conversation: " + error.message); return; }
+                convo = created;
+            }
+            selectedCoachForNewConvo.value = '';
+            await loadMyConversations();
+            const fullConvo = myConversations.value.find(c => c.id === convo.id) || convo;
+            openParentConversationThread(fullConvo);
         }
 
         async function sendConversationReply() {
@@ -3627,19 +3722,18 @@ createApp({
             await client.auth.refreshSession();
             const { data: { user: freshUser } } = await client.auth.getUser();
 
-            let convoId = isParent.value ? myConversationId.value : openConversationId.value;
-            if (isParent.value && !convoId) {
-                const { data: created, error: createErr } = await client.from('conversations').insert({ team_id: myTeam.value, parent_user_id: freshUser?.id }).select().single();
-                if (createErr) { alert("Error starting conversation: " + createErr.message); return; }
-                convoId = created.id;
-                myConversationId.value = convoId;
-                subscribeToConversation(convoId);
-            }
+            const convoId = isParent.value ? openParentConvoId.value : openConversationId.value;
             if (!convoId) return;
 
-            const parentUserIdForMessage = isParent.value
-                ? freshUser?.id
-                : conversationsList.value.find(c => c.id === openConversationId.value)?.parent_user_id;
+            let parentUserIdForMessage, coachUserIdForMessage;
+            if (isParent.value) {
+                parentUserIdForMessage = freshUser?.id;
+                coachUserIdForMessage = myConversations.value.find(c => c.id === convoId)?.coach_user_id;
+            } else {
+                const convo = conversationsList.value.find(c => c.id === openConversationId.value);
+                parentUserIdForMessage = convo?.parent_user_id;
+                coachUserIdForMessage = freshUser?.id;
+            }
 
             const bodyToSend = conversationReply.value.trim();
             conversationReply.value = '';
@@ -3647,7 +3741,7 @@ createApp({
             const { data: inserted, error } = await client.from('conversation_messages').insert({
                 conversation_id: convoId, team_id: myTeam.value, sender_id: freshUser?.id,
                 sender_role: isParent.value ? 'parent' : 'coach', body: bodyToSend,
-                parent_user_id: parentUserIdForMessage
+                parent_user_id: parentUserIdForMessage, coach_user_id: coachUserIdForMessage
             }).select().single();
             if (error) { alert("Error sending message: " + error.message); conversationReply.value = bodyToSend; return; }
 
@@ -4950,7 +5044,7 @@ createApp({
             teamColors, saveColors, themeMode, themePreference, setThemePreference,
             title, group, poolType, defaultStroke, workoutVisibility, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
             seasonPlans, activePlanContext, teamGroupsList, staffList, planForm, newGroupName, myRole, myTeam,
-            filterGroup, filterDate, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
+            filterGroup, workoutsTab, pastRangeStart, pastRangeEnd, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
             formatTime, formattedStartTime, save, loadWorkout, startNewWorkout, formatPracticeDate, startNewPlan, editPlan, addWeek, savePlan, deletePlan, deleteWorkout,
             addGroup, updateGroupStartTime, deleteGroup, removeStaff, changeRole, copyInviteLink, showInviteQRCode, showQRCode, qrCodeDataUrl, closeQRCode, joinTeam, createTeam, updateVaultPassword, discardDraft, loadStaff, visibleStaffList,
             showTimeWheelFor, wheelHour, wheelMinute, wheelAmPm, formatTime12h, openTimeWheel, closeTimeWheel, confirmTimeWheel,
@@ -4969,8 +5063,9 @@ createApp({
             teamModules, layoutDraft, draggedLayoutIndex, openLayoutEditor, toggleLayoutModule, layoutDragStart, layoutDrop, saveLayout,
             pushSupported, pushSubscribed, notificationPrefs, myNotificationTypes, enablePushNotifications, disablePushNotifications, toggleNotificationPref, openSettings,
             announcementGroup, announcementTitle, announcementBody, sendingAnnouncement, sendMessage, openMessages,
-            messageTarget, messageFamilyId, broadcastHistory, conversationsList, openConversationId, conversationThread, conversationReply, myConversationId,
+            messageTarget, messageFamilyId, broadcastHistory, conversationsList, openConversationId, conversationThread, conversationReply,
             openConversationThread, sendConversationReply, unsubscribeFromConversation,
+            dmEnabledCoaches, myConversations, openParentConvoId, selectedCoachForNewConvo, loadDmEnabledCoaches, loadMyConversations, openParentConversationThread, closeParentConversation, startConversationWithCoach,
             coachGroupLinksMap, myAssignedGroups, toggleCoachGroup,
             calendarEvents, newCalendarEvent, showNewCalendarEventForm, upcomingCalendarEvents, postableGroups, createCalendarEvent, deleteCalendarEvent,
             calendarViewDate, calendarVisibilityFilter, selectedCalendarDay, calendarMonthLabel, calendarGridDays, eventsByDate,
