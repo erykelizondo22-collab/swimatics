@@ -1286,6 +1286,20 @@
                     </div>
                 </div>
 
+                <div v-if="!isParent && !isOffice" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 space-y-4">
+                    <div>
+                        <h3 class="text-xl font-black uppercase tracking-tight text-slate-900">Send an Announcement</h3>
+                        <p class="text-xs text-slate-400 font-bold mt-1">Sends a push notification directly to parents. They can turn these off individually if they don't want them.</p>
+                    </div>
+                    <select v-model="announcementGroup" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                        <option value="">Whole Team</option>
+                        <option v-for="g in postableGroups" :key="g" :value="g">{{g}}</option>
+                    </select>
+                    <input v-model="announcementTitle" placeholder="Title" maxlength="80" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                    <textarea v-model="announcementBody" placeholder="Message" rows="3" maxlength="500" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none resize-none"></textarea>
+                    <button @click="sendCoachAnnouncement" :disabled="!announcementTitle.trim() || !announcementBody.trim() || sendingAnnouncement" class="w-full bg-slate-900 text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">{{ sendingAnnouncement ? 'Sending...' : 'Send' }}</button>
+                </div>
+
                 <div v-if="pushSubscribed" class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
                     <div v-for="t in myNotificationTypes" :key="t.key" class="p-5 flex justify-between items-center gap-3">
                         <span class="font-bold text-slate-800 text-sm">{{t.label}}</span>
@@ -1556,10 +1570,15 @@ createApp({
             { key: 'meet_entry_override_needed', label: 'A Meet Entry Needs My Review', roles: ['coach', 'admin', 'owner'] },
             { key: 'attendance_reminder', label: "Attendance Not Yet Taken", roles: ['coach', 'admin', 'owner'] },
             { key: 'new_workout', label: 'New Workout Posted', roles: ['coach', 'admin', 'owner'] },
+            { key: 'coach_announcement', label: 'Coach Announcements', roles: ['parent'] },
         ];
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
+        const announcementGroup = ref('');
+        const announcementTitle = ref('');
+        const announcementBody = ref('');
+        const sendingAnnouncement = ref(false);
 
         // ROSTER
         const swimmers = ref([]);
@@ -2540,7 +2559,7 @@ createApp({
                 p256dh: subJson.keys.p256dh,
                 auth_key: subJson.keys.auth,
                 user_agent: navigator.userAgent
-            }, { onConflict: 'user_id,endpoint' });
+            }, { onConflict: 'endpoint' });
 
             if (error) { alert("Error saving subscription: " + error.message); return; }
             pushSubscribed.value = true;
@@ -2758,6 +2777,24 @@ createApp({
             pushSubscribed.value = false;
         }
 
+        async function sendCoachAnnouncement() {
+            if (!announcementTitle.value.trim() || !announcementBody.value.trim()) return;
+            sendingAnnouncement.value = true;
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const { error } = await client.from('coach_announcements').insert({
+                team_id: myTeam.value,
+                group_name: announcementGroup.value || null,
+                title: announcementTitle.value.trim(),
+                body: announcementBody.value.trim(),
+                created_by: freshUser?.id
+            });
+            sendingAnnouncement.value = false;
+            if (error) { alert("Error sending announcement: " + error.message); return; }
+            announcementTitle.value = '';
+            announcementBody.value = '';
+            announcementGroup.value = '';
+        }
+
         // ============================================================
         // NAV DISPATCH — maps each toggleable module key to a label
         // and an action, so the nav dropdown can be rendered from
@@ -2928,6 +2965,7 @@ createApp({
         function openAttendanceMark(groupName) {
             attendanceMarkGroup.value = groupName;
             attendanceGroupFilter.value = groupName;
+            loadAttendanceForDate();
         }
 
         async function openAttendanceAnalytics(groupName) {
@@ -3930,6 +3968,7 @@ createApp({
             accountsList, accountSearchQuery, filteredAccounts, loadAccounts, promoteToCoach, promoteToOffice, demoteToParent,
             teamModules, layoutDraft, draggedLayoutIndex, openLayoutEditor, toggleLayoutModule, layoutDragStart, layoutDrop, saveLayout,
             pushSupported, pushSubscribed, notificationPrefs, myNotificationTypes, enablePushNotifications, disablePushNotifications, toggleNotificationPref, openNotifications,
+            announcementGroup, announcementTitle, announcementBody, sendingAnnouncement, sendCoachAnnouncement,
             coachGroupLinksMap, myAssignedGroups, toggleCoachGroup,
             calendarEvents, newCalendarEvent, showNewCalendarEventForm, upcomingCalendarEvents, postableGroups, createCalendarEvent, deleteCalendarEvent,
             calendarViewDate, calendarVisibilityFilter, selectedCalendarDay, calendarMonthLabel, calendarGridDays, eventsByDate,
