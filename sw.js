@@ -32,15 +32,37 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Intercept network requests and serve from cache if available.
+// The main app document (navigations, and index.html directly) uses
+// network-first: always fetch the latest version when online, and
+// only fall back to whatever's cached if the network request fails
+// (offline). This is what actually lets a new deploy reach users
+// without bumping CACHE_NAME -- the old cache-first-for-everything
+// approach below is why every previous update needed a version bump
+// just to get the new HTML past this service worker.
+const isAppDocument = (request) =>
+  request.mode === 'navigate' || request.url.endsWith('/index.html') || request.url.endsWith('/');
+
 self.addEventListener('fetch', event => {
+  if (isAppDocument(event.request)) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Everything else (manifest, icons) changes rarely, so cache-first
+  // stays faster and still works offline.
   event.respondWith(
     caches.match(event.request).then(response => {
-      // Return the cached version if found.
       if (response) {
         return response;
       }
-      // Otherwise, fetch from the network.
       return fetch(event.request);
     })
   );
