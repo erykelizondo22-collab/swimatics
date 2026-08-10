@@ -433,6 +433,10 @@
                     <div class="p-6 flex flex-col items-center gap-3">
                         <img :src="qrCodeDataUrl" alt="Invite QR code" class="rounded-2xl border border-slate-200">
                         <p class="text-xs text-slate-400 font-bold text-center">Anyone who scans this and signs in with Google joins your team automatically as a parent — great to post at the pool or share in a team group chat.</p>
+                        <div class="flex gap-2 w-full mt-2">
+                            <button @click="textInviteLink('parent')" class="flex-1 bg-slate-50 border border-slate-200 text-slate-700 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-100 transition-colors">💬 Text</button>
+                            <button @click="emailInviteLink('parent')" class="flex-1 bg-slate-50 border border-slate-200 text-slate-700 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-100 transition-colors">✉️ Email</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -465,35 +469,76 @@
                 </div>
             </div>
 
-            <div v-if="currentView === 'onboarding'" class="max-w-5xl mx-auto mt-8 md:mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 text-center relative flex flex-col justify-center hover:shadow-2xl transition-shadow duration-300">
-                    <h2 class="text-2xl md:text-3xl font-black text-slate-900 mb-6 uppercase tracking-tight">Join a Team</h2>
-                    <input v-model="joinCode" placeholder="Team Code" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 uppercase text-center text-lg tracking-widest mb-4 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all">
-                    <input v-model="teamPassword" type="password" placeholder="Vault Password" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 text-center text-lg tracking-widest mb-4 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all">
+            <div v-if="currentView === 'onboarding'" class="max-w-xl mx-auto mt-16 md:mt-24">
+                <div v-if="coachRequestPending" class="bg-white p-10 md:p-14 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
+                    <div class="text-4xl mb-4">⏳</div>
+                    <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Request Sent</h2>
+                    <p class="text-sm text-slate-500 font-medium max-w-sm mx-auto">Your request to join as a coach is waiting on approval from the team owner. You'll be able to sign in as soon as they approve it — check back soon.</p>
+                </div>
 
-                    <button @click="joinAsAthlete = !joinAsAthlete" class="text-[10px] font-black uppercase tracking-widest mb-4" :class="joinAsAthlete ? 'text-blue-600' : 'text-slate-400'">{{ joinAsAthlete ? '✓ Registering as an athlete' : "I'm an athlete, not a parent" }}</button>
+                <div v-else-if="coachRequestBlockedMessage" class="bg-white p-10 md:p-14 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
+                    <div class="text-4xl mb-4">🚫</div>
+                    <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Can't Join Right Now</h2>
+                    <p class="text-sm text-slate-500 font-medium max-w-sm mx-auto">{{coachRequestBlockedMessage}}</p>
+                </div>
 
-                    <template v-if="joinAsAthlete">
-                        <p class="text-[11px] text-slate-400 font-bold mb-3 leading-relaxed">Athlete accounts require a birthdate on file and a minimum age of 13. You can view your own schedule and workouts, but messaging a coach always automatically includes your parent(s) — there's no way to message a coach privately.</p>
-                        <div class="relative mb-4">
-                            <input v-model="athleteSearchQuery" @input="searchForMyAthleteProfile" placeholder="Type your own name..." class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 text-center text-sm outline-none focus:border-blue-500 focus:bg-white transition-all">
-                            <div v-if="athleteSearchQuery && !selectedAthleteSwimmerId && athleteSearchResults.length" class="absolute z-10 top-full left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg mt-1 max-h-48 overflow-y-auto text-left">
-                                <div v-for="r in athleteSearchResults" :key="r.id" @click="selectedAthleteSwimmerId = r.id; athleteSearchQuery = r.first_name + ' ' + r.last_name" class="p-3 hover:bg-slate-50 cursor-pointer text-sm font-bold text-slate-800 border-b border-slate-100 last:border-0">{{r.first_name}} {{r.last_name}}</div>
-                            </div>
+                <div v-else class="bg-white p-10 md:p-14 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
+                    <svg class="animate-spin h-8 w-8 mx-auto mb-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">{{ isProcessingInvite ? 'Sending your request...' : 'Setting up your vault...' }}</h2>
+                    <p class="text-sm text-slate-400 font-medium">{{ isProcessingInvite ? "Just a moment." : "This only takes a second." }}</p>
+                </div>
+            </div>
+
+            <div v-if="currentView === 'team-setup'" class="max-w-2xl mx-auto mt-8 md:mt-16">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Welcome to Swimatics 🎉</h2>
+                    <p class="text-sm font-bold text-slate-400 mt-2">Let's get your team set up — this only takes a minute.</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 mb-6">
+                    <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-1">Team Name</h3>
+                    <p class="text-slate-500 text-sm font-medium mb-4">This is what everyone will see throughout the app.</p>
+                    <input v-model="setupTeamName" placeholder="e.g. South Florida Aquatics" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all">
+                    <p class="text-[10px] text-slate-400 font-bold mt-3">Internal ID: <span class="mono">{{myTeam}}</span> — used only behind the scenes, you'll never need to share it.</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 mb-6">
+                    <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-1">Location</h3>
+                    <p class="text-slate-500 text-sm font-medium mb-4">City and state is plenty — helps families and coaches know it's the right team.</p>
+                    <input v-model="setupLocation" placeholder="e.g. Miami, FL" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all">
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] shadow-sm mb-6">
+                    <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Team Colors</h3>
+                    <p class="text-slate-500 text-sm font-medium mb-6">Used throughout the app — headers, buttons, your invite links.</p>
+                    <div class="flex gap-6">
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Primary</label>
+                            <input type="color" v-model="teamColors.primary" @change="saveColors" class="w-16 h-16 rounded-xl cursor-pointer p-0 border-0 bg-transparent shadow-sm hover:scale-105 transition-transform">
                         </div>
-                        <button @click="submitAthleteRegistration" :disabled="!selectedAthleteSwimmerId || !joinCode || !teamPassword" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-blue-700 hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0">Register as Athlete</button>
-                    </template>
-                    <template v-else>
-                        <p class="text-[11px] text-slate-400 font-bold mb-4 leading-relaxed">You'll join as a parent account. If you're a coach, ask an existing coach to promote you from the Accounts tab once you're in.</p>
-                        <button @click="joinTeam()" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-black hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm">Join Team</button>
-                    </template>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Secondary</label>
+                            <input type="color" v-model="teamColors.secondary" @change="saveColors" class="w-16 h-16 rounded-xl cursor-pointer p-0 border-0 bg-transparent shadow-sm hover:scale-105 transition-transform">
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-gradient-to-br from-blue-600 to-cyan-500 p-8 md:p-12 rounded-[2.5rem] shadow-xl shadow-blue-900/20 text-center text-white relative flex flex-col justify-center hover:shadow-2xl transition-shadow duration-300">
-                    <h2 class="text-2xl md:text-3xl font-black mb-8 uppercase tracking-tight">Create a Vault</h2>
-                    <input v-model="newTeamId" placeholder="New Team Code" class="w-full bg-white/10 border border-white/20 p-4 rounded-2xl font-black text-white placeholder-blue-100/70 uppercase text-center text-lg tracking-widest mb-4 outline-none focus:bg-white/20 focus:border-white/50 transition-all backdrop-blur-sm">
-                    <input v-model="newTeamPassword" type="password" placeholder="Create Password" class="w-full bg-white/10 border border-white/20 p-4 rounded-2xl font-black text-white placeholder-blue-100/70 text-center text-lg tracking-widest mb-8 outline-none focus:bg-white/20 focus:border-white/50 transition-all backdrop-blur-sm">
-                    <button @click="createTeam" class="bg-white text-blue-600 font-black py-5 rounded-2xl shadow-lg hover:scale-[1.02] hover:shadow-xl transition-all duration-300 uppercase tracking-widest text-sm">Launch Vault</button>
+
+                <div class="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] shadow-sm mb-8">
+                    <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Team Logo</h3>
+                    <p class="text-slate-500 text-sm font-medium mb-6">Optional — you can always add this later from Staff.</p>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                        <div class="w-24 h-24 bg-white rounded-2xl border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 z-10 relative shadow-sm">
+                            <img v-if="teamLogoUrl" :src="teamLogoUrl" class="w-full h-full object-contain p-2 relative z-10 bg-white">
+                            <span v-else class="text-slate-300 text-[10px] font-black uppercase text-center leading-tight">No<br>Logo</span>
+                        </div>
+                        <div class="flex-1 w-full">
+                            <input type="file" @change="uploadLogo" accept="image/*" class="block w-full text-sm text-slate-800 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-white file:border file:border-slate-200 file:text-slate-700 hover:file:bg-slate-50 file:transition-colors file:cursor-pointer cursor-pointer outline-none file:shadow-sm file:uppercase file:tracking-widest">
+                            <div v-if="isUploadingLogo" class="text-[10px] font-black text-blue-600 uppercase tracking-widest animate-pulse mt-3">Uploading...</div>
+                        </div>
+                    </div>
                 </div>
+
+                <button @click="completeTeamSetup" :disabled="isSavingSetup || !setupTeamName.trim()" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-black hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0">{{ isSavingSetup ? 'Saving...' : "Let's Go →" }}</button>
             </div>
 
             <div v-if="currentView === 'registration' && isOffice" class="max-w-xl mx-auto space-y-6 mt-6">
@@ -1042,10 +1087,32 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-4v-4m8 0h2m-2 0h-2M4 12H2m2 0h2M9 4H4a1 1 0 00-1 1v4m6-5h6a1 1 0 011 1v4m-7 6v5m0 0H4a1 1 0 01-1-1v-5m0 0h5m6 0h6m0 0v5a1 1 0 01-1 1h-5"></path></svg>
                             Show QR Code
                         </button>
-                        <button @click="copyInviteLink" class="w-full sm:w-auto bg-slate-900 text-white px-6 py-3.5 rounded-xl font-black shadow-lg hover:bg-black transition-colors uppercase tracking-widest text-xs flex items-center justify-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                            Copy Coach Invite Link
-                        </button>
+                        <div class="relative w-full sm:w-auto">
+                            <button @click="showInviteShareMenu = !showInviteShareMenu" class="w-full sm:w-auto bg-slate-900 text-white px-6 py-3.5 rounded-xl font-black shadow-lg hover:bg-black transition-colors uppercase tracking-widest text-xs flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                                Send Coach Invite
+                            </button>
+                            <div v-if="showInviteShareMenu" @click.self="showInviteShareMenu = false" class="fixed inset-0 z-40"></div>
+                            <div v-if="showInviteShareMenu" class="absolute right-0 sm:right-0 top-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden w-full sm:w-56">
+                                <button @click="copyInviteLink(); showInviteShareMenu = false;" class="w-full text-left px-5 py-3.5 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2">📋 Copy Link</button>
+                                <button @click="textInviteLink('coach'); showInviteShareMenu = false;" class="w-full text-left px-5 py-3.5 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2 border-t border-slate-100">💬 Send via Text</button>
+                                <button @click="emailInviteLink('coach'); showInviteShareMenu = false;" class="w-full text-left px-5 py-3.5 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2 border-t border-slate-100">✉️ Send via Email</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="(myRole === 'owner' || myRole === 'admin') && pendingCoachRequests.length" class="bg-amber-50 border border-amber-200 p-6 rounded-[2rem] shadow-sm mb-6">
+                    <h3 class="text-lg font-black text-amber-900 uppercase tracking-tight mb-1">Pending Coach Requests</h3>
+                    <p class="text-amber-700/80 text-xs font-bold mb-4">Someone used your invite link — approve them to grant coach access, or deny to turn them away.</p>
+                    <div class="space-y-2">
+                        <div v-for="r in pendingCoachRequests" :key="r.id" class="bg-white p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-amber-100">
+                            <span class="font-bold text-sm text-slate-800">{{r.email || 'Unknown account'}}</span>
+                            <div class="flex gap-2 shrink-0">
+                                <button @click="decideCoachRequest(r.id, true, r.email)" class="bg-emerald-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest">Approve</button>
+                                <button @click="decideCoachRequest(r.id, false, r.email)" class="bg-red-50 text-red-500 border border-red-200 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest">Deny</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1086,15 +1153,6 @@
                     </div>
                 </div>
 
-                <div v-if="myRole === 'owner'" class="bg-amber-50 border border-amber-200 p-8 rounded-[2rem] shadow-sm mb-8">
-                    <h3 class="text-xl font-black text-amber-900 uppercase tracking-tight mb-2">Vault Security</h3>
-                    <p class="text-amber-700/80 text-sm font-medium mb-6">Change the master password to instantly lock out anyone using the old credentials.</p>
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <input v-model="newVaultPassword" type="password" placeholder="Enter New Master Password" class="flex-1 p-4 rounded-xl border border-amber-300 font-black text-amber-900 tracking-widest outline-none focus:border-amber-500 focus:bg-white focus:ring-4 focus:ring-amber-500/10 transition-all">
-                        <button @click="updateVaultPassword" class="bg-amber-500 text-white font-black px-8 py-4 rounded-xl uppercase tracking-widest text-xs hover:bg-amber-600 shadow-md transition-colors whitespace-nowrap">Change Password</button>
-                    </div>
-                </div>
-
                 <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200 space-y-4">
                     <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest border-b border-slate-100 pb-4 mb-4">Active Members</h3>
                     <div v-for="member in visibleStaffList" :key="member.id" class="flex flex-col sm:flex-row justify-between sm:items-center bg-slate-50 p-5 rounded-2xl border border-slate-200 gap-4 hover:border-slate-300 transition-colors">
@@ -1111,7 +1169,7 @@
                         
                         <div v-if="(myRole === 'owner' || myRole === 'admin') && member.id !== user.id" class="flex gap-2 items-center">
                             <select v-if="myRole === 'owner'" 
-                                    @change="changeRole(member.id, member.name || member.email, $event.target.value)" 
+                                    @change="changeRole(member.id, member.name || member.email, $event.target.value, member.role)" 
                                     :value="member.role"
                                     class="bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest px-3 py-2.5 rounded-xl text-slate-700 outline-none focus:border-slate-400 cursor-pointer shadow-sm">
                                 <option value="parent">Parent</option>
@@ -1122,7 +1180,7 @@
                             </select>
 
                             <button v-if="myRole === 'admin' && member.role === 'coach'" 
-                                    @click="changeRole(member.id, member.name || member.email, 'admin')" 
+                                    @click="changeRole(member.id, member.name || member.email, 'admin', member.role)" 
                                     class="text-blue-600 font-black px-4 py-2.5 hover:bg-blue-100 rounded-xl transition-colors uppercase text-[10px] tracking-widest bg-blue-50 border border-blue-100">
                                 Promote
                             </button>
@@ -2176,6 +2234,24 @@
                         <h3 class="text-2xl font-black uppercase text-slate-900">{{s.first_name}} {{s.last_name}}</h3>
                         <span class="text-[10px] font-black uppercase bg-slate-100 px-3 py-1.5 rounded-lg text-slate-500">{{s.group_name}}</span>
                     </div>
+
+                    <div v-if="!s.athlete_user_id" class="relative">
+                        <button @click="athleteShareMenuFor = (athleteShareMenuFor === s.id ? null : s.id)" class="w-full text-left bg-slate-50 hover:bg-slate-100 transition-colors p-4 rounded-2xl flex items-center justify-between gap-3">
+                            <div>
+                                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">No athlete account yet</div>
+                                <div class="text-sm font-bold text-slate-700 mt-0.5">Send {{s.first_name}} their own account link</div>
+                            </div>
+                            <span class="text-slate-400 text-lg shrink-0">→</span>
+                        </button>
+                        <div v-if="athleteShareMenuFor === s.id" @click.self="athleteShareMenuFor = null" class="fixed inset-0 z-40"></div>
+                        <div v-if="athleteShareMenuFor === s.id" class="absolute left-0 right-0 top-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                            <button @click="copyAthleteLink(s.id, s.first_name); athleteShareMenuFor = null;" class="w-full text-left px-5 py-3.5 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-colors">📋 Copy Link</button>
+                            <button @click="textAthleteLink(s.id); athleteShareMenuFor = null;" class="w-full text-left px-5 py-3.5 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-colors border-t border-slate-100">💬 Send via Text</button>
+                            <button @click="emailAthleteLink(s.id, s.first_name); athleteShareMenuFor = null;" class="w-full text-left px-5 py-3.5 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-colors border-t border-slate-100">✉️ Send via Email</button>
+                        </div>
+                        <p class="text-[10px] text-slate-400 font-bold mt-2 px-1">Athletes must be 13+ with a birthdate on file. This link is specific to {{s.first_name}} — whoever opens it gets linked to this exact profile automatically.</p>
+                    </div>
+
                     <div class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl">
                         <div>
                             <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Attendance ({{selectedSeasonName}})</h4>
@@ -2486,6 +2562,11 @@ createApp({
         const pastRangeEnd = ref('');
         const joinCode = ref(""); 
         const showQRCode = ref(false);
+        const showInviteShareMenu = ref(false);
+        const athleteShareMenuFor = ref(null);
+        const coachRequestPending = ref(false);
+        const coachRequestBlockedMessage = ref('');
+        const pendingCoachRequests = ref([]);
         const qrCodeDataUrl = ref('');
         const teamPassword = ref(""); 
         const newTeamId = ref(""); 
@@ -2495,6 +2576,10 @@ createApp({
         const isUploadingLogo = ref(false);
         const teamColors = ref({ primary: '#0ea5e9', secondary: '#0284c7' });
         const myTeamPlan = ref(null);
+        const myTeamSetupCompleted = ref(true);
+        const setupTeamName = ref('');
+        const setupLocation = ref('');
+        const isSavingSetup = ref(false);
         const myTeamSubStatus = ref(null);
         const myTeamTrialEnds = ref(null);
 
@@ -2569,6 +2654,7 @@ createApp({
         
         const hasPendingInvite = ref(false);
         const isProcessingInvite = ref(false);
+        const isCreatingVault = ref(false);
 
         const planForm = ref({ id: null, title: '', group_name: '', start_date: '', weeks: [] });
         const seasonPlanTab = ref('builder');
@@ -2871,7 +2957,77 @@ createApp({
             localStorage.removeItem('pending_invite_code');
             localStorage.removeItem('pending_invite_key');
             localStorage.removeItem('pending_invite_role');
+            localStorage.removeItem('pending_invite_swimmer');
             location.reload();
+        }
+
+        // Individualized athlete link -- skips the manual "search your
+        // own name" step entirely by calling join_team_as_athlete
+        // directly with the specific swimmer id the link was built for.
+        async function joinAsAthleteViaLink(teamId, passwordHash, swimmerId) {
+            const { error } = await client.rpc('join_team_as_athlete', {
+                p_team_id: teamId, p_password_hash: passwordHash, p_swimmer_id: swimmerId
+            });
+            localStorage.removeItem('pending_invite_code');
+            localStorage.removeItem('pending_invite_key');
+            localStorage.removeItem('pending_invite_role');
+            localStorage.removeItem('pending_invite_swimmer');
+            if (error) {
+                isProcessingInvite.value = false;
+                alert("Error setting up your athlete account: " + error.message);
+                return;
+            }
+            location.reload();
+        }
+
+        // Coach invite links no longer grant access immediately -- they
+        // create a request an owner/admin has to approve first. This is
+        // also what stops a removed or declined coach from silently
+        // getting back in with the same old link: request_coach_access
+        // reports their existing status instead of creating a new
+        // approval every time.
+        async function requestCoachAccessViaLink(teamId, passwordHash) {
+            const { data, error } = await client.rpc('request_coach_access', { p_team_id: teamId, p_password_hash: passwordHash });
+            localStorage.removeItem('pending_invite_code');
+            localStorage.removeItem('pending_invite_key');
+            localStorage.removeItem('pending_invite_role');
+            localStorage.removeItem('pending_invite_swimmer');
+            isProcessingInvite.value = false;
+
+            if (error) { alert("Error requesting access: " + error.message); return; }
+
+            if (data === 'already_member') { location.reload(); return; }
+            if (data === 'blocked') {
+                coachRequestBlockedMessage.value = "This invite link no longer works for your account. Ask your team owner for a fresh invite.";
+                return;
+            }
+            // 'created' or 'already_pending'
+            coachRequestPending.value = true;
+        }
+
+        // Checks for an outstanding request from a PREVIOUS visit, so
+        // simply reopening the app while waiting on approval doesn't
+        // accidentally auto-create a brand new vault for this person.
+        async function checkMyPendingCoachRequest() {
+            const { data } = await client.from('coach_join_requests').select('status').eq('user_id', user.value.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+            if (!data) return false;
+            if (data.status === 'pending') { coachRequestPending.value = true; return true; }
+            if (data.status === 'denied') { coachRequestBlockedMessage.value = "Your request to join this team was declined. Contact the team owner if you think this is a mistake."; return true; }
+            return false;
+        }
+
+        async function loadPendingCoachRequests() {
+            const { data } = await client.from('coach_join_requests').select('*').eq('team_id', myTeam.value).eq('status', 'pending').order('created_at', { ascending: true });
+            pendingCoachRequests.value = data || [];
+        }
+
+        async function decideCoachRequest(requestId, approve, email) {
+            const verb = approve ? 'approve' : 'deny';
+            if (!confirm(`Are you sure you want to ${verb} ${email || 'this person'}${approve ? ' as a coach' : ''}?`)) return;
+            const { error } = await client.rpc('decide_coach_request', { p_request_id: requestId, p_approve: approve });
+            if (error) { alert("Error: " + error.message); return; }
+            loadPendingCoachRequests();
+            if (approve) loadStaff();
         }
 
         async function createTeam() {
@@ -2888,6 +3044,48 @@ createApp({
             // no plan selected yet, so its first owner must always be allowed
             // through regardless of any staff limit.
             await client.auth.updateUser({ data: { team_id: upperCode, team_role: 'owner' } });
+            location.reload();
+        }
+
+        // Auto-creates a vault for a genuinely new sign-in (no pending
+        // invite, no existing team) -- replaces manually typing a team
+        // code and password. Derives a starting code from the person's
+        // name, retrying with a random suffix on the rare collision.
+        // The vault still gets a real password under the hood, since
+        // the coach invite link and parent QR code both still rely on
+        // one -- it's just never manually chosen or seen here.
+        async function autoCreateVault() {
+            isCreatingVault.value = true;
+            const { data: { user: freshUser } } = await client.auth.getUser();
+            const base = (freshUser?.user_metadata?.full_name || freshUser?.email?.split('@')[0] || 'TEAM')
+                .toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12) || 'TEAM';
+
+            let code = base;
+            let attempt = 0;
+            let created = false;
+
+            while (!created && attempt < 5) {
+                if (attempt > 0) code = base + Math.floor(1000 + Math.random() * 9000);
+                const randomPwd = Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b => b.toString(36)).join('').slice(0, 16);
+                const hashedPwd = await sha256Hex(randomPwd);
+                const { error } = await client.from('teams').insert({ id: code, password: hashedPwd });
+                if (!error) {
+                    created = true;
+                } else if (error.code !== '23505') {
+                    isCreatingVault.value = false;
+                    alert("Error setting up your vault: " + error.message);
+                    return;
+                }
+                attempt++;
+            }
+
+            if (!created) {
+                isCreatingVault.value = false;
+                alert("Couldn't set up your vault right now — please try again.");
+                return;
+            }
+
+            await client.auth.updateUser({ data: { team_id: code, team_role: 'owner' } });
             location.reload();
         }
 
@@ -2946,7 +3144,7 @@ createApp({
 
         async function loadTeamSettings() {
             if(!myTeam.value) return;
-            const { data } = await client.from('teams').select('logo_url, primary_color, secondary_color, plan, subscription_status, trial_ends_at').eq('id', myTeam.value).single();
+            const { data } = await client.from('teams').select('logo_url, primary_color, secondary_color, plan, subscription_status, trial_ends_at, name, location, setup_completed').eq('id', myTeam.value).single();
             
             if(data) {
                 if(data.primary_color) teamColors.value.primary = data.primary_color;
@@ -2955,7 +3153,28 @@ createApp({
                 myTeamPlan.value = data.plan;
                 myTeamSubStatus.value = data.subscription_status;
                 myTeamTrialEnds.value = data.trial_ends_at;
+                myTeamSetupCompleted.value = data.setup_completed;
+                setupTeamName.value = data.name || '';
+                setupLocation.value = data.location || '';
             }
+        }
+
+        // Finishes the one-time setup page shown after a fresh vault's
+        // first successful payment -- name and location are saved here;
+        // colors and logo save independently via their own existing
+        // functions, reused as-is on this same page.
+        async function completeTeamSetup() {
+            if (!setupTeamName.value.trim()) return alert("Please enter a team name.");
+            isSavingSetup.value = true;
+            const { error } = await client.from('teams').update({
+                name: setupTeamName.value.trim(),
+                location: setupLocation.value.trim() || null,
+                setup_completed: true
+            }).eq('id', myTeam.value);
+            isSavingSetup.value = false;
+            if (error) return alert("Error saving your team: " + error.message);
+            myTeamSetupCompleted.value = true;
+            location.reload();
         }
 
         async function saveColors() {
@@ -3114,16 +3333,6 @@ createApp({
                 alert("Error importing PDF: " + err.message);
                 isImportingPdf.value = false;
                 pdfImportProgress.value = "";
-            }
-        }
-
-        async function updateVaultPassword() {
-            if(!newVaultPassword.value) return alert("Enter a new password");
-            if(confirm("Are you sure? All magic links previously sent will instantly stop working.")) {
-                const hashedPwd = await sha256Hex(newVaultPassword.value);
-                const { error } = await client.rpc('change_team_password', { p_team_id: myTeam.value, new_password: hashedPwd });
-                if(error) alert("Error: " + error.message);
-                else { alert("Master password updated securely."); newVaultPassword.value = ""; }
             }
         }
 
@@ -3566,8 +3775,13 @@ createApp({
             }
         }
 
-        async function changeRole(id, name, newRole) {
-            if(confirm(`Update ${name} to ${newRole.toUpperCase()}?`)) {
+        async function changeRole(id, name, newRole, oldRole) {
+            const rank = { parent: 0, office: 1, coach: 2, admin: 3, owner: 4 };
+            const isDemotion = oldRole && rank[newRole] !== undefined && rank[oldRole] !== undefined && rank[newRole] < rank[oldRole];
+            const message = isDemotion
+                ? `Are you sure you want to demote ${name} from ${oldRole.toUpperCase()} to ${newRole.toUpperCase()}? They'll immediately lose any access the old role had.`
+                : `Update ${name} to ${newRole.toUpperCase()}?`;
+            if(confirm(message)) {
                 const { error } = await client.rpc('change_team_role', { target_user_id: id, p_team_id: myTeam.value, new_role: newRole });
                 if(error) alert("Error: " + error.message);
                 else loadStaff();
@@ -4589,7 +4803,7 @@ createApp({
             'meets': { label: 'Meets', icon: '🏆', activeViews: ['meets','meet-detail'], onSelect: () => { currentView.value = 'meets'; loadMeets(); } },
             'import': { label: 'Import', icon: '📥', activeViews: ['import'], onSelect: () => { currentView.value = 'import'; resetImport(); } },
             'calendar': { label: 'Calendar', icon: '📅', activeViews: ['calendar'], onSelect: () => { currentView.value = 'calendar'; loadCalendarEvents(); loadMyAssignedGroups(); } },
-            'staff': { label: 'Staff', icon: '🧑\u200d🏫', activeViews: ['staff'], onSelect: () => { currentView.value = 'staff'; loadStaff(); loadCoachGroupLinks(); } },
+            'staff': { label: 'Staff', icon: '🧑\u200d🏫', activeViews: ['staff'], onSelect: () => { currentView.value = 'staff'; loadStaff(); loadCoachGroupLinks(); loadPendingCoachRequests(); } },
             'accounts': { label: 'Accounts', icon: '👤', activeViews: ['accounts'], onSelect: () => { currentView.value = 'accounts'; loadAccounts(); loadFamilyAccounts(); } },
         };
 
@@ -4632,7 +4846,7 @@ createApp({
         async function buildInviteLink(role) {
             const { data, error } = await client.from('teams').select('password').eq('id', myTeam.value).single();
             if (error) { alert("Error building invite link: " + error.message); return null; }
-            if (!data || !data.password) { alert("Couldn't find a vault password for this team yet -- set one under Vault Security first."); return null; }
+            if (!data || !data.password) { alert("Couldn't find this team's vault credentials -- contact support."); return null; }
             const encodedPwd = btoa(data.password);
             return `${window.location.origin}${window.location.pathname}?invite=${myTeam.value}&key=${encodedPwd}&role=${role}`;
         }
@@ -4646,6 +4860,62 @@ createApp({
             } catch (e) {
                 alert("Couldn't copy automatically -- here's the link to copy by hand:\n\n" + link);
             }
+        }
+
+        // Sends the coach invite link via the person's own texting or
+        // email app, prefilled and ready to send -- an alternative to
+        // copying and pasting it manually.
+        async function textInviteLink(role) {
+            const link = await buildInviteLink(role);
+            if (!link) return;
+            const body = encodeURIComponent(`Join our team on Swimatics: ${link}`);
+            window.location.href = `sms:?body=${body}`;
+        }
+
+        async function emailInviteLink(role) {
+            const link = await buildInviteLink(role);
+            if (!link) return;
+            const subject = encodeURIComponent(`Join ${setupTeamName.value || myTeam.value} on Swimatics`);
+            const body = encodeURIComponent(`You're invited to join our team on Swimatics!\n\n${link}`);
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        }
+
+        // Individualized athlete link -- a parent generates this for ONE
+        // specific swimmer. Carries the swimmer's own id in the URL, so
+        // whoever clicks it and signs in gets linked to THAT exact
+        // athlete profile automatically (via join_team_as_athlete),
+        // instead of manually searching their own name from a roster.
+        async function buildAthleteInviteLink(swimmerId) {
+            const { data, error } = await client.from('teams').select('password').eq('id', myTeam.value).single();
+            if (error || !data?.password) { alert("Error building link: " + (error?.message || "couldn't find team credentials")); return null; }
+            const encodedPwd = btoa(data.password);
+            return `${window.location.origin}${window.location.pathname}?invite=${myTeam.value}&key=${encodedPwd}&role=athlete&swimmer=${swimmerId}`;
+        }
+
+        async function copyAthleteLink(swimmerId, swimmerName) {
+            const link = await buildAthleteInviteLink(swimmerId);
+            if (!link) return;
+            try {
+                await navigator.clipboard.writeText(link);
+                alert(`Account link for ${swimmerName} copied!`);
+            } catch (e) {
+                alert("Couldn't copy automatically -- here's the link to copy by hand:\n\n" + link);
+            }
+        }
+
+        async function textAthleteLink(swimmerId) {
+            const link = await buildAthleteInviteLink(swimmerId);
+            if (!link) return;
+            const body = encodeURIComponent(`Here's your link to set up your own Swimatics account: ${link}`);
+            window.location.href = `sms:?body=${body}`;
+        }
+
+        async function emailAthleteLink(swimmerId, swimmerName) {
+            const link = await buildAthleteInviteLink(swimmerId);
+            if (!link) return;
+            const subject = encodeURIComponent(`Your Swimatics account, ${swimmerName}`);
+            const body = encodeURIComponent(`Here's your personal link to set up your own Swimatics account:\n\n${link}`);
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
         }
 
         async function showInviteQRCode() {
@@ -5345,6 +5615,11 @@ createApp({
                 localStorage.setItem('pending_invite_code', urlParams.get('invite'));
                 localStorage.setItem('pending_invite_key', urlParams.get('key'));
                 localStorage.setItem('pending_invite_role', urlParams.get('role') || 'coach');
+                if (urlParams.get('swimmer')) {
+                    localStorage.setItem('pending_invite_swimmer', urlParams.get('swimmer'));
+                } else {
+                    localStorage.removeItem('pending_invite_swimmer');
+                }
                 hasPendingInvite.value = true;
                 window.history.replaceState({}, document.title, window.location.pathname);
             } else if (localStorage.getItem('pending_invite_code')) {
@@ -5367,37 +5642,57 @@ createApp({
                     if (localStorage.getItem('pending_invite_code')) {
                         isProcessingInvite.value = true;
                         currentView.value = 'onboarding';
-                        joinCode.value = localStorage.getItem('pending_invite_code');
+                        const inviteCode = localStorage.getItem('pending_invite_code');
                         // FIX: the invite link carries the already-hashed password (see
                         // copyInviteLink) — pass it straight to joinTeam instead of putting
                         // it in teamPassword.value, which would get hashed a second time
                         // and never match.
                         const inviteHash = atob(localStorage.getItem('pending_invite_key'));
                         const inviteRole = localStorage.getItem('pending_invite_role') || 'coach';
-                        setTimeout(() => joinTeam(inviteHash, inviteRole), 1000); 
+                        const inviteSwimmerId = localStorage.getItem('pending_invite_swimmer');
+
+                        if (inviteRole === 'athlete' && inviteSwimmerId) {
+                            setTimeout(() => joinAsAthleteViaLink(inviteCode, inviteHash, inviteSwimmerId), 1000);
+                        } else if (inviteRole === 'coach') {
+                            setTimeout(() => requestCoachAccessViaLink(inviteCode, inviteHash), 1000);
+                        } else {
+                            joinCode.value = inviteCode;
+                            setTimeout(() => joinTeam(inviteHash, inviteRole), 1000);
+                        }
                     } else {
+                        // No invite pending in localStorage -- but check for an
+                        // outstanding coach request from a previous visit first,
+                        // so simply reopening the app while waiting on approval
+                        // doesn't accidentally auto-create a brand new vault.
                         currentView.value = 'onboarding';
+                        const hasOutstandingRequest = await checkMyPendingCoachRequest();
+                        if (!hasOutstandingRequest) autoCreateVault();
                     }
                 } else {
                     await checkForPendingCheckout();
-                    loadTeamSettings();
-                    loadGroups();
-                    loadTeamLayout();
-                    if (isParent.value) {
-                        currentView.value = 'parent-home';
-                        loadMyLinkedSwimmers();
-                        loadMeets();
-                        loadCalendarEvents();
-                    } else if (isOffice.value) {
-                        currentView.value = 'roster';
-                        loadSwimmers();
-                        refreshMyRole();
+                    await loadTeamSettings();
+
+                    if (myRole.value === 'owner' && myTeamPlan.value && !myTeamSetupCompleted.value) {
+                        currentView.value = 'team-setup';
                     } else {
-                        currentView.value = 'dashboard';
-                        loadWorkouts();
-                        loadSeasonPlans();
-                        loadMyAssignedGroups();
-                        refreshMyRole();
+                        loadGroups();
+                        loadTeamLayout();
+                        if (isParent.value) {
+                            currentView.value = 'parent-home';
+                            loadMyLinkedSwimmers();
+                            loadMeets();
+                            loadCalendarEvents();
+                        } else if (isOffice.value) {
+                            currentView.value = 'roster';
+                            loadSwimmers();
+                            refreshMyRole();
+                        } else {
+                            currentView.value = 'dashboard';
+                            loadWorkouts();
+                            loadSeasonPlans();
+                            loadMyAssignedGroups();
+                            refreshMyRole();
+                        }
                     }
                 }
             }
@@ -5906,14 +6201,18 @@ createApp({
 
         return {
             user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, drawerRef, printTarget, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
-            hasPendingInvite, isProcessingInvite, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
+            hasPendingInvite, isProcessingInvite, isCreatingVault, autoCreateVault, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors, themeMode, themePreference, setThemePreference,
             myTeamPlan, myTeamSubStatus, myTeamTrialEnds, planStatusDisplay, openBillingPortal,
+            myTeamSetupCompleted, setupTeamName, setupLocation, isSavingSetup, completeTeamSetup,
+            textInviteLink, emailInviteLink, showInviteShareMenu,
+            athleteShareMenuFor, copyAthleteLink, textAthleteLink, emailAthleteLink, joinAsAthleteViaLink,
+            coachRequestPending, coachRequestBlockedMessage, pendingCoachRequests, requestCoachAccessViaLink, decideCoachRequest,
             title, group, poolType, defaultStroke, workoutVisibility, workoutFontSize, printWorkoutSheet, printCalendarSheet, printWatermarkPositions, publicWorkouts, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
             seasonPlans, activePlanContext, teamGroupsList, staffList, planForm, newGroupName, myRole, myTeam,
             filterGroup, workoutsTab, pastRangeStart, pastRangeEnd, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
             formatTime, formattedStartTime, save, loadWorkout, startNewWorkout, formatPracticeDate, startNewPlan, editPlan, addWeek, savePlan, deletePlan, deleteWorkout,
-            addGroup, updateGroupStartTime, deleteGroup, removeStaff, changeRole, copyInviteLink, showInviteQRCode, showQRCode, qrCodeDataUrl, closeQRCode, joinTeam, createTeam, updateVaultPassword, discardDraft, loadStaff, visibleStaffList,
+            addGroup, updateGroupStartTime, deleteGroup, removeStaff, changeRole, copyInviteLink, showInviteQRCode, showQRCode, qrCodeDataUrl, closeQRCode, joinTeam, createTeam, discardDraft, loadStaff, visibleStaffList,
             showTimeWheelFor, wheelHour, wheelMinute, wheelAmPm, formatTime12h, openTimeWheel, closeTimeWheel, confirmTimeWheel,
             hasDraft, resumeDraft, currentSetPace, updateCursor, stressScore, stressColor,
             analyticsGroup, analyticsStartDate, analyticsEndDate, analyticsStats, resetAnalyticsDates,
