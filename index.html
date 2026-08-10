@@ -67,6 +67,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     color: #fff; display: flex; align-items: center; gap: 9px;
 }
 .nav-brand .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--aqua); box-shadow: 0 0 12px 2px rgba(20,184,212,0.7); }
+.nav-brand .icon { width: 30px; height: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.25); }
+footer .nav-brand .icon { width: 26px; height: 26px; }
 .nav-cta {
     background: var(--aqua); color: var(--navy-deep);
     font-weight: 700; font-size: 13px; letter-spacing: 0.03em;
@@ -282,7 +284,7 @@ footer .nav-brand { justify-content: center; margin-bottom: 8px; color: #fff; fo
 <body>
 
 <nav class="nav" id="nav">
-    <div class="nav-brand"><span class="dot"></span>SWIMATICS</div>
+    <div class="nav-brand"><img src="icon.png" alt="Swimatics" class="icon">SWIMATICS</div>
     <a href="#" class="nav-cta" id="navCta">Join Now / Sign In</a>
 </nav>
 
@@ -454,7 +456,7 @@ footer .nav-brand { justify-content: center; margin-bottom: 8px; color: #fff; fo
 </section>
 
 <footer>
-    <div class="nav-brand" style="justify-content:center;"><span class="dot"></span>SWIMATICS</div>
+    <div class="nav-brand" style="justify-content:center;"><img src="icon.png" alt="Swimatics" class="icon">SWIMATICS</div>
     <div>Built for coaches, by coaches.</div>
 </footer>
 
