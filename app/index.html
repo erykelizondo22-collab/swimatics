@@ -538,6 +538,11 @@
                         <p class="text-[11px] text-slate-400 font-bold text-center">Every plan includes a free 7-day trial — your card is charged nothing today.</p>
                     </div>
 
+                    <div class="bg-amber-50 border border-amber-200 p-5 rounded-2xl mb-6 flex gap-3">
+                        <span class="text-lg shrink-0">⚠️</span>
+                        <p class="text-xs text-amber-800 font-bold leading-relaxed">If you cancel — during your trial or anytime after — your team's data is permanently deleted 7 days later. There's no recovery after that. If you just want a break, letting the subscription lapse still starts this same 7-day countdown, so reach out first if you're unsure.</p>
+                    </div>
+
                     <button @click="submitVaultSetupAndCheckout" :disabled="!vaultSetupName.trim()" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-black hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0">Continue to Checkout →</button>
                 </div>
             </div>
@@ -1802,6 +1807,7 @@
                         <button v-if="planStatusDisplay.showPortal" @click="openBillingPortal" class="text-[10px] font-black uppercase bg-slate-900 text-white px-4 py-2.5 rounded-lg shrink-0">Manage Billing</button>
                         <a v-else href="/" class="text-[10px] font-black uppercase bg-slate-900 text-white px-4 py-2.5 rounded-lg shrink-0">Choose a Plan</a>
                     </div>
+                    <p v-if="planStatusDisplay.showPortal" class="text-[10px] text-slate-400 font-bold mt-3 px-1">Canceling deletes your team's data permanently 7 days later — there's no recovery after that.</p>
                 </div>
 
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
@@ -2635,6 +2641,7 @@ createApp({
         const isSavingSetup = ref(false);
         const myTeamSubStatus = ref(null);
         const myTeamTrialEnds = ref(null);
+        const myTeamCanceledAt = ref(null);
 
         // THEME — a personal preference, not a team setting. Defaults to
         // "auto" (follow the device's own light/dark setting) unless this
@@ -3199,7 +3206,7 @@ createApp({
 
         async function loadTeamSettings() {
             if(!myTeam.value) return;
-            const { data } = await client.from('teams').select('logo_url, primary_color, secondary_color, plan, subscription_status, trial_ends_at, name, location, setup_completed').eq('id', myTeam.value).single();
+            const { data } = await client.from('teams').select('logo_url, primary_color, secondary_color, plan, subscription_status, trial_ends_at, canceled_at, name, location, setup_completed').eq('id', myTeam.value).single();
             
             if(data) {
                 if(data.primary_color) teamColors.value.primary = data.primary_color;
@@ -3208,6 +3215,7 @@ createApp({
                 myTeamPlan.value = data.plan;
                 myTeamSubStatus.value = data.subscription_status;
                 myTeamTrialEnds.value = data.trial_ends_at;
+                myTeamCanceledAt.value = data.canceled_at;
                 myTeamSetupCompleted.value = data.setup_completed;
                 setupTeamName.value = data.name || '';
                 setupLocation.value = data.location || '';
@@ -5075,7 +5083,13 @@ createApp({
             }
             if (myTeamSubStatus.value === 'active') return { label: planLabel, detail: 'Active subscription.', urgent: false, showPortal: true };
             if (myTeamSubStatus.value === 'past_due') return { label: planLabel, detail: 'Payment failed — please update your card to avoid losing access.', urgent: true, showPortal: true };
-            if (myTeamSubStatus.value === 'canceled') return { label: planLabel, detail: 'Subscription canceled — gated features are no longer available.', urgent: true, showPortal: true };
+            if (myTeamSubStatus.value === 'canceled') {
+                const daysLeft = myTeamCanceledAt.value ? Math.max(0, 7 - Math.floor((new Date() - new Date(myTeamCanceledAt.value)) / 86400000)) : null;
+                const detail = daysLeft != null
+                    ? `Canceled — all data will be permanently deleted in ${daysLeft} day${daysLeft === 1 ? '' : 's'} unless you resubscribe.`
+                    : 'Subscription canceled — gated features are no longer available.';
+                return { label: planLabel, detail, urgent: true, showPortal: true };
+            }
             return { label: planLabel, detail: '', urgent: false, showPortal: true };
         });
 
@@ -6264,7 +6278,7 @@ createApp({
             user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, drawerRef, printTarget, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
             hasPendingInvite, isProcessingInvite, isCreatingVault, submitVaultSetupAndCheckout, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors, themeMode, themePreference, setThemePreference,
-            myTeamPlan, myTeamSubStatus, myTeamTrialEnds, planStatusDisplay, openBillingPortal,
+            myTeamPlan, myTeamSubStatus, myTeamTrialEnds, myTeamCanceledAt, planStatusDisplay, openBillingPortal,
             myTeamSetupCompleted, setupTeamName, setupLocation, isSavingSetup, completeTeamSetup,
             textInviteLink, emailInviteLink, showInviteShareMenu,
             athleteShareMenuFor, copyAthleteLink, textAthleteLink, emailAthleteLink, joinAsAthleteViaLink,
