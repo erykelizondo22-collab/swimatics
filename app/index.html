@@ -366,6 +366,14 @@
 
         <div :key="currentView" class="page-transition max-w-[1200px] mx-auto p-4 md:p-6 mt-6 relative">
             
+            <div v-if="myTeam && !myTeamPlan && currentView !== 'settings'" class="mb-6 bg-slate-900 text-white p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <div class="font-black uppercase tracking-widest text-xs mb-1">No plan selected yet</div>
+                    <div class="text-sm text-white/70 font-medium">{{ myRole === 'owner' ? 'Choose a plan to unlock the rest of Swimatics — everyone gets a free 7-day trial.' : 'Ask your team owner to choose a plan to unlock the rest of Swimatics.' }}</div>
+                </div>
+                <a v-if="myRole === 'owner'" href="/" class="shrink-0 bg-white text-slate-900 px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs">Choose a Plan</a>
+            </div>
+
             <div v-if="showSwimmerProfileFor" @click.self="closeSwimmerProfile" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                 <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
                     <div class="p-6 flex justify-between items-start text-white shrink-0" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
@@ -1673,6 +1681,18 @@
                     <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Just for you, on this device</p>
                 </div>
 
+                <div v-if="myRole === 'owner'" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                    <h3 class="text-xl font-black uppercase tracking-tight text-slate-900 mb-4">Plan & Billing</h3>
+                    <div class="flex items-center justify-between gap-3 p-4 rounded-2xl" :class="planStatusDisplay.urgent ? 'bg-red-50' : 'bg-slate-50'">
+                        <div>
+                            <div class="font-black text-sm" :class="planStatusDisplay.urgent ? 'text-red-600' : 'text-slate-800'">{{planStatusDisplay.label}}</div>
+                            <div class="text-xs font-medium mt-1" :class="planStatusDisplay.urgent ? 'text-red-500' : 'text-slate-500'">{{planStatusDisplay.detail}}</div>
+                        </div>
+                        <button v-if="planStatusDisplay.showPortal" @click="openBillingPortal" class="text-[10px] font-black uppercase bg-slate-900 text-white px-4 py-2.5 rounded-lg shrink-0">Manage Billing</button>
+                        <a v-else href="/" class="text-[10px] font-black uppercase bg-slate-900 text-white px-4 py-2.5 rounded-lg shrink-0">Choose a Plan</a>
+                    </div>
+                </div>
+
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
                     <h3 class="text-xl font-black uppercase tracking-tight text-slate-900 mb-1">Appearance</h3>
                     <p class="text-xs text-slate-400 font-bold mb-4">Just for you — everyone else keeps their own choice.</p>
@@ -2474,6 +2494,9 @@ createApp({
         const teamLogoUrl = ref("");
         const isUploadingLogo = ref(false);
         const teamColors = ref({ primary: '#0ea5e9', secondary: '#0284c7' });
+        const myTeamPlan = ref(null);
+        const myTeamSubStatus = ref(null);
+        const myTeamTrialEnds = ref(null);
 
         // THEME — a personal preference, not a team setting. Defaults to
         // "auto" (follow the device's own light/dark setting) unless this
@@ -2841,7 +2864,10 @@ createApp({
             const { data } = await client.from('teams').select('id').eq('id', code).eq('password', pwdToCheck);
             if (!data?.length) return alert("Invalid Team Credentials");
             const roleToAssign = roleOverride || (preHashedPassword !== undefined ? 'coach' : 'parent');
-            await client.auth.updateUser({ data: { team_id: code, team_role: roleToAssign } });
+            // Routed through join_team_role (not a direct auth.updateUser call) so a
+            // team at its plan's staff limit can't silently exceed it.
+            const { error } = await client.rpc('join_team_role', { p_team_id: code, p_role: roleToAssign });
+            if (error) return alert(error.message);
             localStorage.removeItem('pending_invite_code');
             localStorage.removeItem('pending_invite_key');
             localStorage.removeItem('pending_invite_role');
@@ -2858,18 +2884,77 @@ createApp({
                 return alert("Error: " + error.message);
             }
             
+            // Not routed through the capped RPC on purpose -- a brand new team has
+            // no plan selected yet, so its first owner must always be allowed
+            // through regardless of any staff limit.
             await client.auth.updateUser({ data: { team_id: upperCode, team_role: 'owner' } });
             location.reload();
         }
 
+        // If someone arrived here fresh off the landing page's plan
+        // picker, the URL carries ?plan=X&interval=Y -- pick that up
+        // once and continue straight into real Stripe checkout instead
+        // of just opening to the dashboard.
+        async function checkForPendingCheckout() {
+            const params = new URLSearchParams(window.location.search);
+            const plan = params.get('plan');
+            const interval = params.get('interval');
+            if (!plan || !interval) return;
+            window.history.replaceState({}, document.title, window.location.pathname);
+
+            const { data: { session } } = await client.auth.getSession();
+            if (!session) return;
+
+            try {
+                const res = await fetch('https://nzrzcbxxqxwktocrmplg.supabase.co/functions/v1/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                    body: JSON.stringify({ plan, interval })
+                });
+                const result = await res.json();
+                if (result.url) {
+                    window.location.href = result.url;
+                } else {
+                    alert('Error starting checkout: ' + (result.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Error starting checkout: ' + e.message);
+            }
+        }
+
+        // "Manage Billing" in Settings -- sends the owner to Stripe's own
+        // hosted portal for upgrades, downgrades, switching monthly/annual,
+        // or canceling, without needing any of that built here.
+        async function openBillingPortal() {
+            const { data: { session } } = await client.auth.getSession();
+            if (!session) return;
+            try {
+                const res = await fetch('https://nzrzcbxxqxwktocrmplg.supabase.co/functions/v1/create-portal-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                });
+                const result = await res.json();
+                if (result.url) {
+                    window.location.href = result.url;
+                } else {
+                    alert('Error opening billing portal: ' + (result.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Error opening billing portal: ' + e.message);
+            }
+        }
+
         async function loadTeamSettings() {
             if(!myTeam.value) return;
-            const { data } = await client.from('teams').select('logo_url, primary_color, secondary_color').eq('id', myTeam.value).single();
+            const { data } = await client.from('teams').select('logo_url, primary_color, secondary_color, plan, subscription_status, trial_ends_at').eq('id', myTeam.value).single();
             
             if(data) {
                 if(data.primary_color) teamColors.value.primary = data.primary_color;
                 if(data.secondary_color) teamColors.value.secondary = data.secondary_color;
                 if (data.logo_url) { teamLogoUrl.value = data.logo_url; }
+                myTeamPlan.value = data.plan;
+                myTeamSubStatus.value = data.subscription_status;
+                myTeamTrialEnds.value = data.trial_ends_at;
             }
         }
 
@@ -4653,6 +4738,22 @@ createApp({
         // ============================================================
         // ATTENDANCE
         // ============================================================
+        const planStatusDisplay = computed(() => {
+            const planNames = { individual: 'Individual', bronze: 'Bronze', silver: 'Silver', gold: 'Gold' };
+            const planLabel = planNames[myTeamPlan.value] || null;
+
+            if (!planLabel) return { label: 'No plan selected', detail: 'Choose a plan to unlock the rest of Swimatics.', urgent: false, showPortal: false };
+            if (myTeamSubStatus.value === 'grandfathered') return { label: planLabel, detail: 'Complimentary access — no billing on this account.', urgent: false, showPortal: false };
+            if (myTeamSubStatus.value === 'trialing') {
+                const daysLeft = myTeamTrialEnds.value ? Math.max(0, Math.ceil((new Date(myTeamTrialEnds.value) - new Date()) / 86400000)) : null;
+                return { label: `${planLabel} — Free Trial`, detail: daysLeft != null ? `${daysLeft} day${daysLeft === 1 ? '' : 's'} left, then billing starts automatically.` : 'Trial in progress.', urgent: false, showPortal: true };
+            }
+            if (myTeamSubStatus.value === 'active') return { label: planLabel, detail: 'Active subscription.', urgent: false, showPortal: true };
+            if (myTeamSubStatus.value === 'past_due') return { label: planLabel, detail: 'Payment failed — please update your card to avoid losing access.', urgent: true, showPortal: true };
+            if (myTeamSubStatus.value === 'canceled') return { label: planLabel, detail: 'Subscription canceled — gated features are no longer available.', urgent: true, showPortal: true };
+            return { label: planLabel, detail: '', urgent: false, showPortal: true };
+        });
+
         const selectedSeasonName = computed(() => {
             const s = seasonsList.value.find(s => s.id === selectedSeasonId.value);
             return s ? s.name : 'All-Time';
@@ -5278,6 +5379,7 @@ createApp({
                         currentView.value = 'onboarding';
                     }
                 } else {
+                    await checkForPendingCheckout();
                     loadTeamSettings();
                     loadGroups();
                     loadTeamLayout();
@@ -5806,6 +5908,7 @@ createApp({
             user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, drawerRef, printTarget, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
             hasPendingInvite, isProcessingInvite, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors, themeMode, themePreference, setThemePreference,
+            myTeamPlan, myTeamSubStatus, myTeamTrialEnds, planStatusDisplay, openBillingPortal,
             title, group, poolType, defaultStroke, workoutVisibility, workoutFontSize, printWorkoutSheet, printCalendarSheet, printWatermarkPositions, publicWorkouts, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
             seasonPlans, activePlanContext, teamGroupsList, staffList, planForm, newGroupName, myRole, myTeam,
             filterGroup, workoutsTab, pastRangeStart, pastRangeEnd, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
