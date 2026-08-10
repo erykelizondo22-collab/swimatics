@@ -277,6 +277,12 @@
             </div>
 
             <div v-if="myTeam" class="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                <div v-if="myTeam === 'DEMO'" class="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-lg p-1">
+                    <button v-for="t in [{k:null,l:'Gold'},{k:'individual',l:'Ind.'},{k:'bronze',l:'Bronze'},{k:'silver',l:'Silver'}]" :key="t.l"
+                            @click="demoTierOverride = t.k"
+                            class="text-[9px] md:text-[10px] font-black uppercase tracking-widest px-2 md:px-3 py-1.5 rounded-md transition-colors"
+                            :class="demoTierOverride === t.k ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-200'">{{t.l}}</button>
+                </div>
                 <span class="text-[10px] md:text-xs font-black bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm" :style="{ color: teamColors.primary }">{{myTeam}}</span>
             </div>
             <div v-else class="flex items-center gap-2 sm:gap-4 shrink-0">
@@ -317,25 +323,25 @@
                     <span class="text-lg w-6 text-center shrink-0">🏠</span>
                     <span class="font-black uppercase tracking-widest text-xs">Home</span>
                 </button>
-                <button v-if="teamModules.includes('calendar')" @click="currentView = 'calendar'; loadCalendarEvents(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'calendar' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'calendar' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                <button v-if="teamModules.includes('calendar') && hasFeature('calendar')" @click="currentView = 'calendar'; loadCalendarEvents(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'calendar' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'calendar' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
                     <span class="text-lg w-6 text-center shrink-0">📅</span>
                     <span class="font-black uppercase tracking-widest text-xs">Calendar</span>
                 </button>
                 </template>
                 <template v-else-if="isOffice">
-                <button @click="currentView = 'roster'; loadSwimmers(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'roster' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'roster' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                <button v-if="hasFeature('roster')" @click="currentView = 'roster'; loadSwimmers(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'roster' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'roster' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
                     <span class="text-lg w-6 text-center shrink-0">📋</span>
                     <span class="font-black uppercase tracking-widest text-xs">Roster</span>
                 </button>
-                <button @click="currentView = 'calendar'; loadCalendarEvents(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'calendar' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'calendar' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                <button v-if="hasFeature('calendar')" @click="currentView = 'calendar'; loadCalendarEvents(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'calendar' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'calendar' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
                     <span class="text-lg w-6 text-center shrink-0">📅</span>
                     <span class="font-black uppercase tracking-widest text-xs">Calendar</span>
                 </button>
-                <button @click="currentView = 'registration'; mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'registration' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'registration' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                <button v-if="hasFeature('roster')" @click="currentView = 'registration'; mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'registration' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'registration' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
                     <span class="text-lg w-6 text-center shrink-0">📝</span>
                     <span class="font-black uppercase tracking-widest text-xs">Registration</span>
                 </button>
-                <button @click="currentView = 'accounts'; loadStaff(); loadFamilyAccounts(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'accounts' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'accounts' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                <button v-if="hasFeature('admin')" @click="currentView = 'accounts'; loadStaff(); loadFamilyAccounts(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'accounts' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'accounts' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
                     <span class="text-lg w-6 text-center shrink-0">👪</span>
                     <span class="font-black uppercase tracking-widest text-xs">Accounts</span>
                 </button>
@@ -345,7 +351,7 @@
                     <span class="text-lg w-6 text-center shrink-0">{{m.icon}}</span>
                     <span class="font-black uppercase tracking-widest text-xs">{{m.label}}</span>
                 </button>
-                <button v-if="myRole === 'owner' || myRole === 'admin'" @click="openLayoutEditor(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'layout' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'layout' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                <button v-if="(myRole === 'owner' || myRole === 'admin') && hasFeature('admin')" @click="openLayoutEditor(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'layout' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'layout' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
                     <span class="text-lg w-6 text-center shrink-0">⚙️</span>
                     <span class="font-black uppercase tracking-widest text-xs">Site Layout</span>
                 </button>
@@ -353,7 +359,7 @@
             </div>
 
             <div class="p-3 border-t border-slate-100 shrink-0 space-y-1">
-                <button v-if="!isOffice" @click="openMessages(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'messages' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'messages' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                <button v-if="!isOffice && hasFeature('messages')" @click="openMessages(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'messages' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'messages' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
                     <span class="text-lg w-6 text-center shrink-0">💬</span>
                     <span class="font-black uppercase tracking-widest text-xs">Messages</span>
                 </button>
@@ -4857,21 +4863,50 @@ createApp({
         // teamModules (order + on/off) instead of being hardcoded.
         // ============================================================
         const MODULE_DEFS = {
-            'dashboard': { label: 'Workouts', icon: '🏊', activeViews: ['dashboard'], onSelect: () => { currentView.value = 'dashboard'; } },
-            'analytics': { label: 'Analytics', icon: '📊', activeViews: ['analytics'], onSelect: () => { currentView.value = 'analytics'; } },
-            'season-planning': { label: 'Season', icon: '🗓️', activeViews: ['season-planning','plan-builder'], onSelect: () => { currentView.value = 'season-planning'; } },
-            'groups': { label: 'Groups', icon: '👥', activeViews: ['groups','group-details'], onSelect: () => { currentView.value = 'groups'; selectedGroupForEdit.value = null; } },
-            'roster': { label: 'Roster', icon: '📋', activeViews: ['roster'], onSelect: () => { currentView.value = 'roster'; loadSwimmers(); } },
-            'attendance': { label: 'Attendance', icon: '✅', activeViews: ['attendance'], onSelect: async () => { currentView.value = 'attendance'; attendanceMarkGroup.value = null; loadSwimmers(); loadAttendanceForDate(); await loadSeasons(); loadAttendanceSummary(); } },
-            'meets': { label: 'Meets', icon: '🏆', activeViews: ['meets','meet-detail'], onSelect: () => { currentView.value = 'meets'; loadMeets(); } },
-            'import': { label: 'Import', icon: '📥', activeViews: ['import'], onSelect: () => { currentView.value = 'import'; resetImport(); } },
-            'calendar': { label: 'Calendar', icon: '📅', activeViews: ['calendar'], onSelect: () => { currentView.value = 'calendar'; loadCalendarEvents(); loadMyAssignedGroups(); } },
-            'staff': { label: 'Staff', icon: '🧑\u200d🏫', activeViews: ['staff'], onSelect: () => { currentView.value = 'staff'; loadStaff(); loadCoachGroupLinks(); loadPendingCoachRequests(); } },
-            'accounts': { label: 'Accounts', icon: '👤', activeViews: ['accounts'], onSelect: () => { currentView.value = 'accounts'; loadAccounts(); loadFamilyAccounts(); } },
+            'dashboard': { label: 'Workouts', icon: '🏊', feature: 'workouts', activeViews: ['dashboard'], onSelect: () => { currentView.value = 'dashboard'; } },
+            'analytics': { label: 'Analytics', icon: '📊', feature: 'workouts', activeViews: ['analytics'], onSelect: () => { currentView.value = 'analytics'; } },
+            'season-planning': { label: 'Season', icon: '🗓️', feature: 'workouts', activeViews: ['season-planning','plan-builder'], onSelect: () => { currentView.value = 'season-planning'; } },
+            'groups': { label: 'Groups', icon: '👥', feature: 'roster', activeViews: ['groups','group-details'], onSelect: () => { currentView.value = 'groups'; selectedGroupForEdit.value = null; } },
+            'roster': { label: 'Roster', icon: '📋', feature: 'roster', activeViews: ['roster'], onSelect: () => { currentView.value = 'roster'; loadSwimmers(); } },
+            'attendance': { label: 'Attendance', icon: '✅', feature: 'attendance', activeViews: ['attendance'], onSelect: async () => { currentView.value = 'attendance'; attendanceMarkGroup.value = null; loadSwimmers(); loadAttendanceForDate(); await loadSeasons(); loadAttendanceSummary(); } },
+            'meets': { label: 'Meets', icon: '🏆', feature: 'meets', activeViews: ['meets','meet-detail'], onSelect: () => { currentView.value = 'meets'; loadMeets(); } },
+            'import': { label: 'Import', icon: '📥', feature: 'roster', activeViews: ['import'], onSelect: () => { currentView.value = 'import'; resetImport(); } },
+            'calendar': { label: 'Calendar', icon: '📅', feature: 'calendar', activeViews: ['calendar'], onSelect: () => { currentView.value = 'calendar'; loadCalendarEvents(); loadMyAssignedGroups(); } },
+            'staff': { label: 'Staff', icon: '🧑\u200d🏫', feature: 'admin', activeViews: ['staff'], onSelect: () => { currentView.value = 'staff'; loadStaff(); loadCoachGroupLinks(); loadPendingCoachRequests(); } },
+            'accounts': { label: 'Accounts', icon: '👤', feature: 'admin', activeViews: ['accounts'], onSelect: () => { currentView.value = 'accounts'; loadAccounts(); loadFamilyAccounts(); } },
         };
 
+        // Mirrors team_plan_level() / team_has_feature() in the database
+        // exactly -- this is UI-only (hiding what a team hasn't paid for),
+        // the real enforcement is still the RLS policies on the actual
+        // data tables. Keeping both in sync matters: this just prevents
+        // someone from seeing a nav item for a page that would load empty.
+        // DEMO-only display override -- lets that one account preview
+        // what the nav looks like at each tier for pitching purposes,
+        // without touching the real teams.plan value in the database or
+        // affecting RLS in any way. Underlying data access is unchanged;
+        // this only ever affects what THIS UI shows. Restricted to the
+        // literal team id 'DEMO' so no real customer can ever reach it.
+        const demoTierOverride = ref(null);
+
+        const teamFeatureLevel = computed(() => {
+            if (myTeam.value === 'DEMO' && demoTierOverride.value) {
+                return { individual: 1, bronze: 1, silver: 2, gold: 3 }[demoTierOverride.value] ?? 3;
+            }
+            if (!['trialing', 'active', 'grandfathered'].includes(myTeamSubStatus.value)) return 0;
+            if (myTeamPlan.value === 'individual' || myTeamPlan.value === 'bronze') return 1;
+            if (myTeamPlan.value === 'silver') return 2;
+            if (myTeamPlan.value === 'gold') return 3;
+            return 0;
+        });
+        const FEATURE_LEVELS = { workouts: 1, roster: 2, attendance: 2, calendar: 2, meets: 3, messages: 3, notifications: 3, admin: 3 };
+        function hasFeature(key) {
+            if (!key) return true;
+            return teamFeatureLevel.value >= (FEATURE_LEVELS[key] || 0);
+        }
+
         const navModules = computed(() => teamModules.value
-            .filter(key => MODULE_DEFS[key] && (!MODULE_DEFS[key].ownerAdminOnly || myRole.value === 'owner' || myRole.value === 'admin'))
+            .filter(key => MODULE_DEFS[key] && hasFeature(MODULE_DEFS[key].feature) && (!MODULE_DEFS[key].ownerAdminOnly || myRole.value === 'owner' || myRole.value === 'admin'))
             .map(key => ({ key, label: MODULE_DEFS[key].label, icon: MODULE_DEFS[key].icon })));
 
         function selectModule(key) {
@@ -6278,7 +6313,7 @@ createApp({
             user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, drawerRef, printTarget, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
             hasPendingInvite, isProcessingInvite, isCreatingVault, submitVaultSetupAndCheckout, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors, themeMode, themePreference, setThemePreference,
-            myTeamPlan, myTeamSubStatus, myTeamTrialEnds, myTeamCanceledAt, planStatusDisplay, openBillingPortal,
+            myTeamPlan, myTeamSubStatus, myTeamTrialEnds, myTeamCanceledAt, planStatusDisplay, openBillingPortal, hasFeature, demoTierOverride,
             myTeamSetupCompleted, setupTeamName, setupLocation, isSavingSetup, completeTeamSetup,
             textInviteLink, emailInviteLink, showInviteShareMenu,
             athleteShareMenuFor, copyAthleteLink, textAthleteLink, emailAthleteLink, joinAsAthleteViaLink,
