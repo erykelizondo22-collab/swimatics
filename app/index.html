@@ -469,8 +469,14 @@
                 </div>
             </div>
 
-            <div v-if="currentView === 'onboarding'" class="max-w-xl mx-auto mt-16 md:mt-24">
-                <div v-if="coachRequestPending" class="bg-white p-10 md:p-14 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
+            <div v-if="currentView === 'onboarding'" class="max-w-2xl mx-auto mt-10 md:mt-16">
+                <div v-if="isProcessingInvite" class="bg-white p-10 md:p-14 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
+                    <svg class="animate-spin h-8 w-8 mx-auto mb-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Getting you set up...</h2>
+                    <p class="text-sm text-slate-400 font-medium">Just a moment.</p>
+                </div>
+
+                <div v-else-if="coachRequestPending" class="bg-white p-10 md:p-14 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
                     <div class="text-4xl mb-4">⏳</div>
                     <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Request Sent</h2>
                     <p class="text-sm text-slate-500 font-medium max-w-sm mx-auto">Your request to join as a coach is waiting on approval from the team owner. You'll be able to sign in as soon as they approve it — check back soon.</p>
@@ -482,10 +488,57 @@
                     <p class="text-sm text-slate-500 font-medium max-w-sm mx-auto">{{coachRequestBlockedMessage}}</p>
                 </div>
 
-                <div v-else class="bg-white p-10 md:p-14 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
+                <div v-else-if="isCreatingVault" class="bg-white p-10 md:p-14 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
                     <svg class="animate-spin h-8 w-8 mx-auto mb-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">{{ isProcessingInvite ? 'Sending your request...' : 'Setting up your vault...' }}</h2>
-                    <p class="text-sm text-slate-400 font-medium">{{ isProcessingInvite ? "Just a moment." : "This only takes a second." }}</p>
+                    <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Redirecting to checkout...</h2>
+                    <p class="text-sm text-slate-400 font-medium">This only takes a second.</p>
+                </div>
+
+                <div v-else>
+                    <div class="text-center mb-8">
+                        <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Set Up Your Team</h2>
+                        <p class="text-sm font-bold text-slate-400 mt-2">A few details, then pick a plan — your vault is created once checkout completes.</p>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 mb-6">
+                        <h3 class="text-lg font-black text-slate-900 uppercase tracking-tight mb-4">Team Details</h3>
+                        <input v-model="vaultSetupName" placeholder="Team Name (e.g. South Florida Aquatics)" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all mb-3">
+                        <input v-model="vaultSetupLocation" placeholder="Location (e.g. Miami, FL)" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all mb-4">
+                        <div class="flex gap-6">
+                            <div class="flex flex-col gap-2">
+                                <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Primary Color</label>
+                                <input type="color" v-model="vaultSetupColors.primary" class="w-14 h-14 rounded-xl cursor-pointer p-0 border-0 bg-transparent shadow-sm">
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Secondary Color</label>
+                                <input type="color" v-model="vaultSetupColors.secondary" class="w-14 h-14 rounded-xl cursor-pointer p-0 border-0 bg-transparent shadow-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 mb-6">
+                        <h3 class="text-lg font-black text-slate-900 uppercase tracking-tight mb-4">Choose a Plan</h3>
+                        <div class="flex items-center justify-center gap-3 mb-5">
+                            <span class="text-xs font-black uppercase" :class="!vaultSetupAnnual ? 'text-slate-900' : 'text-slate-400'">Monthly</span>
+                            <button @click="vaultSetupAnnual = !vaultSetupAnnual" class="w-12 h-7 rounded-full relative transition-colors" :class="vaultSetupAnnual ? 'bg-blue-600' : 'bg-slate-200'">
+                                <span class="absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform" :class="vaultSetupAnnual ? 'translate-x-5' : ''"></span>
+                            </button>
+                            <span class="text-xs font-black uppercase" :class="vaultSetupAnnual ? 'text-slate-900' : 'text-slate-400'">Annual <span class="text-emerald-500">(2 months free)</span></span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                            <button v-for="p in [{k:'individual',n:'Individual',price:40,d:'Workouts only, solo'},{k:'bronze',n:'Bronze',price:75,d:'Workouts, 6 staff'},{k:'silver',n:'Silver',price:150,d:'+ Roster & Attendance'},{k:'gold',n:'Gold',price:200,d:'Everything, unlimited'}]" :key="p.k"
+                                    @click="vaultSetupPlan = p.k"
+                                    class="p-4 rounded-2xl border-2 text-left transition-all"
+                                    :class="vaultSetupPlan === p.k ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-slate-300'">
+                                <div class="font-black text-sm text-slate-900">{{p.n}}</div>
+                                <div class="font-black text-lg mt-1 text-slate-900">${{vaultSetupAnnual ? p.price*10 : p.price}}<span class="text-[10px] text-slate-400 font-bold">{{vaultSetupAnnual ? '/yr' : '/mo'}}</span></div>
+                                <div class="text-[10px] text-slate-400 font-bold mt-1 leading-tight">{{p.d}}</div>
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-slate-400 font-bold text-center">Every plan includes a free 7-day trial — your card is charged nothing today.</p>
+                    </div>
+
+                    <button @click="submitVaultSetupAndCheckout" :disabled="!vaultSetupName.trim()" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-black hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0">Continue to Checkout →</button>
                 </div>
             </div>
 
@@ -2655,6 +2708,11 @@ createApp({
         const hasPendingInvite = ref(false);
         const isProcessingInvite = ref(false);
         const isCreatingVault = ref(false);
+        const vaultSetupName = ref('');
+        const vaultSetupLocation = ref('');
+        const vaultSetupColors = ref({ primary: '#0ea5e9', secondary: '#0284c7' });
+        const vaultSetupPlan = ref('bronze');
+        const vaultSetupAnnual = ref(false);
 
         const planForm = ref({ id: null, title: '', group_name: '', start_date: '', weeks: [] });
         const seasonPlanTab = ref('builder');
@@ -3047,46 +3105,43 @@ createApp({
             location.reload();
         }
 
-        // Auto-creates a vault for a genuinely new sign-in (no pending
-        // invite, no existing team) -- replaces manually typing a team
-        // code and password. Derives a starting code from the person's
-        // name, retrying with a random suffix on the rare collision.
-        // The vault still gets a real password under the hood, since
-        // the coach invite link and parent QR code both still rely on
-        // one -- it's just never manually chosen or seen here.
-        async function autoCreateVault() {
+        // REPLACES the old autoCreateVault. No team is created here at
+        // all anymore -- this just validates the setup form and sends
+        // the collected info straight into Stripe Checkout. The team
+        // itself gets created by the webhook, only once payment (or a
+        // trial) actually starts. See stripe-webhook's
+        // checkout.session.completed handler.
+        async function submitVaultSetupAndCheckout() {
+            if (!vaultSetupName.value.trim()) { alert("Please enter a team name."); return; }
             isCreatingVault.value = true;
-            const { data: { user: freshUser } } = await client.auth.getUser();
-            const base = (freshUser?.user_metadata?.full_name || freshUser?.email?.split('@')[0] || 'TEAM')
-                .toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12) || 'TEAM';
 
-            let code = base;
-            let attempt = 0;
-            let created = false;
+            const { data: { session } } = await client.auth.getSession();
+            if (!session) { isCreatingVault.value = false; return; }
 
-            while (!created && attempt < 5) {
-                if (attempt > 0) code = base + Math.floor(1000 + Math.random() * 9000);
-                const randomPwd = Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b => b.toString(36)).join('').slice(0, 16);
-                const hashedPwd = await sha256Hex(randomPwd);
-                const { error } = await client.from('teams').insert({ id: code, password: hashedPwd });
-                if (!error) {
-                    created = true;
-                } else if (error.code !== '23505') {
+            try {
+                const res = await fetch('https://nzrzcbxxqxwktocrmplg.supabase.co/functions/v1/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                    body: JSON.stringify({
+                        plan: vaultSetupPlan.value,
+                        interval: vaultSetupAnnual.value ? 'annual' : 'monthly',
+                        teamName: vaultSetupName.value.trim(),
+                        location: vaultSetupLocation.value.trim(),
+                        primaryColor: vaultSetupColors.value.primary,
+                        secondaryColor: vaultSetupColors.value.secondary
+                    })
+                });
+                const result = await res.json();
+                if (result.url) {
+                    window.location.href = result.url;
+                } else {
                     isCreatingVault.value = false;
-                    alert("Error setting up your vault: " + error.message);
-                    return;
+                    alert("Error starting checkout: " + (result.error || "Unknown error"));
                 }
-                attempt++;
-            }
-
-            if (!created) {
+            } catch (e) {
                 isCreatingVault.value = false;
-                alert("Couldn't set up your vault right now — please try again.");
-                return;
+                alert("Error starting checkout: " + e.message);
             }
-
-            await client.auth.updateUser({ data: { team_id: code, team_role: 'owner' } });
-            location.reload();
         }
 
         // If someone arrived here fresh off the landing page's plan
@@ -5663,15 +5718,21 @@ createApp({
                         // No invite pending in localStorage -- but check for an
                         // outstanding coach request from a previous visit first,
                         // so simply reopening the app while waiting on approval
-                        // doesn't accidentally auto-create a brand new vault.
+                        // doesn't show the setup form again unnecessarily.
+                        // Otherwise: show the pre-payment setup form. No vault
+                        // gets created here anymore -- that now only happens
+                        // once the webhook receives a completed checkout.
                         currentView.value = 'onboarding';
-                        const hasOutstandingRequest = await checkMyPendingCoachRequest();
-                        if (!hasOutstandingRequest) autoCreateVault();
+                        await checkMyPendingCoachRequest();
                     }
                 } else {
                     await checkForPendingCheckout();
                     await loadTeamSettings();
 
+                    // setup_completed is now always true by the time a team
+                    // exists at all -- setup happens BEFORE payment, and the
+                    // webhook sets it true at creation. This check stays only
+                    // as a defensive fallback, not the normal path anymore.
                     if (myRole.value === 'owner' && myTeamPlan.value && !myTeamSetupCompleted.value) {
                         currentView.value = 'team-setup';
                     } else {
@@ -6201,13 +6262,14 @@ createApp({
 
         return {
             user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, drawerRef, printTarget, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
-            hasPendingInvite, isProcessingInvite, isCreatingVault, autoCreateVault, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
+            hasPendingInvite, isProcessingInvite, isCreatingVault, submitVaultSetupAndCheckout, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors, themeMode, themePreference, setThemePreference,
             myTeamPlan, myTeamSubStatus, myTeamTrialEnds, planStatusDisplay, openBillingPortal,
             myTeamSetupCompleted, setupTeamName, setupLocation, isSavingSetup, completeTeamSetup,
             textInviteLink, emailInviteLink, showInviteShareMenu,
             athleteShareMenuFor, copyAthleteLink, textAthleteLink, emailAthleteLink, joinAsAthleteViaLink,
             coachRequestPending, coachRequestBlockedMessage, pendingCoachRequests, requestCoachAccessViaLink, decideCoachRequest,
+            vaultSetupName, vaultSetupLocation, vaultSetupColors, vaultSetupPlan, vaultSetupAnnual,
             title, group, poolType, defaultStroke, workoutVisibility, workoutFontSize, printWorkoutSheet, printCalendarSheet, printWatermarkPositions, publicWorkouts, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
             seasonPlans, activePlanContext, teamGroupsList, staffList, planForm, newGroupName, myRole, myTeam,
             filterGroup, workoutsTab, pastRangeStart, pastRangeEnd, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
