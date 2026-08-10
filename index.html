@@ -107,6 +107,34 @@ footer .nav-brand .icon { width: 26px; height: 26px; }
 }
 .clock-wrap { width: clamp(180px, 24vw, 260px); margin: 0 auto 40px; position: relative; }
 .clock-wrap svg { width: 100%; height: 100%; }
+
+.digi-clock {
+    display: inline-flex; flex-direction: column; align-items: center; gap: 10px;
+    background: linear-gradient(180deg, #1a1a1a, #0a0a0a);
+    border: 3px solid #2a2a2a;
+    border-radius: 16px;
+    padding: 22px clamp(24px, 4vw, 42px) 18px;
+    box-shadow: 0 20px 50px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+    margin: 0 auto 40px;
+}
+.digi-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: clamp(34px, 6vw, 56px);
+    letter-spacing: 0.04em;
+    color: #ff2a2a;
+    text-shadow: 0 0 6px rgba(255,42,42,0.85), 0 0 18px rgba(255,42,42,0.55), 0 0 34px rgba(255,42,42,0.3);
+    line-height: 1;
+}
+.digi-display .colon { animation: colonBlink 1s steps(1) infinite; }
+@keyframes colonBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.25; } }
+.digi-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.28em; text-transform: uppercase; color: #6b6b6b;
+}
+@media (prefers-reduced-motion: reduce) {
+    .digi-display .colon { animation: none; }
+}
 .hero h1 {
     font-family: 'Space Grotesk', sans-serif; font-weight: 800;
     font-size: clamp(40px, 6.4vw, 84px); line-height: 0.98; letter-spacing: -0.025em;
@@ -225,6 +253,11 @@ footer .nav-brand .icon { width: 26px; height: 26px; }
 .msg-in { background: var(--foam); border-bottom-left-radius: 4px; }
 .msg-out { background: var(--navy-deep); color: #fff; margin-left: auto; border-bottom-right-radius: 4px; }
 
+/* AI Co-Pilot mock */
+.ai-context { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--mist-light); margin-bottom: 14px; }
+.ai-prompt { background: var(--foam); border-radius: 14px; padding: 16px; font-size: 13.5px; font-style: italic; color: var(--ink); line-height: 1.5; margin-bottom: 14px; }
+.ai-generate { background: var(--navy-deep); color: #fff; text-align: center; border-radius: 12px; padding: 12px; font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em; }
+
 /* Phone notification mock */
 .phone-mock { background: var(--navy-deep); border-radius: 26px; padding: 16px 16px 24px; max-width: 320px; margin: 0 auto; }
 .notif-banner { background: rgba(255,255,255,0.97); border-radius: 16px; padding: 13px 15px; display: flex; gap: 11px; align-items: flex-start; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
@@ -241,11 +274,63 @@ footer .nav-brand .icon { width: 26px; height: 26px; }
 .pricing-inner { max-width: 620px; margin: 0 auto; }
 .pricing .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--aqua); margin-bottom: 16px; }
 .pricing h2 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(28px, 3.6vw, 38px); letter-spacing: -0.02em; }
-.price-tag { margin: 40px 0; }
-.price-tag .amount { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 56px; color: var(--ink); }
-.price-tag .amount span { font-size: 18px; color: var(--mist); font-weight: 500; }
-.price-tag .note { color: var(--mist); font-size: 14px; margin-top: 6px; }
-.pricing p.desc { color: var(--mist); font-size: 15.5px; line-height: 1.6; margin-bottom: 12px; }
+.pricing > p.desc { color: var(--mist); font-size: 15.5px; line-height: 1.6; margin: 18px auto 40px; max-width: 520px; }
+
+/* Monthly / Annual toggle */
+.billing-toggle { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 0 auto 36px; flex-wrap: wrap; }
+.billing-label { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14.5px; color: var(--mist); transition: color 0.2s ease; }
+.billing-label.active { color: var(--ink); }
+.save-badge { background: rgba(20,184,212,0.14); color: #0891a8; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 100px; margin-left: 6px; }
+.toggle-switch {
+    width: 52px; height: 28px; border-radius: 100px; background: var(--foam-dim);
+    border: 1px solid rgba(11,27,43,0.12); position: relative; cursor: pointer; flex-shrink: 0;
+    transition: background 0.25s ease;
+}
+.toggle-switch.on { background: var(--aqua); }
+.toggle-knob {
+    position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+.toggle-switch.on .toggle-knob { transform: translateX(24px); }
+
+/* Plan tab buttons */
+.plan-tabs { display: flex; justify-content: center; gap: 8px; margin: 0 auto 8px; flex-wrap: wrap; padding: 0 24px; }
+.plan-tab {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px;
+    padding: 12px 24px; border-radius: 100px; border: 1.5px solid rgba(11,27,43,0.12);
+    background: #fff; color: var(--mist); transition: all 0.2s ease;
+}
+.plan-tab:hover { border-color: var(--aqua); }
+.plan-tab.active { background: var(--navy-deep); border-color: var(--navy-deep); color: #fff; }
+
+/* Detail panel */
+.plan-detail {
+    max-width: 620px; margin: 32px auto 0; background: #fff; border-radius: 26px;
+    padding: 36px clamp(24px, 5vw, 44px); border: 1px solid rgba(11,27,43,0.08);
+    box-shadow: 0 20px 50px -20px rgba(11,27,43,0.18); text-align: left;
+}
+.plan-detail-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; border-bottom: 1px solid var(--foam-dim); padding-bottom: 26px; margin-bottom: 26px; }
+.plan-detail-name { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 26px; letter-spacing: -0.01em; }
+.plan-detail-staff { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--mist); margin-top: 6px; }
+.plan-detail-price { text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 34px; color: var(--ink); }
+.price-period { font-size: 14px; color: var(--mist); font-weight: 500; }
+.plan-save { font-family: 'Space Grotesk', sans-serif; font-size: 11.5px; font-weight: 700; color: #0891a8; margin-top: 2px; }
+
+.feature-checklist { list-style: none; display: flex; flex-direction: column; gap: 13px; margin-bottom: 30px; }
+.feature-checklist li { display: flex; align-items: center; gap: 12px; font-size: 14.5px; font-weight: 500; }
+.feature-checklist .mark { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; font-weight: 800; }
+.feature-checklist li.included .mark { background: rgba(20,184,212,0.15); color: #0891a8; }
+.feature-checklist li.included { color: var(--ink); }
+.feature-checklist li.locked .mark { background: var(--foam-dim); color: var(--mist-light); }
+.feature-checklist li.locked { color: var(--mist-light); }
+
+@media (max-width: 560px) {
+    .plan-tabs { gap: 6px; }
+    .plan-tab { padding: 10px 16px; font-size: 12.5px; }
+    .plan-detail-head { flex-direction: column; }
+    .plan-detail-price { text-align: left; }
+}
 
 /* ============================================================
    FINAL CTA — bookends the hero, deep pool navy again
@@ -294,16 +379,9 @@ footer .nav-brand { justify-content: center; margin-bottom: 8px; color: #fff; fo
 <section class="hero">
     <div class="hero-eyebrow">Swim team management, on deck</div>
 
-    <div class="clock-wrap">
-        <svg viewBox="0 0 200 200" aria-hidden="true">
-            <circle cx="100" cy="100" r="96" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="2"/>
-            <circle cx="100" cy="100" r="86" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-            <g id="clockTicks"></g>
-            <g id="clockNumerals" font-family="JetBrains Mono, monospace" font-size="13" font-weight="700" fill="rgba(255,255,255,0.55)" text-anchor="middle"></g>
-            <line id="minuteHand" x1="100" y1="100" x2="100" y2="34" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
-            <line id="secondHand" x1="100" y1="100" x2="100" y2="24" stroke="#e4483a" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="100" cy="100" r="5" fill="#e4483a"/>
-        </svg>
+    <div class="digi-clock">
+        <div class="digi-display" id="digiTime">00<span class="colon">:</span>00<span class="colon">:</span>00</div>
+        <div class="digi-label">Pool Deck Time</div>
     </div>
 
     <h1>Everything <em>on deck.</em><br>Nothing on paper.</h1>
@@ -428,6 +506,22 @@ footer .nav-brand { justify-content: center; margin-bottom: 8px; color: #fff; fo
             </div>
         </div>
     </div>
+    <!-- SET 06 — AI Co-Pilot -->
+    <div class="feature-row reverse">
+        <div class="feature-text">
+            <div class="feature-set">SET 06 — AI CO-PILOT</div>
+            <h3>It already knows how you coach.</h3>
+            <p>Describe the set you want in plain language. The AI pulls your last 100 workouts for that group and builds something that actually fits your style — not a generic set pulled from nowhere.</p>
+        </div>
+        <div class="feature-visual">
+            <div class="mock-head"><span class="mock-dot" style="background:#ff5f57"></span><span class="mock-dot" style="background:#febc2e"></span><span class="mock-dot" style="background:#28c840"></span><span class="title">✨ AI Co-Pilot</span></div>
+            <div class="mock-body">
+                <div class="ai-context">SENIOR · SCY · THRESHOLD FOCUS</div>
+                <div class="ai-prompt">"Give me a 1200y threshold set using 100s and 200s"</div>
+                <div class="ai-generate">✨ Generate Set</div>
+            </div>
+        </div>
+    </div>
 </section>
 
 <!-- ============================================================
@@ -436,13 +530,36 @@ footer .nav-brand { justify-content: center; margin-bottom: 8px; color: #fff; fo
 <section class="pricing">
     <div class="pricing-inner">
         <div class="eyebrow">Pricing</div>
-        <h2>Priced per swimmer, not per headache.</h2>
-        <div class="price-tag">
-            <span class="amount">$4<span>/swimmer/mo</span></span>
-            <div class="note">Every feature included. No per-coach seats.</div>
+        <h2>Pick the plan that fits how you coach.</h2>
+        <p class="desc">Every plan includes the AI Co-Pilot. Higher tiers add what a growing program actually needs — see exactly what's different below.</p>
+    </div>
+
+    <div class="billing-toggle">
+        <span class="billing-label" id="labelMonthly">Monthly</span>
+        <button class="toggle-switch" id="billingToggle" aria-label="Toggle annual billing"><span class="toggle-knob"></span></button>
+        <span class="billing-label" id="labelAnnual">Annual <span class="save-badge">Save 2 months</span></span>
+    </div>
+
+    <div class="plan-tabs">
+        <button class="plan-tab active" data-plan="individual">Individual</button>
+        <button class="plan-tab" data-plan="bronze">Bronze</button>
+        <button class="plan-tab" data-plan="silver">Silver</button>
+        <button class="plan-tab" data-plan="gold">Gold</button>
+    </div>
+
+    <div class="plan-detail">
+        <div class="plan-detail-head">
+            <div>
+                <div class="plan-detail-name" id="planName">Individual</div>
+                <div class="plan-detail-staff" id="planStaff">Just you — solo coach</div>
+            </div>
+            <div class="plan-detail-price">
+                <span id="planPrice">$40</span><span class="price-period" id="planPeriod">/mo</span>
+                <div class="plan-save" id="planSave" style="display:none;"></div>
+            </div>
         </div>
-        <p class="desc">A team of 70 runs about what you're already paying for a scoreboard app and a group text, combined.</p>
-        <a href="#" class="btn-primary" id="pricingJoin">Get Started</a>
+        <ul class="feature-checklist" id="featureChecklist"></ul>
+        <a href="#" class="btn-primary pricing-join" id="planCta" style="width:100%; text-align:center; display:block;">Get Started</a>
     </div>
 </section>
 
@@ -465,7 +582,88 @@ footer .nav-brand { justify-content: center; margin-bottom: 8px; color: #fff; fo
 // CONFIG — set this to your actual hosted app URL before deploying.
 // ============================================================
 const APP_URL = "/app/";
-document.querySelectorAll('#navCta, #heroJoin, #pricingJoin, #finalJoin').forEach(el => {
+
+// ============================================================
+// PRICING — plan data, tab switching, and the monthly/annual toggle.
+// Annual price is always 10x monthly ("2 months free").
+// ============================================================
+const ALL_FEATURES = [
+    "Workouts & AI Co-Pilot",
+    "Roster Management",
+    "Attendance Tracking",
+    "Team Calendar",
+    "Meet Entries & Events",
+    "Family Messaging",
+    "Push Notifications",
+    "Staff & Admin Tools"
+];
+const PLANS = {
+    individual: { name: "Individual", staff: "Just you — solo coach", monthly: 40, features: [0] },
+    bronze:     { name: "Bronze",     staff: "Up to 6 staff total",     monthly: 75, features: [0] },
+    silver:     { name: "Silver",     staff: "Up to 10 staff total",    monthly: 150, features: [0,1,2,3] },
+    gold:       { name: "Gold",       staff: "Unlimited staff",         monthly: 200, features: [0,1,2,3,4,5,6,7] }
+};
+
+let currentPlan = 'individual';
+let isAnnual = false;
+
+function renderPlan() {
+    const plan = PLANS[currentPlan];
+    document.getElementById('planName').textContent = plan.name;
+    document.getElementById('planStaff').textContent = plan.staff;
+
+    const price = isAnnual ? plan.monthly * 10 : plan.monthly;
+    document.getElementById('planPrice').textContent = '$' + price.toLocaleString();
+    document.getElementById('planPeriod').textContent = isAnnual ? '/yr' : '/mo';
+
+    const saveEl = document.getElementById('planSave');
+    if (isAnnual) {
+        saveEl.style.display = 'block';
+        saveEl.textContent = `Save $${(plan.monthly * 2).toLocaleString()} vs monthly`;
+    } else {
+        saveEl.style.display = 'none';
+    }
+
+    const list = document.getElementById('featureChecklist');
+    list.innerHTML = '';
+    ALL_FEATURES.forEach((label, i) => {
+        const included = plan.features.includes(i);
+        const li = document.createElement('li');
+        li.className = included ? 'included' : 'locked';
+        li.innerHTML = `<span class="mark">${included ? '✓' : '—'}</span><span>${label}</span>`;
+        list.appendChild(li);
+    });
+
+    // Carries the selection through to the app as URL params, so once
+    // someone's logged in, the app knows to continue straight into
+    // checkout for THIS plan instead of just opening to the dashboard.
+    const intervalParam = isAnnual ? 'annual' : 'monthly';
+    document.getElementById('planCta').setAttribute('href', `${APP_URL}?plan=${currentPlan}&interval=${intervalParam}`);
+}
+
+document.querySelectorAll('.plan-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.plan-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPlan = btn.dataset.plan;
+        renderPlan();
+    });
+});
+
+const billingToggle = document.getElementById('billingToggle');
+const labelMonthly = document.getElementById('labelMonthly');
+const labelAnnual = document.getElementById('labelAnnual');
+billingToggle.addEventListener('click', () => {
+    isAnnual = !isAnnual;
+    billingToggle.classList.toggle('on', isAnnual);
+    labelMonthly.classList.toggle('active', !isAnnual);
+    labelAnnual.classList.toggle('active', isAnnual);
+    renderPlan();
+});
+labelMonthly.classList.add('active');
+renderPlan();
+
+document.querySelectorAll('#navCta, #heroJoin, .pricing-join, #finalJoin').forEach(el => {
     el.setAttribute('href', APP_URL);
 });
 
@@ -482,43 +680,13 @@ const io = new IntersectionObserver((entries) => {
 }, { threshold: 0.18 });
 rows.forEach(r => io.observe(r));
 
-// Live pace clock -- ticks, numerals, and a genuinely sweeping second hand using real time
-const ticksGroup = document.getElementById('clockTicks');
-for (let i = 0; i < 60; i++) {
-    const angle = i * 6;
-    const isMajor = i % 5 === 0;
-    const r1 = isMajor ? 78 : 82;
-    const len = isMajor ? 2.4 : 1.3;
-    const rad = (angle - 90) * Math.PI / 180;
-    const x1 = 100 + r1 * Math.cos(rad), y1 = 100 + r1 * Math.sin(rad);
-    const x2 = 100 + (r1 + (isMajor ? 8 : 5)) * Math.cos(rad), y2 = 100 + (r1 + (isMajor ? 8 : 5)) * Math.sin(rad);
-    const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    tick.setAttribute('x1', x1); tick.setAttribute('y1', y1);
-    tick.setAttribute('x2', x2); tick.setAttribute('y2', y2);
-    tick.setAttribute('stroke', isMajor ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.22)');
-    tick.setAttribute('stroke-width', isMajor ? len : len);
-    ticksGroup.appendChild(tick);
-}
-const numeralsGroup = document.getElementById('clockNumerals');
-[15, 30, 45, 60].forEach(n => {
-    const angle = (n / 60) * 360 - 90;
-    const rad = angle * Math.PI / 180;
-    const x = 100 + 64 * Math.cos(rad), y = 100 + 64 * Math.sin(rad) + 4;
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttribute('x', x); text.setAttribute('y', y);
-    text.textContent = n;
-    numeralsGroup.appendChild(text);
-});
-
-const secondHand = document.getElementById('secondHand');
-const minuteHand = document.getElementById('minuteHand');
+// Live digital clock -- HH:MM:SS ticking in real time, colons blink via CSS
+const digiEl = document.getElementById('digiTime');
+function pad(n) { return String(n).padStart(2, '0'); }
 function tickClock() {
     const now = new Date();
-    const secDeg = (now.getSeconds() + now.getMilliseconds() / 1000) * 6;
-    const minDeg = now.getMinutes() * 6 + now.getSeconds() * 0.1;
-    secondHand.setAttribute('transform', `rotate(${secDeg} 100 100)`);
-    minuteHand.setAttribute('transform', `rotate(${minDeg} 100 100)`);
-    requestAnimationFrame(tickClock);
+    digiEl.innerHTML = `${pad(now.getHours())}<span class="colon">:</span>${pad(now.getMinutes())}<span class="colon">:</span>${pad(now.getSeconds())}`;
+    setTimeout(tickClock, 250);
 }
 tickClock();
 </script>
