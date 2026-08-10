@@ -1,4 +1,4 @@
-const CACHE_NAME = 'swimops-v66';
+const CACHE_NAME = 'swimops-v67';
 const urlsToCache = [
   './index.html',
   './manifest.json',
@@ -43,6 +43,16 @@ const isAppDocument = (request) =>
   request.mode === 'navigate' || request.url.endsWith('/index.html') || request.url.endsWith('/');
 
 self.addEventListener('fetch', event => {
+  // Only GET requests are safe to intercept/cache -- a POST (like the
+  // Stripe checkout call) has a body, and running it through
+  // caches.match()/fetch() the way GET requests are handled below
+  // breaks it. Letting the browser handle non-GET requests itself
+  // (by simply not calling respondWith) is the documented, correct
+  // pattern for this.
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   if (isAppDocument(event.request)) {
     event.respondWith(
       fetch(event.request)
