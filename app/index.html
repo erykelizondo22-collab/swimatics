@@ -23,6 +23,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1466,9 +1469,12 @@
             </div>
 
             <div v-if="currentView === 'roster'" class="max-w-5xl mx-auto space-y-8 mt-6">
-                <div class="border-b border-slate-200 pb-6">
-                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Roster</h2>
-                    <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">{{ swimmers.length }} Swimmers</p>
+                <div class="border-b border-slate-200 pb-6 flex items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Roster</h2>
+                        <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">{{ swimmers.length }} Swimmers</p>
+                    </div>
+                    <button @click="exportRosterCsv" class="shrink-0 bg-slate-900 text-white px-5 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-black transition-colors">Export CSV</button>
                 </div>
 
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
@@ -1558,8 +1564,12 @@
             </div>
 
             <div v-if="currentView === 'attendance'" class="max-w-5xl mx-auto space-y-6 mt-6">
-                <div class="border-b border-slate-200 pb-6">
+                <div class="border-b border-slate-200 pb-6 flex items-center justify-between gap-4">
                     <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Attendance</h2>
+                    <div class="flex gap-2 shrink-0">
+                        <button @click="exportAttendanceCsv" class="bg-white border border-slate-200 text-slate-700 px-5 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-slate-50 transition-colors">Export CSV</button>
+                        <button @click="exportAttendancePdf" class="bg-slate-900 text-white px-5 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-black transition-colors">Export PDF</button>
+                    </div>
                 </div>
 
                 <div v-if="!attendanceMarkGroup" class="space-y-4">
@@ -1685,7 +1695,11 @@
                         <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">{{selectedMeet.name}}</h2>
                         <p class="text-sm font-bold uppercase tracking-widest mt-1 text-slate-400">{{selectedMeet.course}} • {{formatPracticeDate(selectedMeet.start_date)}}</p>
                     </div>
-                    <button @click="currentView = 'meets'" class="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl uppercase tracking-widest">Back</button>
+                    <div class="flex gap-2 items-center">
+                        <button @click="exportMeetResultsCsv" class="text-[10px] font-black text-slate-600 bg-white border border-slate-200 px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors">Export CSV</button>
+                        <button @click="exportMeetEntriesHy3" class="text-[10px] font-black text-white bg-slate-900 px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-black transition-colors">Export HY3</button>
+                        <button @click="currentView = 'meets'" class="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl uppercase tracking-widest">Back</button>
+                    </div>
                 </div>
 
                 <div class="flex gap-6 border-b border-slate-100 pb-2">
@@ -2183,6 +2197,8 @@
                         <button @click="goToToday" class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black uppercase text-[10px] tracking-widest text-slate-600 hover:bg-slate-50">Today</button>
                         <button @click="nextMonth" class="w-10 h-10 bg-white border border-slate-200 rounded-xl font-black text-slate-600 hover:bg-slate-50">›</button>
                         <button @click="printCalendarSheet" class="px-4 py-2.5 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-colors">Print</button>
+                        <button @click="exportCalendarIcs" class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black uppercase text-[10px] tracking-widest text-slate-600 hover:bg-slate-50 transition-colors">Export .ics</button>
+                        <button @click="exportCalendarPdf" class="px-4 py-2.5 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-colors">Export PDF</button>
                     </div>
                 </div>
 
@@ -5575,6 +5591,65 @@ createApp({
             return out;
         }
 
+        // Hy-Tek Meet Manager .ev3 export -- semicolon-delimited, verified
+        // field-by-field against real exported files. F (Medley Relay) is
+        // inherently a relay regardless of the I/R field's own value in
+        // some exports -- checking stroke code first avoids misreading
+        // those rows as individual events. A distance of 0 shows up for
+        // medley relays in some exports; flagged for the AI/preview
+        // rather than guessed at, since assuming a specific yardage could
+        // be wrong for a different meet.
+        function parseHyTekEv3(text) {
+            const lines = text.split(/\r?\n/).filter(l => l.trim());
+            if (!lines.length) return null;
+            const header = lines[0].split(';');
+            const STROKE = { A: 'Freestyle', B: 'Backstroke', C: 'Breaststroke', D: 'Butterfly', E: 'IM', F: 'Medley Relay' };
+            const GENDER = { G: 'Girls', B: 'Boys', X: 'Mixed' };
+            const events = [];
+            for (const line of lines.slice(1)) {
+                const f = line.split(';');
+                if (f.length < 10) continue;
+                const [evNum, , , , ir, gen, , ageCode, dist, stroke] = f;
+                const isRelay = ir === 'R' || stroke === 'F';
+                events.push({
+                    event_number: evNum,
+                    gender: GENDER[gen] || gen,
+                    distance: dist === '0' ? null : dist,
+                    distance_flag: dist === '0' ? 'Source file shows 0 for this event -- verify actual distance before importing' : null,
+                    stroke: STROKE[stroke] || stroke,
+                    is_relay: isRelay,
+                    age_code: ageCode
+                });
+            }
+            return { meet_name: header[0], location: header[1], date: header[2], events };
+        }
+
+        async function extractZipMeetEvents(file) {
+            const zip = await JSZip.loadAsync(file);
+            const names = Object.keys(zip.files);
+            const ev3Name = names.find(n => n.toLowerCase().endsWith('.ev3'));
+            const hyvName = names.find(n => n.toLowerCase().endsWith('.hyv'));
+            const targetName = ev3Name || hyvName;
+            if (!targetName) throw new Error("This zip doesn't contain a Hy-Tek .ev3 or .hyv meet events file.");
+
+            const rawText = await zip.files[targetName].async('text');
+            if (!ev3Name) {
+                // .hyv only (older export) -- not deterministically parsed,
+                // hand the raw text to the AI same as before.
+                return rawText;
+            }
+            const parsed = parseHyTekEv3(rawText);
+            if (!parsed) throw new Error("Couldn't read the event file inside this zip.");
+
+            let summary = `Meet: ${parsed.meet_name}\nLocation: ${parsed.location}\nDate: ${parsed.date}\n\nEvents:\n`;
+            parsed.events.forEach(e => {
+                summary += `Event ${e.event_number}: ${e.gender} ${e.distance || '(distance unknown)'} ${e.stroke} (${e.is_relay ? 'Relay' : 'Individual'})`;
+                if (e.distance_flag) summary += `  [WARNING: ${e.distance_flag}]`;
+                summary += `\n`;
+            });
+            return summary;
+        }
+
         async function handleGenericImport(event) {
             const file = event.target.files[0];
             if(!file) return;
@@ -5585,11 +5660,12 @@ createApp({
                 let text = '';
                 if(ext === 'pdf') text = await extractPdfTextGeneric(file);
                 else if(['xlsx','xls'].includes(ext)) text = await extractExcelTextGeneric(file);
+                else if(ext === 'zip') text = await extractZipMeetEvents(file);
                 else text = await file.text();
 
                 importState.value = { status: 'analyzing', message: 'Analyzing with AI...' };
 
-                const prompt = `You are a data extraction engine for a swim team app. Classify the attached file content into exactly ONE of these types: "roster" (swimmer names/birthdates/groups), "times" (swim times/results, one row per swim: swimmer name, distance, stroke, course SCY/SCM/LCM, time, date, meet name), "meet_events" (a meet's event list: event number, gender, distance, stroke, age range, qualifying time), or "attendance" (swimmer name, date, present/absent). If the file is a Hy-Tek HY3/CL2/EV3 fixed-width export, parse its record structure (A0/B1/B2/C1/C2/D0/D1/D3 style records) accordingly. Respond with ONLY a valid JSON object, no markdown, no intro text, in exactly this shape: {"detected_type": "roster|times|meet_events|attendance|unknown", "records": [ {...one object per row, using short lowercase snake_case keys appropriate to the type...} ]}. If you cannot confidently classify or parse the file, return {"detected_type": "unknown", "records": []}.`;
+                const prompt = `You are a data extraction engine for a swim team app. Classify the attached file content into exactly ONE of these types: "roster" (swimmer names/birthdates/groups), "times" (swim times/results, one row per swim: swimmer name, distance, stroke, course SCY/SCM/LCM, time, date, meet name), "meet_events" (a meet's event list: event number, gender, distance, stroke, age range, qualifying time), or "attendance" (swimmer name, date, present/absent). If the content is already a pre-parsed "Events:" summary from a Hy-Tek .ev3 file, use it directly as meet_events records -- carry over any [WARNING: ...] notes into a "warning" field on that record rather than guessing a real value. If the file is raw Hy-Tek HY3/CL2 fixed-width export (A0/B1/B2/C1/C2/D0/D1/D3 style records), parse its record structure accordingly. Respond with ONLY a valid JSON object, no markdown, no intro text, in exactly this shape: {"detected_type": "roster|times|meet_events|attendance|unknown", "records": [ {...one object per row, using short lowercase snake_case keys appropriate to the type...} ]}. If you cannot confidently classify or parse the file, return {"detected_type": "unknown", "records": []}.`;
                 const context = `Existing team groups: ${teamGroupsList.value.map(g=>g.name).join(', ') || 'none'}. Existing roster: ${swimmers.value.map(s=>s.first_name+' '+s.last_name).join(', ') || 'none yet'}.`;
 
                 const { data: { session } } = await client.auth.getSession();
@@ -5629,6 +5705,199 @@ createApp({
                 importState.value = { status: 'error', message: err.message };
             }
             event.target.value = '';
+        }
+
+        // ============================================================
+        // EXPORTS -- roster, attendance, meet results as CSV; calendar
+        // as ICS. All go through one shared download trigger.
+        // ============================================================
+        function downloadTextFile(filename, content, mime = 'text/csv') {
+            const blob = new Blob([content], { type: mime + ';charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        function csvEscape(v) {
+            const s = (v === null || v === undefined) ? '' : String(v);
+            return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        }
+        function toCsv(rows, columns) {
+            const header = columns.map(c => csvEscape(c.label)).join(',');
+            const body = rows.map(r => columns.map(c => csvEscape(c.get(r))).join(',')).join('\n');
+            return header + '\n' + body;
+        }
+
+        async function exportRosterCsv() {
+            const rows = swimmers.value;
+            const csv = toCsv(rows, [
+                { label: 'First Name', get: r => r.first_name },
+                { label: 'Last Name', get: r => r.last_name },
+                { label: 'Birthdate', get: r => r.birthdate },
+                { label: 'Gender', get: r => r.gender },
+                { label: 'Group', get: r => r.group_name },
+            ]);
+            downloadTextFile(`${myTeam.value}-roster.csv`, csv);
+        }
+
+        async function exportAttendanceCsv() {
+            const { data, error } = await client.from('attendance').select('*, swimmers(first_name, last_name)').eq('team_id', myTeam.value).order('date', { ascending: false });
+            if (error) return alert('Error exporting attendance: ' + error.message);
+            const csv = toCsv(data || [], [
+                { label: 'Date', get: r => r.date },
+                { label: 'First Name', get: r => r.swimmers?.first_name },
+                { label: 'Last Name', get: r => r.swimmers?.last_name },
+                { label: 'Status', get: r => r.status },
+            ]);
+            downloadTextFile(`${myTeam.value}-attendance.csv`, csv);
+        }
+
+        // Shared table-style PDF generator, used by both Attendance and
+        // Calendar exports below. jsPDF + autoTable is the standard,
+        // reliable combination for exactly this "data as a PDF table"
+        // pattern -- more consistent across mobile browsers than relying
+        // on the print dialog's own "Save as PDF" destination.
+        function generateTablePdf(title, subtitle, columns, rows) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(16); doc.setFont(undefined, 'bold');
+            doc.text(title, 14, 18);
+            if (subtitle) { doc.setFontSize(10); doc.setFont(undefined, 'normal'); doc.setTextColor(120); doc.text(subtitle, 14, 25); }
+            doc.autoTable({
+                startY: subtitle ? 30 : 24,
+                head: [columns.map(c => c.label)],
+                body: rows.map(r => columns.map(c => String(c.get(r) ?? ''))),
+                styles: { fontSize: 9, cellPadding: 3 },
+                headStyles: { fillColor: [15, 23, 42] },
+                alternateRowStyles: { fillColor: [248, 250, 252] },
+            });
+            return doc;
+        }
+
+        async function exportAttendancePdf() {
+            const { data, error } = await client.from('attendance').select('*, swimmers(first_name, last_name)').eq('team_id', myTeam.value).order('date', { ascending: false });
+            if (error) return alert('Error exporting attendance: ' + error.message);
+            const doc = generateTablePdf(`${setupTeamName.value || myTeam.value} — Attendance`, `Exported ${new Date().toLocaleDateString()}`,
+                [
+                    { label: 'Date', get: r => r.date },
+                    { label: 'First Name', get: r => r.swimmers?.first_name },
+                    { label: 'Last Name', get: r => r.swimmers?.last_name },
+                    { label: 'Status', get: r => r.status },
+                ], data || []);
+            doc.save(`${myTeam.value}-attendance.pdf`);
+        }
+
+        async function exportMeetResultsCsv() {
+            if (!selectedMeet.value) return alert('Open a meet first.');
+            const { data, error } = await client.from('meet_entries')
+                .select('*, swimmers(first_name, last_name), meet_events(event_number, gender, distance, stroke)')
+                .eq('meet_id', selectedMeet.value.id);
+            if (error) return alert('Error exporting meet results: ' + error.message);
+            const csv = toCsv(data || [], [
+                { label: 'Event #', get: r => r.meet_events?.event_number },
+                { label: 'Gender', get: r => r.meet_events?.gender },
+                { label: 'Distance', get: r => r.meet_events?.distance },
+                { label: 'Stroke', get: r => r.meet_events?.stroke },
+                { label: 'First Name', get: r => r.swimmers?.first_name },
+                { label: 'Last Name', get: r => r.swimmers?.last_name },
+                { label: 'Seed Time (sec)', get: r => r.seed_time_seconds },
+                { label: 'Status', get: r => r.status },
+            ]);
+            downloadTextFile(`${selectedMeet.value.name || 'meet'}-results.csv`, csv);
+        }
+
+        function icsEscape(s) { return String(s || '').replace(/[\\,;]/g, m => '\\' + m).replace(/\n/g, '\\n'); }
+        function toIcsDate(dt) { return new Date(dt).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'; }
+
+        async function exportCalendarIcs() {
+            const { data, error } = await client.from('calendar_events').select('*').eq('team_id', myTeam.value).order('start_time', { ascending: true });
+            if (error) return alert('Error exporting calendar: ' + error.message);
+            let ics = 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Swimatics//EN\n';
+            (data || []).forEach(e => {
+                ics += `BEGIN:VEVENT\nUID:${e.id}@swimatics\nDTSTART:${toIcsDate(e.start_time)}\nDTEND:${toIcsDate(e.end_time || e.start_time)}\nSUMMARY:${icsEscape(e.title)}\nLOCATION:${icsEscape(e.location)}\nDESCRIPTION:${icsEscape(e.description)}\nEND:VEVENT\n`;
+            });
+            ics += 'END:VCALENDAR';
+            downloadTextFile(`${myTeam.value}-calendar.ics`, ics, 'text/calendar');
+        }
+
+        async function exportCalendarPdf() {
+            const { data, error } = await client.from('calendar_events').select('*').eq('team_id', myTeam.value).order('start_time', { ascending: true });
+            if (error) return alert('Error exporting calendar: ' + error.message);
+            const doc = generateTablePdf(`${setupTeamName.value || myTeam.value} — Calendar`, `Exported ${new Date().toLocaleDateString()}`,
+                [
+                    { label: 'Date', get: r => new Date(r.start_time).toLocaleDateString() },
+                    { label: 'Time', get: r => new Date(r.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+                    { label: 'Event', get: r => r.title },
+                    { label: 'Location', get: r => r.location },
+                ], data || []);
+            doc.save(`${myTeam.value}-calendar.pdf`);
+        }
+
+        // ============================================================
+        // HY3 meet entries export -- the file structure (record types,
+        // field layout, fixed-width formatting) is well-documented and
+        // reliable. The checksum on each line is NOT officially
+        // published by Hy-Tek -- this is a best-effort implementation
+        // of the community's reverse-engineered approach, and even the
+        // people who originally documented it reported difficulty
+        // reproducing it exactly. TEST an exported file against real
+        // Hy-Tek software (or have a meet host test-import it) before
+        // relying on this for an actual meet submission.
+        // ============================================================
+        function padR(s, len) { s = String(s ?? ''); return s.length >= len ? s.slice(0, len) : s + ' '.repeat(len - s.length); }
+        function padL(s, len, padChar = ' ') { s = String(s ?? ''); return s.length >= len ? s.slice(0, len) : padChar.repeat(len - s.length) + s; }
+
+        function hy3Checksum(line129) {
+            // Best-effort reconstruction of the community-documented
+            // approach: sum odd-position characters, sum even-position
+            // characters doubled, combine, take last 2 digits. UNVERIFIED
+            // against real Hy-Tek software -- see the note above.
+            let oddSum = 0, evenSum = 0;
+            for (let i = 0; i < line129.length; i++) {
+                const code = line129.charCodeAt(i);
+                if (i % 2 === 0) oddSum += code; else evenSum += code * 2;
+            }
+            const total = oddSum + evenSum;
+            return padL(String(total % 100), 2, '0');
+        }
+
+        function formatHy3Time(seconds) {
+            if (seconds == null) return padR('', 8);
+            const m = Math.floor(seconds / 60);
+            const s = (seconds % 60).toFixed(2).padStart(5, '0');
+            return padR(`${m}:${s}`, 8);
+        }
+
+        async function exportMeetEntriesHy3() {
+            if (!selectedMeet.value) return alert('Open a meet first.');
+            const { data: entries, error } = await client.from('meet_entries')
+                .select('*, swimmers(first_name, last_name, birthdate, gender), meet_events(event_number, gender, distance, stroke)')
+                .eq('meet_id', selectedMeet.value.id).eq('status', 'approved');
+            if (error) return alert('Error building HY3: ' + error.message);
+            if (!entries?.length) return alert('No approved entries for this meet yet.');
+
+            const lines = [];
+            lines.push(`A0V3  20${myTeam.value}${' '.repeat(20)}Swimatics${' '.repeat(20)}`);
+            entries.forEach(en => {
+                const swimmerName = padR(`${en.swimmers?.last_name}, ${en.swimmers?.first_name}`, 20);
+                const stroke = (en.meet_events?.stroke || '?')[0];
+                const body =
+                    'E1' +
+                    padR(en.meet_events?.gender === 'Boys' ? 'M' : 'F', 1) +
+                    padR(myTeam.value, 6) +
+                    swimmerName +
+                    padL(en.meet_events?.distance, 4) +
+                    padR(stroke, 1) +
+                    padL(en.meet_events?.event_number, 3) +
+                    formatHy3Time(en.seed_time_seconds) +
+                    'NN N';
+                const checksum = hy3Checksum(body.slice(0, 129).padEnd(129, ' '));
+                lines.push(body + ' ' + checksum);
+            });
+
+            downloadTextFile(`${selectedMeet.value.name || 'meet'}-entries.hy3`, lines.join('\r\n'), 'text/plain');
+            alert("HY3 file downloaded. IMPORTANT: this checksum is unverified against real Hy-Tek software (see the note in this feature) -- test it or confirm with your meet host before relying on it for a real submission.");
         }
 
         async function confirmImport() {
@@ -6314,6 +6583,8 @@ createApp({
             hasPendingInvite, isProcessingInvite, isCreatingVault, submitVaultSetupAndCheckout, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors, themeMode, themePreference, setThemePreference,
             myTeamPlan, myTeamSubStatus, myTeamTrialEnds, myTeamCanceledAt, planStatusDisplay, openBillingPortal, hasFeature, demoTierOverride,
+            exportRosterCsv, exportAttendanceCsv, exportMeetResultsCsv, exportCalendarIcs, exportMeetEntriesHy3,
+            exportAttendancePdf, exportCalendarPdf,
             myTeamSetupCompleted, setupTeamName, setupLocation, isSavingSetup, completeTeamSetup,
             textInviteLink, emailInviteLink, showInviteShareMenu,
             athleteShareMenuFor, copyAthleteLink, textAthleteLink, emailAthleteLink, joinAsAthleteViaLink,
