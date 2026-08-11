@@ -6008,6 +6008,20 @@ createApp({
             
             const { data } = await client.auth.getUser();
             user.value = data?.user;
+
+            // FIX: right after a Google OAuth redirect, Supabase's own
+            // internal token processing is asynchronous and can still be
+            // in flight when this code runs -- getUser() can return no
+            // user even though the person just signed in successfully.
+            // If the URL still carries OAuth redirect markers and we came
+            // up empty, wait briefly and check again before concluding
+            // nobody's signed in.
+            if (!user.value && (window.location.hash.includes('access_token') || window.location.search.includes('code='))) {
+                await new Promise(r => setTimeout(r, 600));
+                const retry = await client.auth.getUser();
+                user.value = retry.data?.user;
+            }
+
             loadThemePreference();
             
             if (user.value) {
@@ -6079,9 +6093,15 @@ createApp({
             // FIX: supabase-js v2 fires an 'INITIAL_SESSION' event immediately on
             // subscribe (in addition to the getUser() call above), which was
             // causing loadTeamSettings/loadWorkouts/loadSeasonPlans/loadGroups to
-            // run twice on every page load. Skip that first synthetic event.
+            // run twice on every page load. Only skip it when user.value is
+            // ALREADY set (meaning getUser() above already caught it -- this
+            // event really is redundant). If user.value is still empty when
+            // this fires, it's the only remaining signal that a session
+            // exists -- skipping it unconditionally is what caused the
+            // sign-in loop (Google succeeds, but the app never picks up the
+            // session and shows sign-in again).
             client.auth.onAuthStateChange((event, session) => {
-                if (event === 'INITIAL_SESSION') return;
+                if (event === 'INITIAL_SESSION' && user.value) return;
                 if (session) {
                     user.value = session.user;
                     if(!myTeam.value && currentView.value !== 'onboarding') currentView.value = 'onboarding';
