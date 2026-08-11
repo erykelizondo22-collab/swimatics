@@ -1787,27 +1787,31 @@
                     </div>
 
                     <div v-if="entriesViewMode === 'swimmer'" class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
-                        <div v-for="s in enterableSwimmers" :key="s.id" class="p-4 space-y-2">
-                            <div class="flex items-center justify-between gap-2 flex-wrap">
-                                <div class="font-bold text-slate-800 text-sm">{{s.first_name}} {{s.last_name}} <span class="text-[9px] text-slate-400 font-black uppercase ml-1">{{s.group_name}}</span></div>
-                                <div v-if="selectedMeet.allow_opt_in_out" class="flex bg-slate-50 border border-slate-200 rounded-lg p-0.5 shrink-0">
-                                    <button @click="setParticipation(selectedMeet.id, s.id, 'opted_in')" :class="participationFor(s.id) === 'opted_in' ? 'bg-emerald-500 text-white' : 'text-slate-400'" class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase transition-colors">In</button>
-                                    <button @click="setParticipation(selectedMeet.id, s.id, 'opted_out')" :class="participationFor(s.id) === 'opted_out' ? 'bg-red-500 text-white' : 'text-slate-400'" class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase transition-colors">Out</button>
-                                    <span v-if="participationFor(s.id) === 'undeclared'" class="px-2.5 py-1 text-[9px] font-black uppercase text-amber-500">Undeclared</span>
+                        <div v-for="s in enterableSwimmers" :key="s.id">
+                            <div @click="toggleSwimmerExpand(s.id)" class="p-4 flex items-center justify-between gap-2 flex-wrap cursor-pointer hover:bg-slate-50 transition-colors">
+                                <div>
+                                    <div class="font-bold text-slate-800 text-sm">{{s.first_name}} {{s.last_name}} <span class="text-[9px] text-slate-400 font-black uppercase ml-1">{{s.group_name}}</span></div>
+                                    <div class="text-[10px] text-slate-400 font-bold mt-0.5">{{entriesForSwimmer(s.id).length}} event{{entriesForSwimmer(s.id).length === 1 ? '' : 's'}} entered</div>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <div v-if="selectedMeet.allow_opt_in_out" @click.stop class="flex bg-slate-50 border border-slate-200 rounded-lg p-0.5">
+                                        <button @click="setParticipation(selectedMeet.id, s.id, 'opted_in')" :class="participationFor(s.id) === 'opted_in' ? 'bg-emerald-500 text-white' : 'text-slate-400'" class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase transition-colors">In</button>
+                                        <button @click="setParticipation(selectedMeet.id, s.id, 'opted_out')" :class="participationFor(s.id) === 'opted_out' ? 'bg-red-500 text-white' : 'text-slate-400'" class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase transition-colors">Out</button>
+                                        <span v-if="participationFor(s.id) === 'undeclared'" class="px-2.5 py-1 text-[9px] font-black uppercase text-amber-500">Undeclared</span>
+                                    </div>
+                                    <span class="w-6 h-6 flex items-center justify-center text-slate-400 font-black text-lg">{{ expandedSwimmerId === s.id ? '−' : '+' }}</span>
                                 </div>
                             </div>
-                            <div class="flex flex-wrap gap-1.5">
-                                <span v-for="en in entriesForSwimmer(s.id)" :key="en.id" class="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-full pl-3 pr-1.5 py-1 text-[10px] font-bold text-slate-600">
-                                    {{eventLabel(en.meet_event_id)}}
-                                    <button @click="removeMeetEntry(en.id)" class="text-slate-400 hover:text-red-500 font-black">×</button>
-                                </span>
-                            </div>
-                            <div class="flex gap-2">
-                                <select v-model="newEntryEventId[s.id]" class="flex-1 bg-slate-50 border border-slate-200 p-2 rounded-lg text-[11px] font-bold outline-none">
-                                    <option value="">+ Add event...</option>
-                                    <option v-for="e in meetEventsList" :key="e.id" :value="e.id">#{{e.event_number}} — {{e.gender}} {{e.distance}} {{e.stroke}}</option>
-                                </select>
-                                <button @click="addMeetEntry(s.id, newEntryEventId[s.id]); newEntryEventId[s.id] = ''" class="bg-slate-900 text-white px-4 rounded-lg text-[10px] font-black uppercase shrink-0">Add</button>
+                            <div v-if="expandedSwimmerId === s.id" class="px-4 pb-4 space-y-1.5 bg-slate-50/60">
+                                <div v-for="e in eventsJoinableBy(s)" :key="e.id" class="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-2.5">
+                                    <div class="text-xs font-bold text-slate-700">#{{e.event_number}} — {{e.gender}} {{e.distance}} {{e.stroke}}</div>
+                                    <button @click="toggleSwimmerEventEntry(s.id, e.id)"
+                                            :class="isEnteredIn(s.id, e.id) ? 'bg-red-50 text-red-500 border-red-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'"
+                                            class="w-7 h-7 rounded-lg border font-black text-base flex items-center justify-center shrink-0 transition-colors">
+                                        {{ isEnteredIn(s.id, e.id) ? '−' : '+' }}
+                                    </button>
+                                </div>
+                                <div v-if="!eventsJoinableBy(s).length" class="text-[10px] text-slate-400 font-bold text-center py-3">No events for this swimmer's gender yet</div>
                             </div>
                         </div>
                         <div v-if="!enterableSwimmers.length" class="p-10 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No swimmers in this group</div>
@@ -4399,7 +4403,6 @@ createApp({
         const entriesGroupFilter = ref('');
         const entriesEventFilter = ref('');
         const newEntrySwimmerId = ref({}); // { [meetEventId]: swimmerId } for the "by event" add-row
-        const newEntryEventId = ref({}); // { [swimmerId]: meetEventId } for the "by swimmer" add-row
 
         // Groups this account is allowed to enter swimmers for on this
         // meet -- owner/admin/office get every group, a plain coach only
@@ -4427,6 +4430,41 @@ createApp({
         function entriesForEvent(meetEventId) {
             const allowedIds = new Set(enterableSwimmers.value.map(s => s.id));
             return meetEntriesList.value.filter(en => en.meet_event_id === meetEventId && allowedIds.has(en.swimmer_id));
+        }
+
+        // Accordion state for the By Swimmer view -- only one swimmer's
+        // event list expanded at a time. Clicking the same swimmer again
+        // collapses it.
+        const expandedSwimmerId = ref(null);
+        function toggleSwimmerExpand(swimmerId) {
+            expandedSwimmerId.value = expandedSwimmerId.value === swimmerId ? null : swimmerId;
+        }
+
+        // Events this swimmer can actually swim -- their own gender, plus
+        // any Mixed ('X') events. swimmers.gender is stored as
+        // 'male'/'female'; meet_events.gender is 'M'/'F'/'X'.
+        function eventsJoinableBy(swimmer) {
+            const code = swimmer.gender === 'male' ? 'M' : swimmer.gender === 'female' ? 'F' : null;
+            return meetEventsList.value.filter(e => e.gender === 'X' || (code && e.gender === code));
+        }
+
+        function isEnteredIn(swimmerId, meetEventId) {
+            return meetEntriesList.value.some(en => en.swimmer_id === swimmerId && en.meet_event_id === meetEventId);
+        }
+
+        // Direct toggle for the +/- buttons -- deliberately no confirm()
+        // dialog here, unlike removeMeetEntry's "×" tag removal elsewhere.
+        // This is meant to be fast, low-friction, and easily reversible
+        // (click again to re-add), not a deliberate delete action.
+        async function toggleSwimmerEventEntry(swimmerId, meetEventId) {
+            const existing = meetEntriesList.value.find(en => en.swimmer_id === swimmerId && en.meet_event_id === meetEventId);
+            if (existing) {
+                const { error } = await client.from('meet_entries').delete().eq('id', existing.id);
+                if (error) return alert("Error removing entry: " + error.message);
+                loadMeetEntries(selectedMeet.value.id);
+            } else {
+                await addMeetEntry(swimmerId, meetEventId);
+            }
         }
 
         async function addMeetEntry(swimmerId, meetEventId) {
@@ -6888,7 +6926,8 @@ createApp({
             dmEnabledCoaches, myConversations, openParentConvoId, selectedCoachForNewConvo, loadDmEnabledCoaches, loadMyConversations, openParentConversationThread, closeParentConversation, startConversationWithCoach,
             coachGroupLinksMap, myAssignedGroups, toggleCoachGroup,
             calendarEvents, newCalendarEvent, showNewCalendarEventForm, upcomingCalendarEvents, postableGroups, createCalendarEvent, deleteCalendarEvent,
-            entriesViewMode, entriesGroupFilter, entriesEventFilter, newEntrySwimmerId, newEntryEventId, meetEntryGroups, enterableSwimmers, filteredMeetEvents, entriesForSwimmer, entriesForEvent, addMeetEntry, removeMeetEntry,
+            entriesViewMode, entriesGroupFilter, entriesEventFilter, newEntrySwimmerId, meetEntryGroups, enterableSwimmers, filteredMeetEvents, entriesForSwimmer, entriesForEvent, addMeetEntry, removeMeetEntry,
+            expandedSwimmerId, toggleSwimmerExpand, eventsJoinableBy, isEnteredIn, toggleSwimmerEventEntry,
             meetParticipationList, participationFor, setParticipation, updateMeetSetting, parentMeetParticipation,
             calendarViewDate, calendarVisibilityFilter, selectedCalendarDay, calendarMonthLabel, calendarGridDays, eventsByDate,
             prevMonth, nextMonth, goToToday, openCalendarDay, closeCalendarDay, addEventOnDay,
