@@ -2627,6 +2627,7 @@ createApp({
         // SMART IMPORT
         const importState = ref({ status: 'idle', message: '' });
         const importPreview = ref({ detected_type: '', records: [] });
+        const importDetectedMeetInfo = ref(null);
         const importColumns = ref([]);
         const practiceDate = ref(new Date().toISOString().split('T')[0]);
         const hasDraft = ref(false);
@@ -5604,7 +5605,11 @@ createApp({
             if (!lines.length) return null;
             const header = lines[0].split(';');
             const STROKE = { A: 'Freestyle', B: 'Backstroke', C: 'Breaststroke', D: 'Butterfly', E: 'IM', F: 'Medley Relay' };
-            const GENDER = { G: 'Girls', B: 'Boys', X: 'Mixed' };
+            // Database's meet_events_gender_check constraint requires
+            // exactly 'M', 'F', or 'X' -- mapped directly here so this
+            // field never depends on the AI correctly translating full
+            // words back into the required codes.
+            const GENDER = { G: 'F', B: 'M', X: 'X' };
             const events = [];
             for (const line of lines.slice(1)) {
                 const f = line.split(';');
@@ -5635,11 +5640,22 @@ createApp({
             const rawText = await zip.files[targetName].async('text');
             if (!ev3Name) {
                 // .hyv only (older export) -- not deterministically parsed,
-                // hand the raw text to the AI same as before.
+                // hand the raw text to the AI same as before. No structured
+                // meet info available from this path.
+                importDetectedMeetInfo.value = null;
                 return rawText;
             }
             const parsed = parseHyTekEv3(rawText);
             if (!parsed) throw new Error("Couldn't read the event file inside this zip.");
+
+            // Captured deterministically from the file itself, not the AI --
+            // this is what lets confirmImport auto-create the meet instead
+            // of requiring one to already be open.
+            importDetectedMeetInfo.value = {
+                name: parsed.meet_name || 'Imported Meet',
+                location: parsed.location || null,
+                start_date: parseHyTekDate(parsed.date)
+            };
 
             let summary = `Meet: ${parsed.meet_name}\nLocation: ${parsed.location}\nDate: ${parsed.date}\n\nEvents:\n`;
             parsed.events.forEach(e => {
@@ -5650,9 +5666,20 @@ createApp({
             return summary;
         }
 
+        // Hy-Tek dates are MM/DD/YYYY -- converts to the YYYY-MM-DD format
+        // the database's date columns expect.
+        function parseHyTekDate(dateStr) {
+            if (!dateStr) return null;
+            const m = dateStr.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (!m) return null;
+            const [, mo, day, yr] = m;
+            return `${yr}-${mo.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+
         async function handleGenericImport(event) {
             const file = event.target.files[0];
             if(!file) return;
+            importDetectedMeetInfo.value = null;
             importState.value = { status: 'reading', message: 'Reading file...' };
 
             try {
@@ -5665,7 +5692,7 @@ createApp({
 
                 importState.value = { status: 'analyzing', message: 'Analyzing with AI...' };
 
-                const prompt = `You are a data extraction engine for a swim team app. Classify the attached file content into exactly ONE of these types: "roster" (swimmer names/birthdates/groups), "times" (swim times/results, one row per swim: swimmer name, distance, stroke, course SCY/SCM/LCM, time, date, meet name), "meet_events" (a meet's event list: event number, gender, distance, stroke, age range, qualifying time), or "attendance" (swimmer name, date, present/absent). If the content is already a pre-parsed "Events:" summary from a Hy-Tek .ev3 file, use it directly as meet_events records -- carry over any [WARNING: ...] notes into a "warning" field on that record rather than guessing a real value. If the file is raw Hy-Tek HY3/CL2 fixed-width export (A0/B1/B2/C1/C2/D0/D1/D3 style records), parse its record structure accordingly. Respond with ONLY a valid JSON object, no markdown, no intro text, in exactly this shape: {"detected_type": "roster|times|meet_events|attendance|unknown", "records": [ {...one object per row, using short lowercase snake_case keys appropriate to the type...} ]}. If you cannot confidently classify or parse the file, return {"detected_type": "unknown", "records": []}.`;
+                const prompt = `You are a data extraction engine for a swim team app. Classify the attached file content into exactly ONE of these types: "roster" (swimmer names/birthdates/groups), "times" (swim times/results, one row per swim: swimmer name, distance, stroke, course SCY/SCM/LCM, time, date, meet name), "meet_events" (a meet's event list: event number, gender, distance, stroke, age range, qualifying time), or "attendance" (swimmer name, date, present/absent). For meet_events records specifically, the "gender" field MUST be exactly "M", "F", or "X" (the database rejects anything else, including full words like "Boys"/"Girls"/"Male"/"Female" -- convert to the single-letter code). If the content is already a pre-parsed "Events:" summary from a Hy-Tek .ev3 file, use it directly as meet_events records -- carry over any [WARNING: ...] notes into a "warning" field on that record rather than guessing a real value. If the file is raw Hy-Tek HY3/CL2 fixed-width export (A0/B1/B2/C1/C2/D0/D1/D3 style records), parse its record structure accordingly. Respond with ONLY a valid JSON object, no markdown, no intro text, in exactly this shape: {"detected_type": "roster|times|meet_events|attendance|unknown", "records": [ {...one object per row, using short lowercase snake_case keys appropriate to the type...} ]}. If you cannot confidently classify or parse the file, return {"detected_type": "unknown", "records": []}.`;
                 const context = `Existing team groups: ${teamGroupsList.value.map(g=>g.name).join(', ') || 'none'}. Existing roster: ${swimmers.value.map(s=>s.first_name+' '+s.last_name).join(', ') || 'none yet'}.`;
 
                 const { data: { session } } = await client.auth.getSession();
@@ -5903,7 +5930,7 @@ createApp({
         async function confirmImport() {
             const rows = importPreview.value.records.filter(r => r._include);
             const type = importPreview.value.detected_type;
-            let inserted = 0, skipped = 0;
+            let inserted = 0, skipped = 0, createdMeetName = null;
 
             try {
                 if(type === 'roster') {
@@ -5927,9 +5954,32 @@ createApp({
 
                 } else if(type === 'times' || type === 'attendance' || type === 'meet_events') {
                     if(type === 'meet_events') {
-                        if(!selectedMeet.value) throw new Error("Open a meet first (Meets > select a meet) before importing its event list.");
+                        let targetMeetId = selectedMeet.value?.id;
+
+                        if (!targetMeetId) {
+                            if (!importDetectedMeetInfo.value) {
+                                throw new Error("Open a meet first (Meets > select a meet) before importing its event list.");
+                            }
+                            // Auto-create the meet from info parsed directly out
+                            // of the file -- but reuse an existing meet with the
+                            // same name first, so re-importing the same file
+                            // doesn't create duplicates.
+                            const info = importDetectedMeetInfo.value;
+                            const { data: existing } = await client.from('meets').select('id').eq('team_id', myTeam.value).eq('name', info.name).maybeSingle();
+                            if (existing) {
+                                targetMeetId = existing.id;
+                            } else {
+                                const { data: created, error: meetErr } = await client.from('meets').insert({
+                                    team_id: myTeam.value, name: info.name, location: info.location, start_date: info.start_date
+                                }).select('id').single();
+                                if (meetErr) throw meetErr;
+                                targetMeetId = created.id;
+                                createdMeetName = info.name;
+                            }
+                        }
+
                         const payloads = rows.map(r => ({
-                            meet_id: selectedMeet.value.id,
+                            meet_id: targetMeetId,
                             event_number: r.event_number || null,
                             gender: r.gender || 'X',
                             distance: parseInt(r.distance) || 0,
@@ -5939,12 +5989,26 @@ createApp({
                         const { error } = await client.from("meet_events").insert(payloads);
                         if(error) throw error;
                         inserted = payloads.length;
-                        loadMeetEvents(selectedMeet.value.id);
+                        if (!selectedMeet.value) {
+                            const { data: fresh } = await client.from('meets').select('*').eq('id', targetMeetId).single();
+                            if (fresh) { selectedMeet.value = fresh; currentView.value = 'meet-detail'; }
+                        }
+                        loadMeetEvents(targetMeetId);
                     } else {
-                        // times / attendance need a swimmer match by name
+                        // times / attendance need a swimmer match by name.
+                        // Tries "First Last" first, then "Last, First" --
+                        // real Hy-Tek results exports conventionally use the
+                        // latter, so relying on only one format silently
+                        // skipped every row from a real results file.
                         for(const r of rows) {
-                            const nameStr = (r.swimmer_name || r.name || '').toLowerCase().trim();
-                            const match = swimmers.value.find(s => `${s.first_name} ${s.last_name}`.toLowerCase().trim() === nameStr);
+                            const raw = (r.swimmer_name || r.name || '').trim();
+                            const asIs = raw.toLowerCase();
+                            let match = swimmers.value.find(s => `${s.first_name} ${s.last_name}`.toLowerCase().trim() === asIs);
+                            if (!match && raw.includes(',')) {
+                                const [lastPart, firstPart] = raw.split(',').map(p => p.trim());
+                                const reordered = `${firstPart} ${lastPart}`.toLowerCase();
+                                match = swimmers.value.find(s => `${s.first_name} ${s.last_name}`.toLowerCase().trim() === reordered);
+                            }
                             if(!match) { skipped++; continue; }
                             if(type === 'times') {
                                 const { error } = await client.from("swim_times").insert({
@@ -5968,7 +6032,7 @@ createApp({
                     throw new Error("Unrecognized data type — nothing was imported.");
                 }
 
-                importState.value = { status: 'done', message: `Imported ${inserted} row(s)${skipped ? `, skipped ${skipped} (no matching swimmer found)` : ''}.` };
+                importState.value = { status: 'done', message: `${createdMeetName ? `Created "${createdMeetName}" and imported` : 'Imported'} ${inserted} row(s)${skipped ? `, skipped ${skipped} (no matching swimmer found)` : ''}.` };
                 if(type === 'roster') loadSwimmers();
 
             } catch(err) {
