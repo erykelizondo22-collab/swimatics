@@ -877,7 +877,7 @@
                         <div v-for="g in teamGroupsList" :key="g.id" v-show="groupAttendanceSummary[g.name] !== undefined && groupAttendanceSummary[g.name] !== null" class="flex items-center gap-3">
                             <div class="w-24 shrink-0 text-xs font-bold text-slate-700 truncate">{{g.name}}</div>
                             <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                <div class="h-full rounded-full" :style="{ width: (groupAttendanceSummary[g.name] || 0) + '%', background: groupAttendanceSummary[g.name] >= 90 ? 'var(--current)' : groupAttendanceSummary[g.name] >= 75 ? '#D97706' : '#dc4c4c' }"></div>
+                                <div class="h-full rounded-full" :style="{ width: (groupAttendanceSummary[g.name] || 0) + '%', background: groupAttendanceSummary[g.name] >= 90 ? '#10B981' : groupAttendanceSummary[g.name] >= 70 ? '#EAB308' : '#dc4c4c' }"></div>
                             </div>
                             <div class="font-mono-data text-xs font-bold w-10 text-right text-slate-600">{{groupAttendanceSummary[g.name]}}%</div>
                         </div>
@@ -1714,7 +1714,12 @@
                         <div class="font-black text-xl uppercase text-slate-900">{{g.name}}</div>
                         <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 flex items-center gap-2">
                             {{ swimmers.filter(s => s.group_name === g.name).length }} Swimmers
-                            <span v-if="groupAttendanceSummary[g.name] !== undefined && groupAttendanceSummary[g.name] !== null" :class="groupAttendanceSummary[g.name] >= 90 ? 'text-emerald-500' : groupAttendanceSummary[g.name] >= 75 ? 'text-amber-500' : 'text-red-500'">• {{groupAttendanceSummary[g.name]}}%</span>
+                            <span v-if="groupAttendanceSummary[g.name] !== undefined && groupAttendanceSummary[g.name] !== null" :class="groupAttendanceSummary[g.name] >= 90 ? 'text-emerald-500' : groupAttendanceSummary[g.name] >= 70 ? 'text-yellow-600' : 'text-red-500'">• {{groupAttendanceSummary[g.name]}}% ({{selectedSeasonName}})</span>
+                        </div>
+                        <div class="text-[10px] font-black uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
+                            <span class="text-slate-300">Today</span>
+                            <span v-if="todayAttendanceByGroup[g.name] !== undefined && todayAttendanceByGroup[g.name] !== null" :class="todayAttendanceByGroup[g.name] >= 90 ? 'text-emerald-500' : todayAttendanceByGroup[g.name] >= 70 ? 'text-yellow-600' : 'text-red-500'">{{todayAttendanceByGroup[g.name]}}%</span>
+                            <span v-else class="text-slate-300">— not marked yet</span>
                         </div>
                         <div class="flex gap-2 mt-4 pt-4 border-t border-slate-100">
                             <button @click.stop="exportAttendanceCsv(g.name)" class="flex-1 bg-slate-50 border border-slate-200 text-slate-600 px-3 py-2 rounded-lg font-black uppercase tracking-widest text-[9px] hover:bg-slate-100 transition-colors">CSV</button>
@@ -1735,6 +1740,7 @@
 
                 <div v-if="!groupDetailAttendanceOnly" class="flex gap-6 border-b border-slate-100 pb-2">
                     <button @click="groupDetailTab = 'swimmers'" :class="groupDetailTab === 'swimmers' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'" class="font-black uppercase tracking-widest text-xs pb-2 transition-colors">Swimmers</button>
+                    <button v-if="selectedGroupForEdit.id !== null" @click="groupDetailTab = 'lanes'" :class="groupDetailTab === 'lanes' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'" class="font-black uppercase tracking-widest text-xs pb-2 transition-colors">Lanes</button>
                     <button v-if="selectedGroupForEdit.id !== null" @click="groupDetailTab = 'settings'" :class="groupDetailTab === 'settings' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'" class="font-black uppercase tracking-widest text-xs pb-2 transition-colors">Settings</button>
                 </div>
 
@@ -1802,7 +1808,7 @@
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
                         <div v-for="s in filteredAttendanceSwimmers" :key="s.id" class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="flex items-center gap-3">
-                                <div class="text-base font-black w-12 text-center shrink-0" v-if="swimmerAttendancePercent[s.id] !== undefined && swimmerAttendancePercent[s.id] !== null" :class="swimmerAttendancePercent[s.id] >= 90 ? 'text-emerald-500' : swimmerAttendancePercent[s.id] >= 75 ? 'text-amber-500' : 'text-red-500'">{{swimmerAttendancePercent[s.id]}}%</div>
+                                <div class="text-base font-black w-12 text-center shrink-0" v-if="swimmerAttendancePercent[s.id] !== undefined && swimmerAttendancePercent[s.id] !== null" :class="swimmerAttendancePercent[s.id] >= 90 ? 'text-emerald-500' : swimmerAttendancePercent[s.id] >= 70 ? 'text-yellow-600' : 'text-red-500'">{{swimmerAttendancePercent[s.id]}}%</div>
                                 <div class="text-[8px] font-black text-slate-300 uppercase w-12 text-center shrink-0" v-else>No Data</div>
                                 <div>
                                     <button @click="openSwimmerHistory(s)" class="font-bold text-slate-800 hover:text-blue-600 hover:underline transition-colors text-left">{{s.first_name}} {{s.last_name}}</button>
@@ -1846,7 +1852,30 @@
                     </div>
                 </div>
 
-                <div v-if="groupDetailTab === 'settings' && selectedGroupForEdit.id !== null" class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
+                <div v-if="groupDetailTab === 'lanes' && selectedGroupForEdit.id !== null" class="space-y-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-end gap-4">
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Number of Lanes</label>
+                            <input type="number" min="1" max="20" v-model.number="laneCount" class="w-28 bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-sm font-bold outline-none">
+                        </div>
+                        <button @click="randomizeLanes" :disabled="isRandomizingLanes" class="bg-[var(--pool-depth)] text-white px-6 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs shadow-md hover:bg-[var(--pool-depth-3)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">{{ isRandomizingLanes ? 'Randomizing...' : 'Randomize' }}</button>
+                        <span v-if="laneAssignments && laneAssignments.updated_at" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Last randomized {{ formatPracticeDate(laneAssignments.updated_at.slice(0,10)) }}</span>
+                    </div>
+
+                    <div v-if="laneAssignments && laneAssignments.lanes" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div v-for="laneNum in Object.keys(laneAssignments.lanes).sort((a,b) => a-b)" :key="laneNum" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                            <div class="text-[10px] font-black uppercase tracking-widest mb-3" :style="{ color: teamColors.primary }">Lane {{laneNum}}</div>
+                            <div class="space-y-1.5">
+                                <div v-for="swimmerId in laneAssignments.lanes[laneNum]" :key="swimmerId" class="text-sm font-bold text-slate-700">
+                                    {{ (swimmers.find(s => s.id === swimmerId) || {}).first_name }} {{ (swimmers.find(s => s.id === swimmerId) || {}).last_name }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else class="text-center py-16 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-2xl">No lane assignment yet — set a lane count and randomize</div>
+                </div>
+
+
 
                     <div class="mb-8 pb-8 border-b border-slate-100 relative">
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Practice Start Time</label>
@@ -2708,7 +2737,7 @@
                     <div class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl">
                         <div>
                             <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Attendance ({{selectedSeasonName}})</h4>
-                            <div class="text-2xl font-black mt-1" :class="swimmerAttendancePercent[s.id] >= 90 ? 'text-emerald-500' : swimmerAttendancePercent[s.id] >= 75 ? 'text-amber-500' : swimmerAttendancePercent[s.id] != null ? 'text-red-500' : 'text-slate-300'">{{ swimmerAttendancePercent[s.id] != null ? swimmerAttendancePercent[s.id] + '%' : 'No Data' }}</div>
+                            <div class="text-2xl font-black mt-1" :class="swimmerAttendancePercent[s.id] >= 90 ? 'text-emerald-500' : swimmerAttendancePercent[s.id] >= 70 ? 'text-yellow-600' : swimmerAttendancePercent[s.id] != null ? 'text-red-500' : 'text-slate-300'">{{ swimmerAttendancePercent[s.id] != null ? swimmerAttendancePercent[s.id] + '%' : 'No Data' }}</div>
                         </div>
                         <button @click="openSwimmerHistory(s)" class="text-[10px] font-black uppercase bg-[var(--pool-depth)] text-white px-4 py-2.5 rounded-lg">View History</button>
                     </div>
@@ -2769,7 +2798,6 @@
             </div>
 
         </div>
-    </div>
 
     <div id="sheet" style="display:none; position: relative; overflow: hidden;" class="print-page" :class="{'no-print': !user, 'print-active': printTarget === 'workout'}">
         <div v-for="topPx in printWatermarkPositions" :key="topPx" style="position: absolute; left: 0; right: 0; display: flex; align-items: center; justify-content: center; z-index: 0; opacity: 0.08; pointer-events: none;" :style="{ top: topPx + 'px', transform: 'translateY(-50%)' }">
@@ -2925,7 +2953,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 106;
+        const SW_VERSION = 107;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -3158,6 +3186,14 @@ createApp({
         const staffList = ref([]);
         const newGroupName = ref("");
         const selectedGroupForEdit = ref(null);
+        // Lane assignment -- laneAssignments is derived straight from
+        // selectedGroupForEdit rather than a separately-synced ref, since
+        // lane_assignments already comes through automatically via
+        // loadGroups' SELECT * once a group is selected. laneCount stays a
+        // real ref (v-model needs one), initialized in openGroupDetails.
+        const laneCount = ref(4);
+        const isRandomizingLanes = ref(false);
+        const laneAssignments = computed(() => selectedGroupForEdit.value ? selectedGroupForEdit.value.lane_assignments : null);
         const importSourceGroup = ref("");
         
         // DRAG AND DROP STATE
@@ -4161,12 +4197,56 @@ createApp({
                 loadGroups();
             }
         }
-        
+
+        // Randomizes this group's swimmers across the given number of
+        // lanes and saves the result -- it stays exactly as assigned until
+        // the coach clicks Randomize again, not re-shuffled on every visit.
+        async function randomizeLanes() {
+            if (!selectedGroupForEdit.value || selectedGroupForEdit.value.id === null) return;
+            if (!laneCount.value || laneCount.value < 1) return alert("Enter at least 1 lane.");
+            if (isRandomizingLanes.value) return;
+            isRandomizingLanes.value = true;
+            try {
+                const groupSwimmers = swimmers.value.filter(s => s.group_name === selectedGroupForEdit.value.name);
+                if (!groupSwimmers.length) return alert("No swimmers in this group to assign.");
+
+                // Fisher-Yates shuffle -- a genuinely unbiased randomization,
+                // not just Array.sort(() => Math.random() - 0.5) which skews.
+                const shuffled = groupSwimmers.map(s => s.id);
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+
+                // Round-robin deal across lanes for as even a split as possible.
+                const lanes = {};
+                for (let i = 1; i <= laneCount.value; i++) lanes[i] = [];
+                shuffled.forEach((swimmerId, idx) => {
+                    const laneNum = (idx % laneCount.value) + 1;
+                    lanes[laneNum].push(swimmerId);
+                });
+
+                const newAssignment = { num_lanes: laneCount.value, lanes, updated_at: new Date().toISOString() };
+                const { error } = await client.from("team_groups").update({ lane_assignments: newAssignment }).eq('id', selectedGroupForEdit.value.id);
+                if (error) return alert("Error saving lane assignment: " + error.message);
+
+                // Update locally so the UI reflects it immediately, and keep
+                // teamGroupsList in sync so it's still correct if the coach
+                // navigates back to Groups and into this group again.
+                selectedGroupForEdit.value.lane_assignments = newAssignment;
+                const idx = teamGroupsList.value.findIndex(g => g.id === selectedGroupForEdit.value.id);
+                if (idx !== -1) teamGroupsList.value[idx].lane_assignments = newAssignment;
+            } finally {
+                isRandomizingLanes.value = false;
+            }
+        }
+
         async function openGroupDetails(g) {
             selectedGroupForEdit.value = g;
             groupDetailTab.value = 'swimmers';
             groupDetailAttendanceOnly.value = false;
             currentView.value = 'group-details';
+            laneCount.value = (g.lane_assignments && g.lane_assignments.num_lanes) || 4;
             if (g.id !== null) {
                 attendanceMarkGroup.value = g.name;
                 attendanceGroupFilter.value = g.name;
@@ -5579,7 +5659,7 @@ createApp({
             'analytics': { label: 'Analytics', icon: '📊', feature: 'workouts', activeViews: ['analytics'], onSelect: async () => { currentView.value = 'analytics'; } },
             'season-planning': { label: 'Season', icon: '🗓️', feature: 'workouts', activeViews: ['season-planning','plan-builder'], onSelect: async () => { currentView.value = 'season-planning'; } },
             'groups': { label: 'Groups', icon: '👥', feature: 'roster', activeViews: ['groups','group-details'], onSelect: async () => { currentView.value = 'groups'; selectedGroupForEdit.value = null; await Promise.all([loadSwimmers(), loadSeasons(), loadAttendanceSummary()]); } },
-            'attendance': { label: 'Attendance', icon: '✅', feature: 'attendance', activeViews: ['attendance'], onSelect: async () => { currentView.value = 'attendance'; selectedGroupForEdit.value = null; await Promise.all([loadSwimmers(), loadSeasons(), loadAttendanceSummary()]); } },
+            'attendance': { label: 'Attendance', icon: '✅', feature: 'attendance', activeViews: ['attendance'], onSelect: async () => { currentView.value = 'attendance'; selectedGroupForEdit.value = null; await Promise.all([loadSwimmers(), loadSeasons(), loadAttendanceSummary(), loadTodayAttendanceByGroup()]); } },
             'meets': { label: 'Meets', icon: '🏆', feature: 'meets', activeViews: ['meets','meet-detail'], onSelect: async () => { currentView.value = 'meets'; await loadMeets(); } },
             'calendar': { label: 'Calendar', icon: '📅', feature: 'calendar', activeViews: ['calendar'], onSelect: async () => { currentView.value = 'calendar'; await Promise.all([loadCalendarEvents(), loadMyAssignedGroups()]); } },
             'staff': { label: 'Staff', icon: '🧑\u200d🏫', feature: 'admin', activeViews: ['staff'], onSelect: async () => { currentView.value = 'staff'; await Promise.all([loadStaff(), loadCoachGroupLinks(), loadPendingCoachRequests()]); } },
@@ -5966,6 +6046,38 @@ createApp({
             const rows = data || [];
             const present = rows.filter(r => r.status === 'present' || r.status === 'excused').length;
             todayAttendancePercent.value = rows.length > 0 ? Math.round((present / rows.length) * 100) : null;
+        }
+
+        // Per-group breakdown of TODAY's attendance specifically -- resets
+        // naturally each day since it's always scoped to getLocalTodayStr(),
+        // separate from groupAttendanceSummary which is the season/all-time
+        // average. Modeled directly on loadTodayAttendanceSummary above,
+        // just broken out per group instead of one team-wide number.
+        const todayAttendanceByGroup = ref({});
+        async function loadTodayAttendanceByGroup() {
+            const swimmerIds = swimmers.value.map(s => s.id);
+            if (!swimmerIds.length) { todayAttendanceByGroup.value = {}; return; }
+            const { data, error } = await client.from("attendance").select("status, swimmer_id")
+                .eq('team_id', myTeam.value)
+                .in('swimmer_id', swimmerIds)
+                .eq('practice_date', getLocalTodayStr());
+            if (error) { console.error("Error loading today's attendance by group:", error.message); return; }
+            const rows = data || [];
+            const swimmerGroupMap = {};
+            swimmers.value.forEach(s => { swimmerGroupMap[s.id] = s.group_name; });
+            const byGroup = {};
+            rows.forEach(r => {
+                const g = swimmerGroupMap[r.swimmer_id];
+                if (!g) return;
+                if (!byGroup[g]) byGroup[g] = { present: 0, total: 0 };
+                byGroup[g].total++;
+                if (r.status === 'present' || r.status === 'excused') byGroup[g].present++;
+            });
+            const result = {};
+            Object.keys(byGroup).forEach(g => {
+                result[g] = byGroup[g].total > 0 ? Math.round((byGroup[g].present / byGroup[g].total) * 100) : null;
+            });
+            todayAttendanceByGroup.value = result;
         }
 
         async function loadAttendanceSummary(scopeToGroup = null) {
@@ -7426,7 +7538,7 @@ createApp({
             hasPendingInvite, isProcessingInvite, isCreatingVault, submitVaultSetupAndCheckout, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors, themeMode, themePreference, setThemePreference,
             myTeamPlan, myTeamSubStatus, myTeamTrialEnds, myTeamCanceledAt, planStatusDisplay, trialDaysLeft, openBillingPortal, hasFeature, demoTierOverride,
-            todayAttendancePercent, nextUpcomingMeet, greetingTimeOfDay, getLocalTodayStr,
+            todayAttendancePercent, todayAttendanceByGroup, nextUpcomingMeet, greetingTimeOfDay, getLocalTodayStr,
             exportRosterCsv, exportAttendanceCsv, exportMeetResultsCsv, exportCalendarIcs, exportMeetEntriesHy3,
             exportAttendancePdf, exportCalendarPdf,
             myTeamSetupCompleted, setupTeamName, setupLocation, isSavingSetup, completeTeamSetup,
@@ -7446,7 +7558,7 @@ createApp({
             isImportingPdf, pdfImportProgress, triggerPdfUpload, importPdf,
             selectedGroupSystems, addEnergySystem, removeEnergySystem, saveGroupSystems, calculateWeekTotal, seasonPlanTab,
             addAlias, removeAlias, saveGroupAliases, editorSystemTotals,
-            selectedGroupForEdit, openGroupDetails, openGroupDetailsForAttendance, dragStart, drop, draggedGroupIndex, importSourceGroup, importSystemsAndAliases,
+            selectedGroupForEdit, openGroupDetails, openGroupDetailsForAttendance, dragStart, drop, draggedGroupIndex, importSourceGroup, importSystemsAndAliases, laneCount, isRandomizingLanes, laneAssignments, randomizeLanes,
             isParent, isOffice, isAthlete, secToTime,
             myGroupConversations, openGroupConvoId, groupConversationThread, loadMyGroupConversations, startGroupChatWithCoach, openGroupConversationThread, closeGroupConversation, sendGroupMessage,
             messageAthleteSwimmerId, coachGroupConversations, loadCoachGroupConversations,
