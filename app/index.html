@@ -284,11 +284,7 @@
                 </button>
                 <div class="flex items-center gap-3 cursor-pointer group" @click="currentView = myTeam ? (isParent ? 'parent-home' : (isOffice ? 'groups' : 'dashboard')) : 'onboarding'; mobileNavOpen = false">
                     <div class="w-10 h-10 flex items-center justify-center rounded-xl group-hover:scale-105 transition-transform duration-300 overflow-hidden" :style="{ backgroundColor: teamColors.primary + '20' }">
-                        <svg width="24" height="24" viewBox="0 0 32 32">
-                            <circle cx="16" cy="16" r="15" fill="none" stroke="var(--lane-brass)" stroke-width="1.5"/>
-                            <circle cx="16" cy="16" r="15" fill="none" stroke="var(--current-light)" stroke-width="1.5" stroke-dasharray="47 47" stroke-dashoffset="23.5"/>
-                            <circle cx="16" cy="16" r="4.5" fill="var(--lane-brass)"/>
-                        </svg>
+                        <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain p-1">
                     </div>
                     <span class="font-display font-black text-2xl tracking-tight hidden sm:inline-block text-slate-900 group-hover:opacity-80 transition-opacity">Swimatics</span>
                 </div>
@@ -319,11 +315,9 @@
                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
                 <div class="flex items-center gap-3 relative">
-                    <svg width="42" height="42" viewBox="0 0 32 32" class="shrink-0">
-                        <circle cx="16" cy="16" r="15" fill="none" stroke="var(--lane-brass)" stroke-width="1.5"/>
-                        <circle cx="16" cy="16" r="15" fill="none" stroke="var(--current-light)" stroke-width="1.5" stroke-dasharray="47 47" stroke-dashoffset="23.5"/>
-                        <circle cx="16" cy="16" r="4.5" fill="var(--lane-brass)"/>
-                    </svg>
+                    <div class="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center overflow-hidden shrink-0">
+                        <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain p-1.5">
+                    </div>
                     <div class="min-w-0">
                         <div class="font-display font-bold text-xl tracking-tight">Swimatics</div>
                         <div class="text-[10px] font-bold uppercase tracking-widest opacity-70 truncate">{{myTeam}}</div>
@@ -641,26 +635,26 @@
             </div>
 
             <div v-if="currentView === 'dashboard'" class="space-y-8 md:space-y-10">
-                <div class="rounded-3xl p-8 md:p-12 text-white shadow-xl shadow-slate-900/20 flex flex-col md:flex-row justify-between items-center relative overflow-hidden gap-8" :style="{ background: 'linear-gradient(to bottom right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
-                    <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
-                    <div class="absolute bottom-0 left-0 w-40 h-40 bg-black opacity-20 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
-                    
+                <div class="rounded-2xl p-8 md:p-12 text-white shadow-xl flex flex-col md:flex-row justify-between items-center relative overflow-hidden gap-8" style="background: linear-gradient(160deg, var(--pool-depth-2) 0%, var(--pool-depth) 55%, var(--pool-depth-3) 100%);">
+                    <div class="absolute pointer-events-none" style="top: -30%; right: -10%; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle, rgba(14,116,144,0.25), transparent 70%);"></div>
+                    <div class="absolute bottom-0 left-0 w-40 h-40 opacity-10 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none" :style="{ backgroundColor: teamColors.primary }"></div>
+
                     <div class="relative z-10 text-center md:text-left">
-                        <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight mb-2">Workouts</h2>
-                        <p class="text-white/80 font-medium text-sm md:text-base uppercase tracking-widest opacity-90">Your master workout repository</p>
+                        <h2 class="font-display text-3xl md:text-4xl font-bold uppercase tracking-tight mb-2">Workouts</h2>
+                        <p class="text-white/70 font-medium text-sm md:text-base uppercase tracking-widest">Your master workout repository</p>
                     </div>
-                    
+
                     <div class="relative z-10 flex flex-col sm:flex-row w-full md:w-auto gap-4">
                         <input type="file" id="pdfUpload" accept="application/pdf" @change="importPdf" class="hidden">
-                        <button @click="triggerPdfUpload" :disabled="isImportingPdf" class="w-full sm:w-auto bg-[var(--pool-depth)] text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:bg-[var(--pool-depth-3)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2">
+                        <button @click="triggerPdfUpload" :disabled="isImportingPdf" class="w-full sm:w-auto bg-white/10 border border-white/20 text-white px-8 py-4 rounded-xl font-black shadow-lg hover:bg-white/20 transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                             Import PDF
                         </button>
 
-                        <button v-if="hasDraft" @click="resumeDraft" class="w-full sm:w-auto bg-amber-400 text-slate-900 px-8 py-4 rounded-2xl font-black shadow-lg hover:bg-amber-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2">
+                        <button v-if="hasDraft" @click="resumeDraft" class="w-full sm:w-auto text-[var(--pool-depth)] px-8 py-4 rounded-xl font-black shadow-lg hover:brightness-105 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2" style="background: var(--lane-brass);">
                             Resume Draft
                         </button>
-                        <button @click="startNewWorkout" class="w-full sm:w-auto bg-white px-8 py-4 rounded-2xl font-black shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2" :style="{ color: teamColors.primary }">
+                        <button @click="startNewWorkout" class="w-full sm:w-auto bg-white text-[var(--pool-depth)] px-8 py-4 rounded-xl font-black shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                             Create Workout
                         </button>
@@ -675,13 +669,13 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-2 rounded-2xl shadow-sm border border-slate-200/60 flex gap-1">
-                    <button @click="workoutsTab = 'today'" :class="workoutsTab === 'today' ? 'text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-colors" :style="workoutsTab === 'today' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">Today's Workouts</button>
-                    <button @click="workoutsTab = 'upcoming'" :class="workoutsTab === 'upcoming' ? 'text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-colors" :style="workoutsTab === 'upcoming' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">Upcoming Workouts</button>
-                    <button @click="workoutsTab = 'past'" :class="workoutsTab === 'past' ? 'text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-colors" :style="workoutsTab === 'past' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">Past Workouts</button>
+                <div class="bg-white p-2 rounded-xl shadow-sm border border-slate-200/60 flex gap-1">
+                    <button @click="workoutsTab = 'today'" :class="workoutsTab === 'today' ? 'text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'" class="flex-1 py-3 rounded-lg font-black uppercase tracking-widest text-xs transition-colors" :style="workoutsTab === 'today' ? { background: 'var(--pool-depth)' } : {}">Today's Workouts</button>
+                    <button @click="workoutsTab = 'upcoming'" :class="workoutsTab === 'upcoming' ? 'text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'" class="flex-1 py-3 rounded-lg font-black uppercase tracking-widest text-xs transition-colors" :style="workoutsTab === 'upcoming' ? { background: 'var(--pool-depth)' } : {}">Upcoming Workouts</button>
+                    <button @click="workoutsTab = 'past'" :class="workoutsTab === 'past' ? 'text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'" class="flex-1 py-3 rounded-lg font-black uppercase tracking-widest text-xs transition-colors" :style="workoutsTab === 'past' ? { background: 'var(--pool-depth)' } : {}">Past Workouts</button>
                 </div>
 
-                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/60 flex flex-wrap gap-5 items-end">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/60 flex flex-wrap gap-5 items-end">
                     <div class="flex-1 min-w-[150px]">
                         <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5 ml-2">Filter by Group</label>
                         <select v-model="filterGroup" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs font-bold uppercase outline-none transition cursor-pointer">
@@ -725,14 +719,14 @@
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
                                 <div class="text-[10px] font-black self-start px-3 py-1 rounded-md uppercase tracking-widest mb-4 border" :style="{ color: teamColors.primary, backgroundColor: teamColors.primary + '10', borderColor: teamColors.primary + '30' }">TODAY • {{formatPracticeDate(w.practice_date)}}</div>
-                                <div class="font-black text-xl leading-tight uppercase text-slate-900 tracking-tight pr-8 mb-6 flex-1">{{w.title}}</div>
+                                <div class="font-display font-bold text-xl leading-tight uppercase text-slate-900 tracking-tight pr-8 mb-6 flex-1">{{w.title}}</div>
                                 <div class="text-[11px] font-bold text-slate-500 mt-auto border-t border-slate-100 pt-4 flex justify-between items-center uppercase tracking-widest">
                                     <span class="flex items-center gap-1.5">
                                         <span class="bg-slate-100 px-2 py-1 rounded-md text-slate-600">{{w.group}}</span>
                                         <span v-if="w.visibility === 'private'" title="Private" class="text-slate-400">🔒</span>
                                         <span v-else-if="w.visibility === 'public'" title="Visible to all coaches" class="text-slate-400">🌐</span>
                                     </span>
-                                    <span class="font-black text-sm px-2 py-1 rounded-md" :style="{ color: teamColors.primary, backgroundColor: teamColors.primary + '10' }">{{w.total_yards}}{{w.pool_type === 'SCM' || w.pool_type === 'LCM' ? 'm' : 'y'}}</span>
+                                    <span class="font-mono-data font-bold text-sm px-2 py-1 rounded-md" :style="{ color: teamColors.primary, backgroundColor: teamColors.primary + '10' }">{{w.total_yards}}{{w.pool_type === 'SCM' || w.pool_type === 'LCM' ? 'm' : 'y'}}</span>
                                 </div>
                             </div>
                         </div>
@@ -749,7 +743,7 @@
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
                                 <div class="text-[10px] font-black text-amber-600 bg-amber-50 self-start px-3 py-1 rounded-md uppercase tracking-widest mb-4 border border-amber-100">{{formatPracticeDate(w.practice_date)}}</div>
-                                <div class="font-black text-xl leading-tight uppercase text-slate-900 tracking-tight pr-8 mb-6 flex-1">{{w.title}}</div>
+                                <div class="font-display font-bold text-xl leading-tight uppercase text-slate-900 tracking-tight pr-8 mb-6 flex-1">{{w.title}}</div>
                                 <div class="text-[11px] font-bold text-slate-500 mt-auto border-t border-slate-100 pt-4 flex justify-between items-center uppercase tracking-widest">
                                     <span class="flex items-center gap-1.5">
                                         <span class="bg-slate-100 px-2 py-1 rounded-md text-slate-600">{{w.group}}</span>
@@ -773,14 +767,14 @@
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
                                 <div class="text-[10px] font-black text-slate-500 bg-slate-200/50 self-start px-3 py-1 rounded-md uppercase tracking-widest mb-4">{{formatPracticeDate(w.practice_date)}}</div>
-                                <div class="font-black text-xl leading-tight uppercase text-slate-600 tracking-tight pr-8 mb-6 flex-1 group-hover:text-slate-900 transition-colors">{{w.title}}</div>
+                                <div class="font-display font-bold text-xl leading-tight uppercase text-slate-600 tracking-tight pr-8 mb-6 flex-1 group-hover:text-slate-900 transition-colors">{{w.title}}</div>
                                 <div class="text-[11px] font-bold text-slate-400 mt-auto border-t border-slate-200/60 pt-4 flex justify-between items-center uppercase tracking-widest">
                                     <span class="flex items-center gap-1.5">
                                         <span class="bg-white border border-slate-200 px-2 py-1 rounded-md text-slate-500">{{w.group}}</span>
                                         <span v-if="w.visibility === 'private'" title="Private" class="text-slate-400">🔒</span>
                                         <span v-else-if="w.visibility === 'public'" title="Visible to all coaches" class="text-slate-400">🌐</span>
                                     </span>
-                                    <span class="text-slate-600 font-black text-sm bg-white border border-slate-200 px-2 py-1 rounded-md">{{w.total_yards}}{{w.pool_type === 'SCM' || w.pool_type === 'LCM' ? 'm' : 'y'}}</span>
+                                    <span class="font-mono-data text-slate-600 font-bold text-sm bg-white border border-slate-200 px-2 py-1 rounded-md">{{w.total_yards}}{{w.pool_type === 'SCM' || w.pool_type === 'LCM' ? 'm' : 'y'}}</span>
                                 </div>
                             </div>
                         </div>
@@ -2614,7 +2608,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 89;
+        const SW_VERSION = 91;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
