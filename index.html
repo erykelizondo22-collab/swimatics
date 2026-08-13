@@ -16,15 +16,15 @@
    own materials, not a generic SaaS palette.
    ============================================================ */
 :root {
-    --navy-deep: #081c34;
-    --navy-mid: #0f2e4c;
-    --navy-mid-2: #123657;
-    --aqua: #14b8d4;
-    --aqua-soft: #7de0ee;
+    --navy-deep: #0B1E33;
+    --navy-mid: #0F2A47;
+    --navy-mid-2: #081426;
+    --aqua: #0E7490;
+    --aqua-soft: #5EB8CC;
     --clock-red: #e4483a;
-    --foam: #f6fafb;
-    --foam-dim: #eaf2f4;
-    --ink: #0b1b2b;
+    --foam: #F7F8FA;
+    --foam-dim: #EDF0F3;
+    --ink: #1E293B;
     --mist: #5c7488;
     --mist-light: #93a8b8;
 }
@@ -56,7 +56,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     transition: background 0.35s ease, padding 0.35s ease, box-shadow 0.35s ease;
 }
 .nav.scrolled {
-    background: rgba(8, 28, 52, 0.86);
+    background: rgba(11, 30, 51, 0.86);
     backdrop-filter: blur(14px);
     padding-top: 14px; padding-bottom: 14px;
     box-shadow: 0 1px 0 rgba(255,255,255,0.06);
@@ -66,7 +66,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     font-weight: 700; font-size: 19px; letter-spacing: -0.01em;
     color: #fff; display: flex; align-items: center; gap: 9px;
 }
-.nav-brand .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--aqua); box-shadow: 0 0 12px 2px rgba(20,184,212,0.7); }
+.nav-brand .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--aqua); box-shadow: 0 0 12px 2px rgba(14,116,144,0.7); }
 .nav-brand .icon { width: 30px; height: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.25); }
 footer .nav-brand .icon { width: 26px; height: 26px; }
 .nav-cta {
@@ -74,9 +74,9 @@ footer .nav-brand .icon { width: 26px; height: 26px; }
     font-weight: 700; font-size: 13px; letter-spacing: 0.03em;
     padding: 11px 22px; border-radius: 100px;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    box-shadow: 0 4px 18px rgba(20,184,212,0.25);
+    box-shadow: 0 4px 18px rgba(14,116,144,0.25);
 }
-.nav-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(20,184,212,0.4); }
+.nav-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(14,116,144,0.4); }
 
 /* ============================================================
    HERO — the pace clock is the thesis. Every swim coach reads one
@@ -88,8 +88,8 @@ footer .nav-brand .icon { width: 26px; height: 26px; }
     position: relative;
     min-height: 100vh;
     background:
-        radial-gradient(ellipse 70% 55% at 50% -10%, rgba(20,184,212,0.16), transparent 60%),
-        linear-gradient(180deg, var(--navy-deep) 0%, #061526 100%);
+        radial-gradient(ellipse 70% 55% at 50% -10%, rgba(14,116,144,0.16), transparent 60%),
+        linear-gradient(180deg, var(--navy-deep) 0%, #081426 100%);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     text-align: center; padding: 140px 24px 100px;
     overflow: hidden;
@@ -149,10 +149,10 @@ footer .nav-brand .icon { width: 26px; height: 26px; }
 .btn-primary {
     background: var(--aqua); color: var(--navy-deep); font-weight: 700; font-size: 15px;
     padding: 16px 32px; border-radius: 100px;
-    box-shadow: 0 8px 28px rgba(20,184,212,0.32);
+    box-shadow: 0 8px 28px rgba(14,116,144,0.32);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 34px rgba(20,184,212,0.45); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 34px rgba(14,116,144,0.45); }
 .btn-ghost {
     color: #fff; font-weight: 600; font-size: 15px; padding: 16px 26px;
     border-radius: 100px; border: 1px solid rgba(255,255,255,0.22);
@@ -210,8 +210,8 @@ footer .nav-brand .icon { width: 26px; height: 26px; }
 .feature-visual {
     flex: 1; min-width: 0;
     background: #fff; border-radius: 26px;
-    box-shadow: 0 24px 60px -20px rgba(11,27,43,0.22), 0 2px 8px rgba(11,27,43,0.05);
-    border: 1px solid rgba(11,27,43,0.06);
+    box-shadow: 0 24px 60px -20px rgba(30,41,59,0.22), 0 2px 8px rgba(30,41,59,0.05);
+    border: 1px solid rgba(30,41,59,0.06);
     overflow: hidden;
 }
 .mock-head {
@@ -228,7 +228,7 @@ footer .nav-brand .icon { width: 26px; height: 26px; }
 .roster-group-label:first-child { margin-top: 0; }
 .roster-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--foam-dim); }
 .roster-row:last-child { border-bottom: none; }
-.roster-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--aqua), #0891b2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+.roster-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--aqua), #14919B); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
 .roster-name { font-size: 13.5px; font-weight: 600; flex: 1; }
 .roster-tag { font-size: 10px; font-weight: 700; color: var(--mist-light); font-family: 'JetBrains Mono', monospace; }
 
@@ -237,8 +237,8 @@ footer .nav-brand .icon { width: 26px; height: 26px; }
 .att-card:last-child { margin-bottom: 0; }
 .att-name { font-size: 13.5px; font-weight: 600; }
 .att-pct { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px; padding: 3px 10px; border-radius: 100px; }
-.att-good { color: #0d9488; background: #d0f5ee; }
-.att-mid { color: #b45309; background: #fef1d9; }
+.att-good { color: #059669; background: #ECFDF5; }
+.att-mid { color: #D97706; background: #FFFBEB; }
 
 /* Meets mock */
 .meet-header { background: var(--foam); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; }
@@ -261,7 +261,7 @@ footer .nav-brand .icon { width: 26px; height: 26px; }
 /* Phone notification mock */
 .phone-mock { background: var(--navy-deep); border-radius: 26px; padding: 16px 16px 24px; max-width: 320px; margin: 0 auto; }
 .notif-banner { background: rgba(255,255,255,0.97); border-radius: 16px; padding: 13px 15px; display: flex; gap: 11px; align-items: flex-start; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-.notif-icon { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--aqua), #0891b2); flex-shrink: 0; }
+.notif-icon { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--aqua), #14919B); flex-shrink: 0; }
 .notif-app { font-size: 10px; font-weight: 700; color: var(--mist); text-transform: uppercase; letter-spacing: 0.05em; }
 .notif-title { font-size: 13px; font-weight: 700; margin-top: 2px; color: var(--ink); }
 .notif-body { font-size: 12.5px; color: var(--mist); margin-top: 2px; line-height: 1.4; }
@@ -280,10 +280,10 @@ footer .nav-brand .icon { width: 26px; height: 26px; }
 .billing-toggle { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 0 auto 36px; flex-wrap: wrap; }
 .billing-label { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14.5px; color: var(--mist); transition: color 0.2s ease; }
 .billing-label.active { color: var(--ink); }
-.save-badge { background: rgba(20,184,212,0.14); color: #0891a8; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 100px; margin-left: 6px; }
+.save-badge { background: rgba(14,116,144,0.14); color: #14919B; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 100px; margin-left: 6px; }
 .toggle-switch {
     width: 52px; height: 28px; border-radius: 100px; background: var(--foam-dim);
-    border: 1px solid rgba(11,27,43,0.12); position: relative; cursor: pointer; flex-shrink: 0;
+    border: 1px solid rgba(30,41,59,0.12); position: relative; cursor: pointer; flex-shrink: 0;
     transition: background 0.25s ease;
 }
 .toggle-switch.on { background: var(--aqua); }
@@ -298,7 +298,7 @@ footer .nav-brand .icon { width: 26px; height: 26px; }
 .plan-tabs { display: flex; justify-content: center; gap: 8px; margin: 0 auto 8px; flex-wrap: wrap; padding: 0 24px; }
 .plan-tab {
     font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px;
-    padding: 12px 24px; border-radius: 100px; border: 1.5px solid rgba(11,27,43,0.12);
+    padding: 12px 24px; border-radius: 100px; border: 1.5px solid rgba(30,41,59,0.12);
     background: #fff; color: var(--mist); transition: all 0.2s ease;
 }
 .plan-tab:hover { border-color: var(--aqua); }
@@ -307,20 +307,20 @@ footer .nav-brand .icon { width: 26px; height: 26px; }
 /* Detail panel */
 .plan-detail {
     max-width: 620px; margin: 32px auto 0; background: #fff; border-radius: 26px;
-    padding: 36px clamp(24px, 5vw, 44px); border: 1px solid rgba(11,27,43,0.08);
-    box-shadow: 0 20px 50px -20px rgba(11,27,43,0.18); text-align: left;
+    padding: 36px clamp(24px, 5vw, 44px); border: 1px solid rgba(30,41,59,0.08);
+    box-shadow: 0 20px 50px -20px rgba(30,41,59,0.18); text-align: left;
 }
 .plan-detail-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; border-bottom: 1px solid var(--foam-dim); padding-bottom: 26px; margin-bottom: 26px; }
 .plan-detail-name { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 26px; letter-spacing: -0.01em; }
 .plan-detail-staff { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--mist); margin-top: 6px; }
 .plan-detail-price { text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 34px; color: var(--ink); }
 .price-period { font-size: 14px; color: var(--mist); font-weight: 500; }
-.plan-save { font-family: 'Space Grotesk', sans-serif; font-size: 11.5px; font-weight: 700; color: #0891a8; margin-top: 2px; }
+.plan-save { font-family: 'Space Grotesk', sans-serif; font-size: 11.5px; font-weight: 700; color: #14919B; margin-top: 2px; }
 
 .feature-checklist { list-style: none; display: flex; flex-direction: column; gap: 13px; margin-bottom: 30px; }
 .feature-checklist li { display: flex; align-items: center; gap: 12px; font-size: 14.5px; font-weight: 500; }
 .feature-checklist .mark { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; font-weight: 800; }
-.feature-checklist li.included .mark { background: rgba(20,184,212,0.15); color: #0891a8; }
+.feature-checklist li.included .mark { background: rgba(14,116,144,0.15); color: #14919B; }
 .feature-checklist li.included { color: var(--ink); }
 .feature-checklist li.locked .mark { background: var(--foam-dim); color: var(--mist-light); }
 .feature-checklist li.locked { color: var(--mist-light); }
@@ -336,13 +336,13 @@ footer .nav-brand .icon { width: 26px; height: 26px; }
    FINAL CTA — bookends the hero, deep pool navy again
    ============================================================ */
 .final-cta {
-    background: linear-gradient(180deg, #061526 0%, var(--navy-deep) 100%);
+    background: linear-gradient(180deg, #081426 0%, var(--navy-deep) 100%);
     padding: 130px 24px; text-align: center; position: relative; overflow: hidden;
 }
 .final-cta::before {
     content: ''; position: absolute; top: -10%; left: 50%; transform: translateX(-50%);
     width: 700px; height: 700px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(20,184,212,0.14), transparent 65%);
+    background: radial-gradient(circle, rgba(14,116,144,0.14), transparent 65%);
     pointer-events: none;
 }
 .final-cta h2 {
@@ -353,7 +353,7 @@ footer .nav-brand .icon { width: 26px; height: 26px; }
 .final-cta .btn-primary { font-size: 16px; padding: 18px 40px; position: relative; }
 
 footer {
-    background: #061526; padding: 40px 24px; text-align: center;
+    background: #081426; padding: 40px 24px; text-align: center;
     color: var(--mist); font-size: 13px;
 }
 footer .nav-brand { justify-content: center; margin-bottom: 8px; color: #fff; font-size: 15px; }
