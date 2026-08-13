@@ -3194,7 +3194,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 118;
+        const SW_VERSION = 121;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -6897,14 +6897,25 @@ createApp({
             const lines = text.split('\n');
             let currentSwimmer = null, currentTeam = null, pending = null;
             const records = [];
+            const scratchedSwimmers = new Set();
             // When importing for a specific meet, only our own team's
             // swimmers matter -- filtering here (not after the AI call)
             // means a 27-team meet file never sends 26 teams' worth of
             // irrelevant data to the AI at all, cutting payload size and
             // cost, and avoiding any risk of the AI's own response being
             // truncated by having to echo back ~2,000 records.
-            const rosterNames = rosterFilter
-                ? new Set(rosterFilter.map(s => `${s.last_name}, ${s.first_name}`.toLowerCase().trim()))
+            // Normalizes whitespace and builds both a full "last, first"
+            // key and a looser "last, first-word-of-first-name" key --
+            // Hy-Tek exports sometimes include a middle initial or extra
+            // token in the first-name field that our own roster doesn't
+            // store, and a strict exact match would silently drop that
+            // swimmer's real results entirely rather than matching them.
+            const norm = s => (s || '').replace(/\s+/g, ' ').trim().toLowerCase();
+            const rosterNamesFull = rosterFilter
+                ? new Set(rosterFilter.map(s => norm(`${s.last_name}, ${s.first_name}`)))
+                : null;
+            const rosterNamesLoose = rosterFilter
+                ? new Set(rosterFilter.map(s => norm(`${s.last_name}, ${(s.first_name || '').split(' ')[0]}`)))
                 : null;
             for (let rawLine of lines) {
                 const line = rawLine.replace(/\r$/, '');
@@ -6919,7 +6930,12 @@ createApp({
                 } else if (rtype === 'E1') {
                     const m = line.match(/\s(\d{2,4}[A-Z])\s/);
                     const swimmerName = currentSwimmer ? `${currentSwimmer.last}, ${currentSwimmer.first}` : null;
-                    const inRoster = !rosterNames || (swimmerName && rosterNames.has(swimmerName.toLowerCase()));
+                    let inRoster = !rosterNamesFull;
+                    if (!inRoster && swimmerName) {
+                        const full = norm(swimmerName);
+                        const loose = norm(`${currentSwimmer.last}, ${(currentSwimmer.first || '').split(' ')[0]}`);
+                        inRoster = rosterNamesFull.has(full) || rosterNamesLoose.has(loose);
+                    }
                     pending = inRoster ? {
                         swimmer: swimmerName,
                         gender: currentSwimmer ? currentSwimmer.gender : null,
@@ -6933,11 +6949,20 @@ createApp({
                     // free legitimately exceed 1000 seconds with no colon).
                     const m = line.match(/^E2[PF]\s+(\d{1,2}:)?(\d{1,4}\.\d{2})([A-Z])?/);
                     const timeStr = m ? ((m[1] || '') + m[2]) : null;
-                    if (timeStr && timeStr !== '0.00') { pending.time = timeStr; records.push(pending); }
+                    if (timeStr && timeStr !== '0.00') {
+                        pending.time = timeStr;
+                        records.push(pending);
+                    } else if (timeStr === '0.00' && pending.swimmer) {
+                        // A genuine scratch/DQ/no-show, not a bug -- but this
+                        // needs to stay visible. A roster swimmer whose every
+                        // event scratched looks identical to a real matching
+                        // failure if this just silently produces nothing.
+                        scratchedSwimmers.add(pending.swimmer);
+                    }
                     pending = null;
                 }
             }
-            return records;
+            return { records, scratchedSwimmers: [...scratchedSwimmers] };
         }
 
         // Maps a Hy-Tek event code (e.g. "50A", "100C", "1500A") to
@@ -6979,8 +7004,33 @@ createApp({
                     // either step, so there's no edge function call here
                     // to run out of resources on a large roster match.
                     const isMeetResults = importContext.value?.type === 'meet_results';
-                    const extracted = extractHy3ResultRecords(text, isMeetResults ? swimmers.value : null);
-                    if (!extracted.length) throw new Error("No matching results found in this file for your roster.");
+                    // Force a fresh roster load right before filtering --
+                    // navigating to Past Meets only loads meets, never
+                    // swimmers, so swimmers.value could be empty or, worse,
+                    // still hold a previously-viewed team's roster if the
+                    // coach switched teams without visiting a page that
+                    // reloads it. Filtering against stale or wrong-team
+                    // data would explain both unmatched swimmers and
+                    // matches that don't belong to the current roster.
+                    if (isMeetResults) await loadSwimmers();
+                    // Distinct from "no matches found below" -- an empty
+                    // roster means there was nothing to check the file
+                    // against in the first place, which is a different,
+                    // more fundamental problem than "your roster has
+                    // people, just none of them swam in this meet."
+                    if (isMeetResults && !swimmers.value.length) throw new Error("No active swimmers on your roster to match against -- add swimmers first, then import results.");
+                    const { records: extracted, scratchedSwimmers } = extractHy3ResultRecords(text, isMeetResults ? swimmers.value : null);
+                    if (!extracted.length) {
+                        if (scratchedSwimmers.length) {
+                            // Real roster swimmers were found and matched --
+                            // they just didn't have a completed race in this
+                            // file (scratched/DQ'd/no-show on every entry).
+                            // That's a genuinely different situation from a
+                            // matching failure, and needs a different message.
+                            throw new Error(`Found ${scratchedSwimmers.length} of your swimmer(s) in this file (${scratchedSwimmers.join(', ')}), but every one of their events shows a scratch or no-show (0.00) -- there's nothing to import for them from this meet.`);
+                        }
+                        throw new Error("No matching results found in this file for your roster.");
+                    }
                     const records = extracted.map(r => {
                         const { distance, stroke } = parseHy3EventCode(r.event_code);
                         return {
@@ -7361,15 +7411,22 @@ createApp({
                         // Tries "First Last" first, then "Last, First" --
                         // real Hy-Tek results exports conventionally use the
                         // latter, so relying on only one format silently
-                        // skipped every row from a real results file.
+                        // skipped every row from a real results file. Falls
+                        // back to matching on just the first word of the
+                        // first name if neither exact form matches -- a
+                        // middle initial or extra token in the export
+                        // shouldn't be enough to drop a real roster match.
+                        const norm = s => (s || '').replace(/\s+/g, ' ').trim().toLowerCase();
                         for(const r of rows) {
-                            const raw = (r.swimmer_name || r.name || '').trim();
-                            const asIs = raw.toLowerCase();
-                            let match = swimmers.value.find(s => `${s.first_name} ${s.last_name}`.toLowerCase().trim() === asIs);
+                            const raw = norm(r.swimmer_name || r.name || '');
+                            let match = swimmers.value.find(s => norm(`${s.first_name} ${s.last_name}`) === raw);
                             if (!match && raw.includes(',')) {
                                 const [lastPart, firstPart] = raw.split(',').map(p => p.trim());
-                                const reordered = `${firstPart} ${lastPart}`.toLowerCase();
-                                match = swimmers.value.find(s => `${s.first_name} ${s.last_name}`.toLowerCase().trim() === reordered);
+                                match = swimmers.value.find(s => norm(`${firstPart} ${lastPart}`) === norm(`${s.first_name} ${s.last_name}`));
+                                if (!match) {
+                                    const firstWord = firstPart.split(' ')[0];
+                                    match = swimmers.value.find(s => norm(s.last_name) === norm(lastPart) && norm(s.first_name.split(' ')[0]) === norm(firstWord));
+                                }
                             }
                             if(!match) { skipped++; continue; }
                             if(type === 'times') {
