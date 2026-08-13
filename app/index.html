@@ -209,6 +209,18 @@
             .page-transition { animation: none; }
         }
         .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+        /* Keyboard focus visibility -- was completely absent app-wide before
+           this, meaning keyboard users had only inconsistent browser
+           defaults (some of which Tailwind's base reset can suppress
+           without providing a replacement). :focus-visible specifically
+           (not plain :focus) so this only shows for actual keyboard
+           navigation, not every mouse click. */
+        button:focus-visible, a:focus-visible, input:focus-visible,
+        select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+            outline: 2px solid var(--current);
+            outline-offset: 2px;
+        }
         
         .font-slider { 
             -webkit-appearance: none; 
@@ -273,7 +285,7 @@
     <div v-else class="no-print pb-20 min-h-screen">
 
         <div v-if="teamLogoUrl" class="app-logo-watermark fixed inset-0 flex items-center justify-center pointer-events-none" style="z-index: 0;">
-            <img :src="teamLogoUrl" style="width: 45vw; max-width: 480px; object-fit: contain;">
+            <img :src="teamLogoUrl" alt="" style="width: 45vw; max-width: 480px; object-fit: contain;">
         </div>
         
         <div class="glass-nav border-b border-slate-200/60 px-4 md:px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm transition-all md:pl-72">
@@ -563,7 +575,7 @@
                             <h3 class="font-black text-2xl leading-tight">{{showSwimmerProfileFor.first_name}} {{showSwimmerProfileFor.last_name}}</h3>
                             <p class="text-[10px] text-white/80 uppercase tracking-widest mt-1">{{showSwimmerProfileFor.group_name || 'No Group'}}</p>
                         </div>
-                        <button @click="closeSwimmerProfile" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0">X</button>
+                        <button @click="closeSwimmerProfile" aria-label="Close" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0">X</button>
                     </div>
                     <div class="p-6 space-y-5 overflow-y-auto">
                         <div v-if="paymentStatusForSwimmer(showSwimmerProfileFor.id)">
@@ -610,7 +622,7 @@
                             <h3 class="font-black text-lg leading-tight">Join {{myTeam}}</h3>
                             <p class="text-[10px] text-white/80 uppercase tracking-widest mt-1">Scan to sign up as a parent</p>
                         </div>
-                        <button @click="closeQRCode" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0">X</button>
+                        <button @click="closeQRCode" aria-label="Close" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0">X</button>
                     </div>
                     <div class="p-6 flex flex-col items-center gap-3">
                         <img :src="qrCodeDataUrl" alt="Invite QR code" class="rounded-2xl border border-slate-200">
@@ -633,7 +645,7 @@
                                 {{activePlanContext ? activePlanContext.weekData?.focus : 'No Plan Focus'}}
                             </p>
                         </div>
-                        <button @click="showAiModal = false" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors">X</button>
+                        <button @click="showAiModal = false" aria-label="Close" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors">X</button>
                     </div>
                     
                     <div class="p-6 space-y-4 bg-slate-50/50">
@@ -768,7 +780,7 @@
                     <p class="text-slate-500 text-sm font-medium mb-6">Optional — you can always add this later from Staff.</p>
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                         <div class="w-24 h-24 bg-white rounded-2xl border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 z-10 relative shadow-sm">
-                            <img v-if="teamLogoUrl" :src="teamLogoUrl" class="w-full h-full object-contain p-2 relative z-10 bg-white">
+                            <img v-if="teamLogoUrl" :src="teamLogoUrl" alt="Team logo" class="w-full h-full object-contain p-2 relative z-10 bg-white">
                             <span v-else class="text-slate-300 text-[10px] font-black uppercase text-center leading-tight">No<br>Logo</span>
                         </div>
                         <div class="flex-1 w-full">
@@ -1218,7 +1230,7 @@
                     </div>
 
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                        <button @click="save" class="w-full text-white font-black py-4 rounded-xl shadow-lg uppercase tracking-widest hover:scale-[1.02] hover:shadow-xl transition-all duration-300 text-sm" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">Save Workout</button>
+                        <button @click="save" :disabled="isSaving" class="w-full text-white font-black py-4 rounded-xl shadow-lg uppercase tracking-widest hover:scale-[1.02] hover:shadow-xl transition-all duration-300 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">{{ isSaving ? 'Saving...' : 'Save Workout' }}</button>
                         <button @click="printWorkoutSheet()" class="w-full bg-slate-100 text-slate-700 py-4 rounded-xl font-black uppercase tracking-widest border border-slate-200 hover:bg-slate-200 hover:text-slate-900 transition-colors text-sm">Print Sheet</button>
                         
                         <div class="border-t border-slate-100 pt-5 mt-2 space-y-3">
@@ -1341,7 +1353,7 @@
                                     {{ calculateWeekTotal(week) }}
                                 </div>
                                 
-                                <button @click="planForm.weeks.splice(index, 1)" class="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors font-black shrink-0">X</button>
+                                <button @click="planForm.weeks.splice(index, 1)" aria-label="Remove week" class="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors font-black shrink-0">X</button>
                             </div>
                         </div>
                     </div>
@@ -1434,7 +1446,7 @@
                     <p class="text-slate-500 text-sm font-medium mb-6">Upload your team logo. It will be displayed as a secure watermark.</p>
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                         <div class="w-24 h-24 bg-white rounded-2xl border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 z-10 relative shadow-sm">
-                            <img v-if="teamLogoUrl" :src="teamLogoUrl" class="w-full h-full object-contain p-2 relative z-10 bg-white">
+                            <img v-if="teamLogoUrl" :src="teamLogoUrl" alt="Team logo" class="w-full h-full object-contain p-2 relative z-10 bg-white">
                             <span v-else class="text-slate-300 text-[10px] font-black uppercase text-center leading-tight">No<br>Logo</span>
                         </div>
                         <div class="flex-1 w-full">
@@ -1627,7 +1639,7 @@
                 <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex gap-3 mb-8">
                         <input v-model="newGroupName" placeholder="New Group Name" class="flex-1 bg-slate-50 p-4 rounded-xl font-black uppercase outline-none border border-slate-200 transition-all text-slate-800">
-                        <button @click="addGroup" class="bg-[var(--pool-depth)] text-white px-8 rounded-xl font-black uppercase tracking-widest hover:bg-[var(--pool-depth-3)] transition-colors shadow-md">Add</button>
+                        <button @click="addGroup" :disabled="isAddingGroup" class="bg-[var(--pool-depth)] text-white px-8 rounded-xl font-black uppercase tracking-widest hover:bg-[var(--pool-depth-3)] transition-colors shadow-md disabled:opacity-40 disabled:cursor-not-allowed">{{ isAddingGroup ? 'Adding...' : 'Add' }}</button>
                     </div>
 
                     <div class="space-y-3 relative">
@@ -1705,7 +1717,7 @@
                                 </div>
                                 <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1"><span v-if="s.birthdate">{{s.birthdate}}</span></div>
                                 <div class="flex flex-wrap gap-1 mt-2">
-                                    <span v-for="p in (parentLinksBySwimmer[s.id] || [])" :key="p.linkId" class="bg-blue-50 text-blue-700 text-[9px] font-bold px-2 py-1 rounded-md border border-blue-100">{{p.name || p.email}} <button @click="unlinkParent(p.linkId)" class="ml-1 text-blue-300 hover:text-red-500">×</button></span>
+                                    <span v-for="p in (parentLinksBySwimmer[s.id] || [])" :key="p.linkId" class="bg-blue-50 text-blue-700 text-[9px] font-bold px-2 py-1 rounded-md border border-blue-100">{{p.name || p.email}} <button @click="unlinkParent(p.linkId)" aria-label="Unlink parent" class="ml-1 text-blue-300 hover:text-red-500">×</button></span>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
@@ -1756,7 +1768,7 @@
                                         <h3 class="font-black text-xl leading-tight">{{showSwimmerHistoryFor.first_name}} {{showSwimmerHistoryFor.last_name}}</h3>
                                         <p class="text-[10px] text-white/80 uppercase tracking-widest mt-1">{{selectedSeasonName}} Attendance</p>
                                     </div>
-                                    <button @click="closeSwimmerHistory" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0">X</button>
+                                    <button @click="closeSwimmerHistory" aria-label="Close" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0">X</button>
                                 </div>
                                 <div class="overflow-y-auto divide-y divide-slate-100">
                                     <div v-for="r in swimmerHistoryRecords" :key="r.practice_date" class="p-4 flex items-center justify-between gap-3">
@@ -1830,7 +1842,7 @@
                                 <div class="flex flex-wrap gap-2">
                                     <span v-for="(alias, aIdx) in (selectedGroupForEdit.system_aliases ? selectedGroupForEdit.system_aliases[sys] : [])" :key="aIdx" class="bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm">
                                         {{ alias }}
-                                        <button @click="removeAlias(selectedGroupForEdit, sys, aIdx)" class="text-slate-300 hover:text-red-500 font-black ml-1">X</button>
+                                        <button @click="removeAlias(selectedGroupForEdit, sys, aIdx)" aria-label="Remove alias" class="text-slate-300 hover:text-red-500 font-black ml-1">X</button>
                                     </span>
                                     <input @keyup.enter="addAlias(selectedGroupForEdit, sys, $event)" placeholder="+ Add nickname (Press Enter)" class="bg-transparent border border-dashed border-slate-300 px-3 py-1.5 rounded-lg text-xs font-bold outline-none focus:border-blue-400 text-slate-700 w-56 transition-colors placeholder-slate-400">
                                 </div>
@@ -2030,7 +2042,7 @@
                             <div class="flex flex-wrap gap-1.5">
                                 <span v-for="en in entriesForEvent(e.id)" :key="en.id" class="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-full pl-3 pr-1.5 py-1 text-[10px] font-bold text-slate-600">
                                     {{swimmerName(en.swimmer_id)}}
-                                    <button @click="removeMeetEntry(en.id)" class="text-slate-400 hover:text-red-500 font-black">×</button>
+                                    <button @click="removeMeetEntry(en.id)" aria-label="Remove entry" class="text-slate-400 hover:text-red-500 font-black">×</button>
                                 </span>
                             </div>
                             <div class="flex gap-2">
@@ -2200,7 +2212,7 @@
                                 </div>
                                 <p class="text-xs text-slate-500 font-medium mt-1">{{a.body}}</p>
                                 <div v-if="a.attachment_url" class="mt-2">
-                                    <img v-if="attachmentType(a.attachment_name) === 'image'" :src="a.attachment_url" class="max-w-full sm:max-w-xs rounded-xl border border-slate-200">
+                                    <img v-if="attachmentType(a.attachment_name) === 'image'" :src="a.attachment_url" alt="Shared image attachment" class="max-w-full sm:max-w-xs rounded-xl border border-slate-200">
                                     <video v-else-if="attachmentType(a.attachment_name) === 'video'" :src="a.attachment_url" controls class="max-w-full sm:max-w-xs rounded-xl border border-slate-200"></video>
                                     <a v-else :href="a.attachment_url" target="_blank" class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors" :style="{ color: teamColors.primary }">📎 {{a.attachment_name}}</a>
                                 </div>
@@ -2240,7 +2252,7 @@
                                     <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{{m.sender_name || m.sender_role}}</div>
                                     <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_id === user.id ? 'bg-[var(--pool-depth)] text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
                                     <div v-if="m.attachment_url" class="mt-1.5">
-                                        <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
+                                        <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" alt="Shared image attachment" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
                                         <video v-else-if="attachmentType(m.attachment_name) === 'video'" :src="m.attachment_url" controls class="max-w-[200px] rounded-xl border border-slate-200 inline-block"></video>
                                         <a v-else :href="m.attachment_url" target="_blank" class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">📎 {{m.attachment_name}}</a>
                                     </div>
@@ -2250,7 +2262,7 @@
                             <div class="p-4 border-t border-slate-100 space-y-2">
                                 <div v-if="conversationReplyFile" class="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-2 rounded-lg">
                                     <span class="truncate">{{conversationReplyFile.name}}</span>
-                                    <button @click="conversationReplyFile = null" class="text-slate-300 hover:text-red-500 font-black shrink-0">×</button>
+                                    <button @click="conversationReplyFile = null" aria-label="Remove attachment" class="text-slate-300 hover:text-red-500 font-black shrink-0">×</button>
                                 </div>
                                 <div class="flex gap-2">
                                     <input type="file" id="replyFileInputAthlete" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,.m4v" @change="conversationReplyFile = $event.target.files[0] || null" class="hidden">
@@ -2295,7 +2307,7 @@
                             <div class="flex items-center gap-2">
                                 <label for="announcementFileInput" class="text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">📎 Attach File, Photo, or Video</label>
                                 <span v-if="announcementFile" class="text-xs font-bold text-slate-600 truncate max-w-[160px]">{{announcementFile.name}}</span>
-                                <button v-if="announcementFile" @click="announcementFile = null" class="text-slate-300 hover:text-red-500 text-xs font-black">×</button>
+                                <button v-if="announcementFile" @click="announcementFile = null" aria-label="Remove attachment" class="text-slate-300 hover:text-red-500 text-xs font-black">×</button>
                             </div>
                         </div>
 
@@ -2312,7 +2324,7 @@
                                 </div>
                                 <p class="text-xs text-slate-500 font-medium mt-1">{{a.body}}</p>
                                 <div v-if="a.attachment_url" class="mt-2">
-                                    <img v-if="attachmentType(a.attachment_name) === 'image'" :src="a.attachment_url" class="max-w-full sm:max-w-xs rounded-xl border border-slate-200">
+                                    <img v-if="attachmentType(a.attachment_name) === 'image'" :src="a.attachment_url" alt="Shared image attachment" class="max-w-full sm:max-w-xs rounded-xl border border-slate-200">
                                     <video v-else-if="attachmentType(a.attachment_name) === 'video'" :src="a.attachment_url" controls class="max-w-full sm:max-w-xs rounded-xl border border-slate-200"></video>
                                     <a v-else :href="a.attachment_url" target="_blank" class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors" :style="{ color: teamColors.primary }">📎 {{a.attachment_name}}</a>
                                 </div>
@@ -2344,7 +2356,7 @@
                                 <div v-for="m in conversationThread" :key="m.id" class="max-w-[80%]" :class="m.sender_role === 'coach' ? 'ml-auto text-right' : ''">
                                     <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_role === 'coach' ? 'bg-[var(--pool-depth)] text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
                                     <div v-if="m.attachment_url" class="mt-1.5">
-                                        <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
+                                        <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" alt="Shared image attachment" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
                                         <video v-else-if="attachmentType(m.attachment_name) === 'video'" :src="m.attachment_url" controls class="max-w-[200px] rounded-xl border border-slate-200 inline-block"></video>
                                         <a v-else :href="m.attachment_url" target="_blank" class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">📎 {{m.attachment_name}}</a>
                                     </div>
@@ -2353,7 +2365,7 @@
                             <div class="p-4 border-t border-slate-100 space-y-2">
                                 <div v-if="conversationReplyFile" class="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-2 rounded-lg">
                                     <span class="truncate">{{conversationReplyFile.name}}</span>
-                                    <button @click="conversationReplyFile = null" class="text-slate-300 hover:text-red-500 font-black shrink-0">×</button>
+                                    <button @click="conversationReplyFile = null" aria-label="Remove attachment" class="text-slate-300 hover:text-red-500 font-black shrink-0">×</button>
                                 </div>
                                 <div class="flex gap-2">
                                     <input type="file" id="replyFileInputCoach" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,.m4v" @change="conversationReplyFile = $event.target.files[0] || null" class="hidden">
@@ -2384,7 +2396,7 @@
                                     <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{{m.sender_name || m.sender_role}}</div>
                                     <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_id === user.id ? 'bg-[var(--pool-depth)] text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
                                     <div v-if="m.attachment_url" class="mt-1.5">
-                                        <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
+                                        <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" alt="Shared image attachment" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
                                         <video v-else-if="attachmentType(m.attachment_name) === 'video'" :src="m.attachment_url" controls class="max-w-[200px] rounded-xl border border-slate-200 inline-block"></video>
                                         <a v-else :href="m.attachment_url" target="_blank" class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">📎 {{m.attachment_name}}</a>
                                     </div>
@@ -2394,7 +2406,7 @@
                             <div class="p-4 border-t border-slate-100 space-y-2">
                                 <div v-if="conversationReplyFile" class="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-2 rounded-lg">
                                     <span class="truncate">{{conversationReplyFile.name}}</span>
-                                    <button @click="conversationReplyFile = null" class="text-slate-300 hover:text-red-500 font-black shrink-0">×</button>
+                                    <button @click="conversationReplyFile = null" aria-label="Remove attachment" class="text-slate-300 hover:text-red-500 font-black shrink-0">×</button>
                                 </div>
                                 <div class="flex gap-2">
                                     <input type="file" id="replyFileInputCoachGroup" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,.m4v" @change="conversationReplyFile = $event.target.files[0] || null" class="hidden">
@@ -2418,7 +2430,7 @@
                                 </div>
                                 <p class="text-xs text-slate-500 font-medium mt-1">{{a.body}}</p>
                                 <div v-if="a.attachment_url" class="mt-2">
-                                    <img v-if="attachmentType(a.attachment_name) === 'image'" :src="a.attachment_url" class="max-w-full sm:max-w-xs rounded-xl border border-slate-200">
+                                    <img v-if="attachmentType(a.attachment_name) === 'image'" :src="a.attachment_url" alt="Shared image attachment" class="max-w-full sm:max-w-xs rounded-xl border border-slate-200">
                                     <video v-else-if="attachmentType(a.attachment_name) === 'video'" :src="a.attachment_url" controls class="max-w-full sm:max-w-xs rounded-xl border border-slate-200"></video>
                                     <a v-else :href="a.attachment_url" target="_blank" class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors" :style="{ color: teamColors.primary }">📎 {{a.attachment_name}}</a>
                                 </div>
@@ -2461,7 +2473,7 @@
                                 <div v-for="m in conversationThread" :key="m.id" class="max-w-[80%]" :class="m.sender_role === 'parent' ? 'ml-auto text-right' : ''">
                                     <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_role === 'parent' ? 'bg-[var(--pool-depth)] text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
                                     <div v-if="m.attachment_url" class="mt-1.5">
-                                        <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
+                                        <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" alt="Shared image attachment" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
                                         <video v-else-if="attachmentType(m.attachment_name) === 'video'" :src="m.attachment_url" controls class="max-w-[200px] rounded-xl border border-slate-200 inline-block"></video>
                                         <a v-else :href="m.attachment_url" target="_blank" class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">📎 {{m.attachment_name}}</a>
                                     </div>
@@ -2471,7 +2483,7 @@
                             <div class="p-4 border-t border-slate-100 space-y-2">
                                 <div v-if="conversationReplyFile" class="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-2 rounded-lg">
                                     <span class="truncate">{{conversationReplyFile.name}}</span>
-                                    <button @click="conversationReplyFile = null" class="text-slate-300 hover:text-red-500 font-black shrink-0">×</button>
+                                    <button @click="conversationReplyFile = null" aria-label="Remove attachment" class="text-slate-300 hover:text-red-500 font-black shrink-0">×</button>
                                 </div>
                                 <div class="flex gap-2">
                                     <input type="file" id="replyFileInputParent" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,.m4v" @change="conversationReplyFile = $event.target.files[0] || null" class="hidden">
@@ -2536,7 +2548,7 @@
 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative">
                     <div v-if="teamLogoUrl" class="absolute inset-0 flex items-center justify-center pointer-events-none" style="z-index: 0;">
-                        <img :src="teamLogoUrl" class="w-1/2 max-w-[280px] object-contain" style="filter: grayscale(100%); opacity: 0.06;">
+                        <img :src="teamLogoUrl" alt="" class="w-1/2 max-w-[280px] object-contain" style="filter: grayscale(100%); opacity: 0.06;">
                     </div>
                     <div class="grid grid-cols-7 border-b border-slate-100 relative" style="z-index: 1;">
                         <div v-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d" class="p-2 text-center text-[9px] font-black text-slate-400 uppercase tracking-widest">{{d}}</div>
@@ -2559,7 +2571,7 @@
                     <div class="bg-white rounded-3xl w-full max-w-md max-h-[80vh] overflow-y-auto p-6 space-y-3">
                         <div class="flex justify-between items-center mb-2">
                             <h3 class="font-black text-lg">{{formatPracticeDate(selectedCalendarDay)}}</h3>
-                            <button @click="closeCalendarDay" class="w-8 h-8 bg-slate-100 rounded-full font-black">X</button>
+                            <button @click="closeCalendarDay" aria-label="Close" class="w-8 h-8 bg-slate-100 rounded-full font-black">X</button>
                         </div>
                         <div v-for="e in (eventsByDate[selectedCalendarDay] || [])" :key="e.id" class="bg-slate-50 p-3 rounded-xl">
                             <div class="flex justify-between items-start gap-2">
@@ -2656,7 +2668,7 @@
                                 <h3 class="font-black text-xl leading-tight">{{showSwimmerHistoryFor.first_name}} {{showSwimmerHistoryFor.last_name}}</h3>
                                 <p class="text-[10px] text-white/80 uppercase tracking-widest mt-1">{{selectedSeasonName}} Attendance</p>
                             </div>
-                            <button @click="closeSwimmerHistory" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0">X</button>
+                            <button @click="closeSwimmerHistory" aria-label="Close" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0">X</button>
                         </div>
                         <div class="overflow-y-auto divide-y divide-slate-100">
                             <div v-for="r in swimmerHistoryRecords" :key="r.practice_date" class="p-4 flex items-center justify-between gap-3">
@@ -2672,7 +2684,7 @@
                     <div class="bg-white rounded-3xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6 space-y-3">
                         <div class="flex justify-between items-center mb-2">
                             <h3 class="font-black text-lg">{{parentMeetEntryTarget.meet.name}} — {{parentMeetEntryTarget.swimmer.first_name}}</h3>
-                            <button @click="parentMeetEntryTarget = null" class="w-8 h-8 bg-slate-100 rounded-full font-black">X</button>
+                            <button @click="parentMeetEntryTarget = null" aria-label="Close" class="w-8 h-8 bg-slate-100 rounded-full font-black">X</button>
                         </div>
 
                         <div v-if="parentMeetEntryTarget.meet.allow_opt_in_out" class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between gap-3">
@@ -2700,7 +2712,7 @@
 
     <div id="sheet" style="display:none; position: relative; overflow: hidden;" class="print-page" :class="{'no-print': !user, 'print-active': printTarget === 'workout'}">
         <div v-for="topPx in printWatermarkPositions" :key="topPx" style="position: absolute; left: 0; right: 0; display: flex; align-items: center; justify-content: center; z-index: 0; opacity: 0.08; pointer-events: none;" :style="{ top: topPx + 'px', transform: 'translateY(-50%)' }">
-            <img :src="teamLogoUrl" style="width: 70%; max-height: 70%; object-fit: contain; filter: grayscale(100%);">
+            <img :src="teamLogoUrl" alt="" style="width: 70%; max-height: 70%; object-fit: contain; filter: grayscale(100%);">
         </div>
 
         <div style="position: relative; z-index: 10;">
@@ -2753,7 +2765,7 @@
 
     <div id="calendarSheet" style="display:none; position: relative; overflow: hidden;" class="print-page" :class="{'no-print': !user, 'print-active': printTarget === 'calendar'}">
         <div v-if="teamLogoUrl" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 0; opacity: 0.06; pointer-events: none;">
-            <img :src="teamLogoUrl" style="width: 60%; max-height: 60%; object-fit: contain; filter: grayscale(100%);">
+            <img :src="teamLogoUrl" alt="" style="width: 60%; max-height: 60%; object-fit: contain; filter: grayscale(100%);">
         </div>
 
         <div style="position: relative; z-index: 10;">
@@ -2762,7 +2774,7 @@
                     <img src="icon.png" alt="Swimatics" class="w-6 h-6 object-contain">
                     <span class="font-black text-lg tracking-tighter uppercase text-black">Swimatics</span>
                 </div>
-                <img v-if="teamLogoUrl" :src="teamLogoUrl" style="height: 32px; width: auto; object-fit: contain;">
+                <img v-if="teamLogoUrl" :src="teamLogoUrl" alt="Team logo" style="height: 32px; width: auto; object-fit: contain;">
             </div>
 
             <div class="flex justify-between border-b-[4px] pb-2 mb-4 items-end" :style="{ borderColor: teamColors.primary }">
@@ -2844,7 +2856,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 97;
+        const SW_VERSION = 99;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -3534,7 +3546,8 @@ createApp({
 
         async function loadTeamSettings() {
             if(!myTeam.value) return;
-            const { data } = await client.from('teams').select('logo_url, primary_color, secondary_color, plan, subscription_status, trial_ends_at, canceled_at, name, location, setup_completed').eq('id', myTeam.value).single();
+            const { data, error } = await client.from('teams').select('logo_url, primary_color, secondary_color, plan, subscription_status, trial_ends_at, canceled_at, name, location, setup_completed').eq('id', myTeam.value).single();
+            if (error) console.error("Error loading team settings:", error.message);
             
             if(data) {
                 if(data.primary_color) teamColors.value.primary = data.primary_color;
@@ -3727,8 +3740,12 @@ createApp({
             }
         }
 
+        const isSaving = ref(false);
         async function save(){
             if(!title.value || !group.value || !practiceDate.value) return alert("Fill out Title, Group, and Date.");
+            if (isSaving.value) return; // guards against a double-tap firing two inserts
+            isSaving.value = true;
+            try {
             const { data: { user: freshUser } } = await client.auth.getUser();
             const payload = { 
                 title: title.value, 
@@ -3759,6 +3776,9 @@ createApp({
             hasDraft.value = false;
             loadWorkouts(); 
             currentView.value = 'dashboard';
+            } finally {
+                isSaving.value = false;
+            }
         }
 
         function startNewWorkout() { 
@@ -3965,12 +3985,14 @@ createApp({
         }
 
         async function loadWorkouts(){
-            const { data } = await client.from("workouts").select("*").eq('team_id', myTeam.value).order('practice_date', {ascending: false});
+            const { data, error } = await client.from("workouts").select("*").eq('team_id', myTeam.value).order('practice_date', {ascending: false});
+            if (error) console.error("Error loading workouts:", error.message);
             cloudWorkouts.value = data || [];
         }
 
         async function loadGroups() {
-            const { data } = await client.from("team_groups").select("*").eq('team_id', myTeam.value).order('sort_order', {ascending: true}).order('name', {ascending: true});
+            const { data, error } = await client.from("team_groups").select("*").eq('team_id', myTeam.value).order('sort_order', {ascending: true}).order('name', {ascending: true});
+            if (error) console.error("Error loading groups:", error.message);
             // Postgres 'time' columns come back as "HH:MM:SS" -- an
             // <input type="time"> strictly expects "HH:MM" and can
             // silently fail to bind/update if given seconds too.
@@ -4025,8 +4047,12 @@ createApp({
             showTimeWheelFor.value = null;
         }
 
+        const isAddingGroup = ref(false);
         async function addGroup() {
             if(!newGroupName.value.trim()) return;
+            if (isAddingGroup.value) return;
+            isAddingGroup.value = true;
+            try {
             const nameStr = newGroupName.value.trim().toUpperCase();
             const defaultSystems = ["EN1", "EN2", "EN3", "SP1", "SP2"];
             
@@ -4043,6 +4069,9 @@ createApp({
             } else { 
                 newGroupName.value = ""; 
                 loadGroups(); 
+            }
+            } finally {
+                isAddingGroup.value = false;
             }
         }
 
@@ -4188,7 +4217,8 @@ createApp({
 
         // SEASON PLANS
         async function loadSeasonPlans() {
-            const { data } = await client.from("season_plans").select("*").eq('team_id', myTeam.value).order('start_date', {ascending: false});
+            const { data, error } = await client.from("season_plans").select("*").eq('team_id', myTeam.value).order('start_date', {ascending: false});
+            if (error) console.error("Error loading season plans:", error.message);
             seasonPlans.value = data || [];
         }
 
@@ -4283,7 +4313,8 @@ createApp({
         // this is just a record office staff can keep updated by hand).
         // ============================================================
         async function loadFamilyAccounts() {
-            const { data } = await client.from('family_accounts').select('*').eq('team_id', myTeam.value);
+            const { data, error } = await client.from('family_accounts').select('*').eq('team_id', myTeam.value);
+            if (error) console.error("Error loading family accounts:", error.message);
             const map = {};
             (data || []).forEach(row => { map[row.parent_user_id] = row; });
             familyAccountsMap.value = map;
@@ -4644,7 +4675,8 @@ createApp({
         // COACH-GROUP ASSIGNMENTS
         // ============================================================
         async function loadCoachGroupLinks() {
-            const { data } = await client.from('coach_group_links').select('*').eq('team_id', myTeam.value);
+            const { data, error } = await client.from('coach_group_links').select('*').eq('team_id', myTeam.value);
+            if (error) console.error("Error loading coach group links:", error.message);
             const map = {};
             (data || []).forEach(link => {
                 if(!map[link.coach_user_id]) map[link.coach_user_id] = [];
@@ -4675,7 +4707,8 @@ createApp({
         // CALENDAR
         // ============================================================
         async function loadCalendarEvents() {
-            const { data } = await client.from('calendar_events').select('*').eq('team_id', myTeam.value).order('start_date', {ascending: true});
+            const { data, error } = await client.from('calendar_events').select('*').eq('team_id', myTeam.value).order('start_date', {ascending: true});
+            if (error) console.error("Error loading calendar events:", error.message);
             calendarEvents.value = data || [];
         }
 
@@ -5634,7 +5667,8 @@ createApp({
         // ROSTER
         // ============================================================
         async function loadSwimmers() {
-            const { data } = await client.from("swimmers").select("*").eq('team_id', myTeam.value).eq('active', true).order('last_name', {ascending: true});
+            const { data, error } = await client.from("swimmers").select("*").eq('team_id', myTeam.value).eq('active', true).order('last_name', {ascending: true});
+            if (error) console.error("Error loading swimmers:", error.message);
             swimmers.value = data || [];
             loadTeamParents();
             loadParentLinks();
@@ -5675,7 +5709,8 @@ createApp({
         }
 
         async function loadParentLinks() {
-            const { data } = await client.from("parent_links").select("*").eq('team_id', myTeam.value);
+            const { data, error } = await client.from("parent_links").select("*").eq('team_id', myTeam.value);
+            if (error) console.error("Error loading parent links:", error.message);
             const map = {};
             (data || []).forEach(link => {
                 const parent = teamParents.value.find(p => p.id === link.parent_user_id);
@@ -5732,7 +5767,8 @@ createApp({
         });
 
         async function loadAttendanceForDate() {
-            const { data } = await client.from("attendance").select("*").eq('team_id', myTeam.value).eq('practice_date', attendanceDate.value);
+            const { data, error } = await client.from("attendance").select("*").eq('team_id', myTeam.value).eq('practice_date', attendanceDate.value);
+            if (error) console.error("Error loading attendance for date:", error.message);
             const map = {};
             (data || []).forEach(a => { map[a.swimmer_id] = a.status; });
             attendanceMap.value = map;
@@ -5770,7 +5806,8 @@ createApp({
         // (for the summary card at the bottom of the drill-down), scoped
         // to whichever swimmers are currently loaded.
         async function loadSeasons() {
-            const { data } = await client.from("seasons").select("*").eq('team_id', myTeam.value).order('start_date', {ascending: false});
+            const { data, error } = await client.from("seasons").select("*").eq('team_id', myTeam.value).order('start_date', {ascending: false});
+            if (error) console.error("Error loading seasons:", error.message);
             seasonsList.value = data || [];
             // Auto-select whichever season's range contains today, if any --
             // otherwise leave it on All-Time.
@@ -5923,7 +5960,8 @@ createApp({
         // MEETS
         // ============================================================
         async function loadMeets() {
-            const { data } = await client.from("meets").select("*").eq('team_id', myTeam.value).order('start_date', {ascending: true});
+            const { data, error } = await client.from("meets").select("*").eq('team_id', myTeam.value).order('start_date', {ascending: true});
+            if (error) console.error("Error loading meets:", error.message);
             meetsList.value = data || [];
         }
 
@@ -5954,7 +5992,8 @@ createApp({
         }
 
         async function loadMeetEvents(meetId) {
-            const { data } = await client.from("meet_events").select("*").eq('meet_id', meetId).order('event_number', {ascending: true});
+            const { data, error } = await client.from("meet_events").select("*").eq('meet_id', meetId).order('event_number', {ascending: true});
+            if (error) console.error("Error loading meet events:", error.message);
             meetEventsList.value = data || [];
         }
 
@@ -5979,7 +6018,8 @@ createApp({
         }
 
         async function loadMeetEntries(meetId) {
-            const { data } = await client.from("meet_entries").select("*").eq('meet_id', meetId);
+            const { data, error } = await client.from("meet_entries").select("*").eq('meet_id', meetId);
+            if (error) console.error("Error loading meet entries:", error.message);
             meetEntriesList.value = data || [];
         }
 
@@ -7240,8 +7280,8 @@ createApp({
             title, group, poolType, defaultStroke, workoutVisibility, workoutFontSize, printWorkoutSheet, printCalendarSheet, printWatermarkPositions, publicWorkouts, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
             seasonPlans, activePlanContext, teamGroupsList, staffList, planForm, newGroupName, myRole, myTeam,
             filterGroup, workoutsTab, pastRangeStart, pastRangeEnd, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
-            formatTime, formattedStartTime, save, loadWorkout, startNewWorkout, formatPracticeDate, startNewPlan, editPlan, addWeek, savePlan, deletePlan, deleteWorkout,
-            addGroup, updateGroupStartTime, deleteGroup, removeStaff, changeRole, copyInviteLink, showInviteQRCode, showQRCode, qrCodeDataUrl, closeQRCode, joinTeam, discardDraft, loadStaff, visibleStaffList,
+            formatTime, formattedStartTime, save, isSaving, loadWorkout, startNewWorkout, formatPracticeDate, startNewPlan, editPlan, addWeek, savePlan, deletePlan, deleteWorkout,
+            addGroup, isAddingGroup, updateGroupStartTime, deleteGroup, removeStaff, changeRole, copyInviteLink, showInviteQRCode, showQRCode, qrCodeDataUrl, closeQRCode, joinTeam, discardDraft, loadStaff, visibleStaffList,
             showTimeWheelFor, wheelHour, wheelMinute, wheelAmPm, formatTime12h, openTimeWheel, closeTimeWheel, confirmTimeWheel,
             hasDraft, resumeDraft, currentSetPace, updateCursor, stressScore, stressColor,
             analyticsGroup, analyticsStartDate, analyticsEndDate, analyticsStats, resetAnalyticsDates,
