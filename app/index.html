@@ -1469,12 +1469,18 @@
             </div>
 
             <div v-if="currentView === 'roster'" class="max-w-5xl mx-auto space-y-8 mt-6">
-                <div class="border-b border-slate-200 pb-6 flex items-center justify-between gap-4">
+                <div class="border-b border-slate-200 pb-6 flex items-center justify-between gap-4 flex-wrap">
                     <div>
                         <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Roster</h2>
                         <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">{{ swimmers.length }} Swimmers</p>
                     </div>
-                    <button @click="exportRosterCsv" class="shrink-0 bg-slate-900 text-white px-5 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-black transition-colors">Export CSV</button>
+                    <div class="flex gap-2 shrink-0">
+                        <select v-model="rosterExportGroup" class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none">
+                            <option value="">All Groups</option>
+                            <option v-for="g in teamGroupsList" :key="g.name" :value="g.name">{{g.name}}</option>
+                        </select>
+                        <button @click="exportRosterCsv" class="bg-slate-900 text-white px-5 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-black transition-colors">Export CSV</button>
+                    </div>
                 </div>
 
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
@@ -4401,6 +4407,7 @@ createApp({
             if (parentMeetEntryTarget.value?.meet?.id === meetId) openParentMeetEntry(parentMeetEntryTarget.value.meet, parentMeetEntryTarget.value.swimmer);
         }
         const entriesGroupFilter = ref('');
+        const rosterExportGroup = ref('');
         const entriesEventFilter = ref('');
         const newEntrySwimmerId = ref({}); // { [meetEventId]: swimmerId } for the "by event" add-row
 
@@ -5980,7 +5987,8 @@ createApp({
         }
 
         async function exportRosterCsv() {
-            const rows = swimmers.value;
+            const group = rosterExportGroup.value;
+            const rows = group ? swimmers.value.filter(s => s.group_name === group) : swimmers.value;
             const csv = toCsv(rows, [
                 { label: 'First Name', get: r => r.first_name },
                 { label: 'Last Name', get: r => r.last_name },
@@ -5988,14 +5996,14 @@ createApp({
                 { label: 'Gender', get: r => r.gender },
                 { label: 'Group', get: r => r.group_name },
             ]);
-            downloadTextFile(`${myTeam.value}-roster.csv`, csv);
+            downloadTextFile(`${myTeam.value}-roster${group ? '-' + group : ''}.csv`, csv);
         }
 
         async function exportAttendanceCsv() {
-            const { data, error } = await client.from('attendance').select('*, swimmers(first_name, last_name)').eq('team_id', myTeam.value).order('date', { ascending: false });
+            const { data, error } = await client.from('attendance').select('*, swimmers(first_name, last_name)').eq('team_id', myTeam.value).order('practice_date', { ascending: false });
             if (error) return alert('Error exporting attendance: ' + error.message);
             const csv = toCsv(data || [], [
-                { label: 'Date', get: r => r.date },
+                { label: 'Date', get: r => r.practice_date },
                 { label: 'First Name', get: r => r.swimmers?.first_name },
                 { label: 'Last Name', get: r => r.swimmers?.last_name },
                 { label: 'Status', get: r => r.status },
@@ -6026,11 +6034,11 @@ createApp({
         }
 
         async function exportAttendancePdf() {
-            const { data, error } = await client.from('attendance').select('*, swimmers(first_name, last_name)').eq('team_id', myTeam.value).order('date', { ascending: false });
+            const { data, error } = await client.from('attendance').select('*, swimmers(first_name, last_name)').eq('team_id', myTeam.value).order('practice_date', { ascending: false });
             if (error) return alert('Error exporting attendance: ' + error.message);
             const doc = generateTablePdf(`${setupTeamName.value || myTeam.value} — Attendance`, `Exported ${new Date().toLocaleDateString()}`,
                 [
-                    { label: 'Date', get: r => r.date },
+                    { label: 'Date', get: r => r.practice_date },
                     { label: 'First Name', get: r => r.swimmers?.first_name },
                     { label: 'Last Name', get: r => r.swimmers?.last_name },
                     { label: 'Status', get: r => r.status },
@@ -6397,6 +6405,30 @@ createApp({
                         if (isParent.value || isAthlete.value) { currentView.value = 'parent-home'; loadMyLinkedSwimmers(); loadMeets(); loadCalendarEvents(); }
                         else if (isOffice.value) { currentView.value = 'roster'; loadSwimmers(); }
                         else { currentView.value = 'dashboard'; loadWorkouts(); loadSeasonPlans(); loadMyAssignedGroups(); }
+                    }
+                }
+            });
+
+            // FIX: mobile browsers silently kill the Realtime websocket
+            // connection (and can let the auth session go stale) when a
+            // phone is locked or the app is backgrounded for a while --
+            // a documented Supabase behavior, not something specific to
+            // this app. Without handling it, the page just sits on
+            // whatever it last showed until manually refreshed. Detecting
+            // a MEANINGFUL period backgrounded and reloading is simpler
+            // and more reliable than hand-rolling reconnection logic for
+            // every realtime channel and load function individually --
+            // it's exactly what manually refreshing already does, just
+            // automatic.
+            let hiddenAt = null;
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') {
+                    hiddenAt = Date.now();
+                } else if (document.visibilityState === 'visible' && hiddenAt) {
+                    const awayMs = Date.now() - hiddenAt;
+                    hiddenAt = null;
+                    if (awayMs > 2 * 60 * 1000 && user.value) {
+                        location.reload();
                     }
                 }
             });
@@ -6926,7 +6958,7 @@ createApp({
             dmEnabledCoaches, myConversations, openParentConvoId, selectedCoachForNewConvo, loadDmEnabledCoaches, loadMyConversations, openParentConversationThread, closeParentConversation, startConversationWithCoach,
             coachGroupLinksMap, myAssignedGroups, toggleCoachGroup,
             calendarEvents, newCalendarEvent, showNewCalendarEventForm, upcomingCalendarEvents, postableGroups, createCalendarEvent, deleteCalendarEvent,
-            entriesViewMode, entriesGroupFilter, entriesEventFilter, newEntrySwimmerId, meetEntryGroups, enterableSwimmers, filteredMeetEvents, entriesForSwimmer, entriesForEvent, addMeetEntry, removeMeetEntry,
+            entriesViewMode, entriesGroupFilter, entriesEventFilter, newEntrySwimmerId, meetEntryGroups, enterableSwimmers, filteredMeetEvents, entriesForSwimmer, entriesForEvent, addMeetEntry, removeMeetEntry, rosterExportGroup,
             expandedSwimmerId, toggleSwimmerExpand, eventsJoinableBy, isEnteredIn, toggleSwimmerEventEntry,
             meetParticipationList, participationFor, setParticipation, updateMeetSetting, parentMeetParticipation,
             calendarViewDate, calendarVisibilityFilter, selectedCalendarDay, calendarMonthLabel, calendarGridDays, eventsByDate,
