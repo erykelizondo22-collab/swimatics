@@ -3609,9 +3609,27 @@ createApp({
             // repeating reliably across printed pages is inconsistent
             // across browsers, so instead this computes exact
             // pixel offsets and places one watermark per page directly.
+            //
+            // FIX: same root cause as the scale measurement above -- the
+            // sheet is still display:none here (window.print() hasn't
+            // run yet, and that's the only thing that makes it visible),
+            // so scrollHeight was always reading 0, which made numPages
+            // always compute to exactly 1 no matter how long the
+            // workout actually was. Any team with a logo configured
+            // would silently get a watermark only on the first printed
+            // page. Same off-screen-but-measurable technique, restored
+            // to its exact original state afterward.
             if (sheet && teamLogoUrl.value) {
                 const pageHeightPx = 11 * 96;
+                sheet.style.display = 'block';
+                sheet.style.position = 'fixed';
+                sheet.style.top = '-99999px';
+                sheet.style.left = '-99999px';
                 const finalHeight = sheet.scrollHeight;
+                sheet.style.display = 'none';
+                sheet.style.position = 'relative';
+                sheet.style.top = '';
+                sheet.style.left = '';
                 const numPages = Math.max(1, Math.ceil(finalHeight / pageHeightPx));
                 printWatermarkPositions.value = Array.from({ length: numPages }, (_, i) => (i * pageHeightPx) + (pageHeightPx / 2));
                 await nextTick();
