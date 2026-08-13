@@ -1,4 +1,4 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -2605,6 +2605,12 @@ createApp({
             { key: 'coach_announcement', label: 'Coach Announcements', roles: ['parent'] },
             { key: 'conversation_message', label: 'Direct Messages', roles: ['parent', 'coach', 'admin', 'owner'] },
         ];
+        // Kept in sync with CACHE_NAME in sw.js -- bump both together on
+        // every deploy. Appended as a query string on service-worker
+        // registration below, so a browser is forced to treat the SW
+        // file as genuinely new and check for an update, independent of
+        // any HTTP cache-control configuration on the hosting platform.
+        const SW_VERSION = 88;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -4175,9 +4181,32 @@ createApp({
         }
 
         async function registerSwimaticsServiceWorker() {
-            if (!pushSupported.value) return null;
+            // FIX: this used to bail out entirely if pushSupported was
+            // false -- but pushSupported also requires 'PushManager' in
+            // window, which is a SEPARATE, unrelated capability from
+            // service-worker support itself. Safari has a long history
+            // of inconsistent PushManager support even on browsers that
+            // fully support service workers; private/incognito modes
+            // commonly disable push specifically; embedded in-app
+            // browser webviews frequently lack it entirely. On any of
+            // these, the service worker was never being registered at
+            // all -- meaning there was nothing to even manage caching or
+            // deliver updates in the first place, regardless of how the
+            // service worker's own internal logic or cache version was
+            // written. Offline support and the network-first freshness
+            // behavior below have nothing to do with push notifications,
+            // so they shouldn't be gated by that unrelated capability.
+            if (!('serviceWorker' in navigator)) return null;
             try {
-                return await navigator.serviceWorker.register('sw.js');
+                // A version query string is an additional, hosting-
+                // config-independent safety net: even if a CDN or
+                // platform-level cache-control setting doesn't get
+                // applied correctly, appending the version here makes
+                // sw.js?v=N a genuinely different URL every time
+                // CACHE_NAME changes, which on its own forces the
+                // browser to treat it as new and check for an update --
+                // completely independent of any HTTP header configuration.
+                return await navigator.serviceWorker.register('sw.js?v=' + SW_VERSION);
             } catch(e) {
                 console.error('Service worker registration failed:', e);
                 return null;
