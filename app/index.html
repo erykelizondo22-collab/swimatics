@@ -282,7 +282,7 @@
                     <svg v-if="!mobileNavOpen" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     <svg v-else class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
-                <div class="md:hidden flex items-center gap-3 cursor-pointer group" @click="currentView = myTeam ? (isParent ? 'parent-home' : (isOffice ? 'groups' : 'dashboard')) : 'onboarding'; mobileNavOpen = false">
+                <div class="md:hidden flex items-center gap-3 cursor-pointer group" @click="currentView = myTeam ? (isParent ? 'parent-home' : (isOffice ? 'groups' : 'home')) : 'onboarding'; mobileNavOpen = false">
                     <div class="w-10 h-10 flex items-center justify-center rounded-xl group-hover:scale-105 transition-transform duration-300 overflow-hidden" :style="{ backgroundColor: teamColors.primary + '20' }">
                         <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain p-1">
                     </div>
@@ -306,59 +306,121 @@
             </div>
         </div>
 
-        <div v-if="myTeam" ref="navDropdownRef" class="hidden md:flex items-center gap-1 px-4 md:px-8 border-b border-slate-200/60 bg-white sticky top-[73px] z-40 shadow-sm">
-            <template v-if="isParent || isAthlete">
-            <button @click="navigateTo('parent-home')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'parent-home' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'parent-home' ? { color: teamColors.primary } : {}">Home</button>
-            <button v-if="teamModules.includes('calendar') && hasFeature('calendar')" @click="navigateTo('calendar', [loadCalendarEvents])" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'calendar' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'calendar' ? { color: teamColors.primary } : {}">Calendar</button>
-            </template>
-
-            <template v-else-if="isOffice">
-            <button v-if="hasFeature('roster')" @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary])" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'groups' || currentView === 'group-details' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'groups' || currentView === 'group-details' ? { color: teamColors.primary } : {}">Groups</button>
-            <button v-if="hasFeature('calendar')" @click="navigateTo('calendar', [loadCalendarEvents])" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'calendar' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'calendar' ? { color: teamColors.primary } : {}">Calendar</button>
-            <button v-if="hasFeature('roster')" @click="navigateTo('registration')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'registration' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'registration' ? { color: teamColors.primary } : {}">Registration</button>
-            <button v-if="hasFeature('admin')" @click="navigateTo('accounts', [loadStaff, loadFamilyAccounts])" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'accounts' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'accounts' ? { color: teamColors.primary } : {}">Accounts</button>
-            </template>
-
-            <template v-else>
-            <button @click="selectModule('home')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'home' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'home' ? { color: teamColors.primary } : {}">Home</button>
-
-            <div v-if="hasFeature('workouts')" class="relative">
-                <button @click="openNavDropdown = openNavDropdown === 'practice' ? null : 'practice'" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2 flex items-center gap-1.5" :class="['dashboard','analytics','season-planning','plan-builder'].includes(currentView) ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="['dashboard','analytics','season-planning','plan-builder'].includes(currentView) ? { color: teamColors.primary } : {}">Practice <span class="text-[8px]">▾</span></button>
-                <div v-if="openNavDropdown === 'practice'" class="absolute top-full left-0 bg-white border border-slate-200 rounded-xl shadow-xl py-2 min-w-[180px] z-50">
-                    <button @click="selectModule('dashboard'); openNavDropdown = null" class="w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50">Workouts</button>
-                    <button @click="selectModule('analytics'); openNavDropdown = null" class="w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50">Analytics</button>
-                    <button @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary]); openNavDropdown = null" class="w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50">Attendance</button>
-                    <button @click="selectModule('season-planning'); openNavDropdown = null" class="w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50">Season</button>
+        <div v-if="myTeam" class="hidden md:flex md:flex-col fixed inset-y-0 left-0 z-40 w-64 shrink-0" style="background: linear-gradient(165deg, var(--pool-depth-2) 0%, var(--pool-depth) 55%, var(--pool-depth-3) 100%);">
+            <div class="p-6 text-white shrink-0 relative overflow-hidden">
+                <div class="absolute pointer-events-none" style="top: -40%; right: -20%; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(14,116,144,0.22), transparent 70%);"></div>
+                <div class="flex items-center gap-3 relative cursor-pointer" @click="currentView = myTeam ? (isParent ? 'parent-home' : (isOffice ? 'groups' : 'home')) : 'onboarding'">
+                    <div class="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center overflow-hidden shrink-0">
+                        <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain p-1.5">
+                    </div>
+                    <div class="min-w-0">
+                        <div class="font-display font-bold text-lg tracking-tight">Swimatics</div>
+                        <div class="text-[10px] font-bold uppercase tracking-widest opacity-70 truncate">{{myTeam}}</div>
+                    </div>
+                </div>
+                <div v-if="user" class="mt-5 pt-4 border-t border-white/10 flex items-center gap-2.5 relative">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0" :style="{ background: 'linear-gradient(135deg, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">{{ (coachName || user.email || '?').charAt(0).toUpperCase() }}</div>
+                    <div class="min-w-0">
+                        <div class="text-xs font-black truncate">{{coachName || user.email}}</div>
+                        <div class="text-[9px] font-bold uppercase tracking-widest opacity-60">{{myRole}}</div>
+                    </div>
                 </div>
             </div>
 
-            <div v-if="hasFeature('roster')" class="relative">
-                <button @click="openNavDropdown = openNavDropdown === 'groups' ? null : 'groups'" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2 flex items-center gap-1.5" :class="['groups','group-details','import'].includes(currentView) ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="['groups','group-details','import'].includes(currentView) ? { color: teamColors.primary } : {}">Groups <span class="text-[8px]">▾</span></button>
-                <div v-if="openNavDropdown === 'groups'" class="absolute top-full left-0 bg-white border border-slate-200 rounded-xl shadow-xl py-2 min-w-[180px] z-50">
-                    <button @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary]); openNavDropdown = null" class="w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50">Roster</button>
-                    <button @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary]); openNavDropdown = null" class="w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50">Group Settings</button>
-                    <button @click="selectModule('import'); openNavDropdown = null" class="w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50">Import</button>
-                </div>
+            <div class="flex-1 overflow-y-auto overscroll-contain p-3 space-y-1">
+                <template v-if="isParent || isAthlete">
+                <button @click="navigateTo('parent-home')" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'parent-home' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'parent-home' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">🏠</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Home</span>
+                </button>
+                <button v-if="teamModules.includes('calendar') && hasFeature('calendar')" @click="navigateTo('calendar', [loadCalendarEvents])" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'calendar' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'calendar' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">📅</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Calendar</span>
+                </button>
+                </template>
+
+                <template v-else-if="isOffice">
+                <button v-if="hasFeature('roster')" @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary])" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'groups' || currentView === 'group-details' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'groups' || currentView === 'group-details' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">📋</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Groups</span>
+                </button>
+                <button v-if="hasFeature('calendar')" @click="navigateTo('calendar', [loadCalendarEvents])" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'calendar' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'calendar' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">📅</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Calendar</span>
+                </button>
+                <button v-if="hasFeature('roster')" @click="navigateTo('registration')" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'registration' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'registration' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">📝</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Registration</span>
+                </button>
+                <button v-if="hasFeature('admin')" @click="navigateTo('accounts', [loadStaff, loadFamilyAccounts])" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'accounts' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'accounts' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">👪</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Accounts</span>
+                </button>
+                </template>
+
+                <template v-else>
+                <div class="px-3 pb-2 text-[9px] font-black uppercase tracking-widest text-white/40">{{ activeNavCategory || 'Menu' }}</div>
+                <template v-if="activeNavCategory === 'practice'">
+                    <button @click="selectModule('dashboard')" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'dashboard' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'dashboard' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                        <span class="text-lg w-6 text-center shrink-0">🏊</span><span class="font-black uppercase tracking-widest text-xs">Workouts</span>
+                    </button>
+                    <button @click="selectModule('analytics')" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'analytics' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'analytics' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                        <span class="text-lg w-6 text-center shrink-0">📊</span><span class="font-black uppercase tracking-widest text-xs">Analytics</span>
+                    </button>
+                    <button @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary])" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all text-white/55 hover:bg-white/10">
+                        <span class="text-lg w-6 text-center shrink-0">✅</span><span class="font-black uppercase tracking-widest text-xs">Attendance</span>
+                    </button>
+                    <button @click="selectModule('season-planning')" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'season-planning' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'season-planning' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                        <span class="text-lg w-6 text-center shrink-0">🗓️</span><span class="font-black uppercase tracking-widest text-xs">Season</span>
+                    </button>
+                </template>
+                <template v-else-if="activeNavCategory === 'groups'">
+                    <button @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary])" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'groups' || currentView === 'group-details' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'groups' || currentView === 'group-details' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                        <span class="text-lg w-6 text-center shrink-0">👥</span><span class="font-black uppercase tracking-widest text-xs">Roster</span>
+                    </button>
+                    <button @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary])" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all text-white/55 hover:bg-white/10">
+                        <span class="text-lg w-6 text-center shrink-0">⚙️</span><span class="font-black uppercase tracking-widest text-xs">Group Settings</span>
+                    </button>
+                    <button @click="selectModule('import')" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'import' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'import' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                        <span class="text-lg w-6 text-center shrink-0">📥</span><span class="font-black uppercase tracking-widest text-xs">Import</span>
+                    </button>
+                </template>
+                <template v-else-if="activeNavCategory === 'team'">
+                    <button @click="selectModule('staff')" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'staff' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'staff' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                        <span class="text-lg w-6 text-center shrink-0">🧑‍🏫</span><span class="font-black uppercase tracking-widest text-xs">Staff</span>
+                    </button>
+                    <button @click="selectModule('accounts')" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'accounts' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'accounts' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                        <span class="text-lg w-6 text-center shrink-0">👤</span><span class="font-black uppercase tracking-widest text-xs">Accounts</span>
+                    </button>
+                    <button @click="openLayoutEditor()" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'layout' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'layout' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                        <span class="text-lg w-6 text-center shrink-0">⚙️</span><span class="font-black uppercase tracking-widest text-xs">Site Layout</span>
+                    </button>
+                </template>
+                <div v-else class="px-4 text-xs font-bold text-white/40">Pick a section above to see its pages here.</div>
+                </template>
             </div>
 
-            <button v-if="hasFeature('meets')" @click="selectModule('meets')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="['meets','meet-detail'].includes(currentView) ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="['meets','meet-detail'].includes(currentView) ? { color: teamColors.primary } : {}">Meets</button>
-            <button v-if="hasFeature('calendar')" @click="selectModule('calendar')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'calendar' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'calendar' ? { color: teamColors.primary } : {}">Calendar</button>
-
-            <div v-if="(myRole === 'owner' || myRole === 'admin') && hasFeature('admin')" class="relative">
-                <button @click="openNavDropdown = openNavDropdown === 'admin' ? null : 'admin'" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2 flex items-center gap-1.5" :class="['staff','accounts','layout'].includes(currentView) ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="['staff','accounts','layout'].includes(currentView) ? { color: teamColors.primary } : {}">Team <span class="text-[8px]">▾</span></button>
-                <div v-if="openNavDropdown === 'admin'" class="absolute top-full left-0 bg-white border border-slate-200 rounded-xl shadow-xl py-2 min-w-[180px] z-50">
-                    <button @click="selectModule('staff'); openNavDropdown = null" class="w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50">Staff</button>
-                    <button @click="selectModule('accounts'); openNavDropdown = null" class="w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50">Accounts</button>
-                    <button @click="openLayoutEditor(); openNavDropdown = null" class="w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-700 hover:bg-slate-50">Site Layout</button>
-                </div>
-            </div>
-            </template>
-
-            <div class="ml-auto flex items-center gap-1">
-                <button v-if="!isOffice && hasFeature('messages')" @click="openMessages()" class="px-3 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'messages' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'messages' ? { color: teamColors.primary } : {}">💬</button>
-                <button @click="openSettings()" class="px-3 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'settings' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'settings' ? { color: teamColors.primary } : {}">⚙️</button>
+            <div class="p-3 border-t border-white/10 shrink-0 space-y-1">
+                <button v-if="!isOffice && hasFeature('messages')" @click="openMessages()" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'messages' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'messages' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">💬</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Messages</span>
+                </button>
+                <button @click="openSettings()" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'settings' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'settings' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">⚙️</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Settings</span>
+                </button>
             </div>
         </div>
+
+        <div v-if="myTeam && !isParent && !isAthlete && !isOffice" class="hidden md:flex items-center gap-1 px-4 fixed top-[73px] left-64 right-0 z-30 border-b border-slate-200/60 bg-white shadow-sm">
+            <button @click="selectModule('home')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'home' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'home' ? { color: teamColors.primary } : {}">Home</button>
+            <button v-if="hasFeature('workouts')" @click="selectModule('dashboard')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="activeNavCategory === 'practice' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="activeNavCategory === 'practice' ? { color: teamColors.primary } : {}">Practice</button>
+            <button v-if="hasFeature('roster')" @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary])" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="activeNavCategory === 'groups' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="activeNavCategory === 'groups' ? { color: teamColors.primary } : {}">Groups</button>
+            <button v-if="hasFeature('meets')" @click="selectModule('meets')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="['meets','meet-detail'].includes(currentView) ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="['meets','meet-detail'].includes(currentView) ? { color: teamColors.primary } : {}">Meets</button>
+            <button v-if="hasFeature('calendar')" @click="selectModule('calendar')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'calendar' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'calendar' ? { color: teamColors.primary } : {}">Calendar</button>
+            <button v-if="(myRole === 'owner' || myRole === 'admin') && hasFeature('admin')" @click="selectModule('staff')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="activeNavCategory === 'team' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="activeNavCategory === 'team' ? { color: teamColors.primary } : {}">Team</button>
+        </div>
+
 
         <div v-if="mobileNavOpen" @click="mobileNavOpen = false" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[55] transition-opacity"></div>
 
@@ -416,7 +478,7 @@
                 </button>
                 </template>
                 <template v-else>
-                <button v-for="m in navModules" :key="m.key" @click="selectModule(m.key); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="isModuleActive(m.key) ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="isModuleActive(m.key) ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                <button v-for="m in drawerNavModules" :key="m.key" @click="selectModule(m.key); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="isModuleActive(m.key) ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="isModuleActive(m.key) ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
                     <span class="text-lg w-6 text-center shrink-0">{{m.icon}}</span>
                     <span class="font-black uppercase tracking-widest text-xs">{{m.label}}</span>
                 </button>
@@ -472,8 +534,11 @@
             <button @click="selectModule('home')" class="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 min-w-0" :style="currentView === 'home' ? { color: teamColors.primary } : {}" :class="currentView !== 'home' ? 'text-slate-400' : ''">
                 <span class="text-lg">🏠</span><span class="text-[9px] font-black uppercase tracking-wide">Home</span>
             </button>
-            <button v-for="m in navModules.slice(0, 3)" :key="m.key" @click="selectModule(m.key)" class="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 min-w-0" :style="isModuleActive(m.key) ? { color: teamColors.primary } : {}" :class="!isModuleActive(m.key) ? 'text-slate-400' : ''">
-                <span class="text-lg">{{m.icon}}</span><span class="text-[9px] font-black uppercase tracking-wide truncate px-1">{{m.label}}</span>
+            <button v-if="hasFeature('workouts')" @click="selectModule('dashboard')" class="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 min-w-0" :style="currentView === 'dashboard' ? { color: teamColors.primary } : {}" :class="currentView !== 'dashboard' ? 'text-slate-400' : ''">
+                <span class="text-lg">🏊</span><span class="text-[9px] font-black uppercase tracking-wide">Workouts</span>
+            </button>
+            <button v-if="hasFeature('roster')" @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary])" class="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 min-w-0" :style="currentView === 'groups' || currentView === 'group-details' ? { color: teamColors.primary } : {}" :class="!(currentView === 'groups' || currentView === 'group-details') ? 'text-slate-400' : ''">
+                <span class="text-lg">✅</span><span class="text-[9px] font-black uppercase tracking-wide">Attendance</span>
             </button>
             <button @click="mobileNavOpen = true" class="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-slate-400">
                 <span class="text-lg">⋯</span><span class="text-[9px] font-black uppercase tracking-wide">More</span>
@@ -481,7 +546,7 @@
             </template>
         </div>
 
-        <div :key="currentView" class="page-transition max-w-[1200px] mx-auto p-4 md:p-6 mt-6 relative md:ml-64">
+        <div :key="currentView" class="page-transition max-w-[1200px] mx-auto p-4 md:p-6 mt-6 md:mt-[132px] relative md:ml-64">
             
             <div v-if="myTeam && !myTeamPlan && currentView !== 'settings'" class="mb-6 bg-[var(--pool-depth)] text-white p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
@@ -2743,8 +2808,19 @@ createApp({
             document.body.style.overflow = isOpen ? 'hidden' : '';
         });
         const navMenuRef = ref(null);
-        const navDropdownRef = ref(null);
-        const openNavDropdown = ref(null);
+        // Drives both which top-bar category shows as active AND what the
+        // left sidebar displays -- derived from currentView (not a
+        // separately-managed ref) so it's always correct regardless of how
+        // the user actually arrived at a given page, rather than needing to
+        // be manually kept in sync from every possible navigation path.
+        // Categories with no sub-items (home, meets, calendar) return null,
+        // which the sidebar uses to know it should stay hidden.
+        const activeNavCategory = computed(() => {
+            if (['dashboard', 'analytics', 'season-planning', 'plan-builder'].includes(currentView.value)) return 'practice';
+            if (['groups', 'group-details', 'import'].includes(currentView.value)) return 'groups';
+            if (['staff', 'accounts', 'layout'].includes(currentView.value) && (myRole.value === 'owner' || myRole.value === 'admin')) return 'team';
+            return null;
+        });
         const drawerRef = ref(null);
         const printTarget = ref('workout'); // 'workout' | 'calendar' -- which hidden print sheet is currently active
 
@@ -2768,7 +2844,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 94;
+        const SW_VERSION = 97;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -5399,6 +5475,12 @@ createApp({
             .filter(key => MODULE_DEFS[key] && hasFeature(MODULE_DEFS[key].feature) && (!MODULE_DEFS[key].ownerAdminOnly || myRole.value === 'owner' || myRole.value === 'admin'))
             .map(key => ({ key, label: MODULE_DEFS[key].label, icon: MODULE_DEFS[key].icon })));
 
+        // Mobile drawer ("More" menu) specifically excludes dashboard, groups,
+        // and meets -- those already have their own direct, dedicated tabs in
+        // the mobile bottom bar, so repeating them here would just be the
+        // same items shown twice.
+        const drawerNavModules = computed(() => navModules.value.filter(m => !['dashboard', 'groups'].includes(m.key)));
+
         // Generic helper for nav buttons outside the MODULE_DEFS system
         // (parent/athlete and office role sidebars) -- same properly-awaited
         // loading pattern as selectModule, without needing a separately
@@ -5446,9 +5528,6 @@ createApp({
                 drawerRef.value && !drawerRef.value.contains(e.target)
             ) {
                 mobileNavOpen.value = false;
-            }
-            if (openNavDropdown.value && navDropdownRef.value && !navDropdownRef.value.contains(e.target)) {
-                openNavDropdown.value = null;
             }
         }
 
@@ -7146,7 +7225,7 @@ createApp({
         }
 
         return {
-            user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, navDropdownRef, openNavDropdown, drawerRef, printTarget, joinCode, teamPassword,
+            user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, activeNavCategory, drawerRef, printTarget, joinCode, teamPassword,
             hasPendingInvite, isProcessingInvite, isCreatingVault, submitVaultSetupAndCheckout, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors, themeMode, themePreference, setThemePreference,
             myTeamPlan, myTeamSubStatus, myTeamTrialEnds, myTeamCanceledAt, planStatusDisplay, trialDaysLeft, openBillingPortal, hasFeature, demoTierOverride,
@@ -7191,7 +7270,7 @@ createApp({
             meetParticipationList, participationFor, setParticipation, updateMeetSetting, parentMeetParticipation,
             calendarViewDate, calendarVisibilityFilter, selectedCalendarDay, calendarMonthLabel, calendarGridDays, eventsByDate,
             prevMonth, nextMonth, goToToday, openCalendarDay, closeCalendarDay, addEventOnDay,
-            navModules, selectModule, isModuleActive, navigateTo, isPageLoading,
+            navModules, drawerNavModules, selectModule, isModuleActive, navigateTo, isPageLoading, loadCalendarEvents,
             swimmers, newSwimmer, teamParents, parentLinksBySwimmer, loadSwimmers, addSwimmer, deleteSwimmer, updateSwimmerGroup, linkParentToSwimmer, unlinkParent,
             attendanceDate, attendanceGroupFilter, attendanceMap, filteredAttendanceSwimmers, loadAttendanceForDate, setAttendance,
             attendanceMarkGroup, groupAttendanceSummary,
