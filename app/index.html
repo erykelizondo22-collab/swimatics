@@ -661,6 +661,50 @@
                     </div>
                 </div>
 
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/60">
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Attendance Today</div>
+                        <div class="font-mono-data text-2xl font-bold" :class="todayAttendancePercent === null ? 'text-slate-300' : 'text-slate-900'">
+                            <template v-if="todayAttendancePercent !== null">{{todayAttendancePercent}}<span class="text-sm text-slate-400">%</span></template>
+                            <template v-else>—</template>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/60">
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Active Swimmers</div>
+                        <div class="font-mono-data text-2xl font-bold text-slate-900">{{swimmers.length}}</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/60">
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Next Meet</div>
+                        <div class="font-mono-data font-bold" :class="nextUpcomingMeet ? 'text-lg text-slate-900' : 'text-2xl text-slate-300'">
+                            <template v-if="nextUpcomingMeet">{{formatPracticeDate(nextUpcomingMeet.start_date)}}</template>
+                            <template v-else>—</template>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/60">
+                        <template v-if="trialDaysLeft !== null">
+                            <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Trial Ends In</div>
+                            <div class="font-mono-data text-2xl font-bold" :style="{ color: 'var(--current)' }">{{trialDaysLeft}}<span class="text-sm text-slate-400">d</span></div>
+                        </template>
+                        <template v-else>
+                            <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Plan</div>
+                            <div class="font-mono-data text-2xl font-bold text-slate-900 capitalize">{{myTeamPlan || '—'}}</div>
+                        </template>
+                    </div>
+                </div>
+
+                <div v-if="Object.keys(groupAttendanceSummary).length" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/60">
+                    <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Attendance by Group</div>
+                    <div class="space-y-3">
+                        <div v-for="g in teamGroupsList" :key="g.id" v-show="groupAttendanceSummary[g.name] !== undefined && groupAttendanceSummary[g.name] !== null" class="flex items-center gap-3">
+                            <div class="w-24 shrink-0 text-xs font-bold text-slate-700 truncate">{{g.name}}</div>
+                            <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full" :style="{ width: (groupAttendanceSummary[g.name] || 0) + '%', background: groupAttendanceSummary[g.name] >= 90 ? 'var(--current)' : groupAttendanceSummary[g.name] >= 75 ? 'var(--lane-brass)' : '#dc4c4c' }"></div>
+                            </div>
+                            <div class="font-mono-data text-xs font-bold w-10 text-right text-slate-600">{{groupAttendanceSummary[g.name]}}%</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div v-if="isImportingPdf || pdfImportProgress" class="bg-indigo-50 border border-indigo-200 text-indigo-700 p-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-between shadow-sm animate-pulse">
                     <div class="flex items-center gap-3">
                         <svg v-if="isImportingPdf" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -2608,7 +2652,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 91;
+        const SW_VERSION = 92;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -2697,6 +2741,16 @@ createApp({
 
         // MEETS
         const meetsList = ref([]);
+        // Dashboard stat card: the soonest meet that hasn't happened yet
+        // (today counts as upcoming, not past). Derived directly from
+        // meetsList -- no separate query needed since that's already
+        // loaded whenever this is relevant.
+        const nextUpcomingMeet = computed(() => {
+            const todayStr = getLocalTodayStr();
+            const upcoming = meetsList.value.filter(m => m.start_date >= todayStr);
+            if (!upcoming.length) return null;
+            return upcoming.reduce((soonest, m) => m.start_date < soonest.start_date ? m : soonest, upcoming[0]);
+        });
         const showNewMeetForm = ref(false);
         const newMeet = ref({ name: '', start_date: '', course: 'SCY', allow_opt_in_out: false, allow_parent_event_selection: true });
         const selectedMeet = ref(null);
@@ -2750,6 +2804,14 @@ createApp({
         const isSavingSetup = ref(false);
         const myTeamSubStatus = ref(null);
         const myTeamTrialEnds = ref(null);
+        // Dashboard stat card: isolated from planStatusDisplay's inline
+        // calculation so this can be referenced directly without pulling
+        // in that whole object. Only meaningful while actually trialing --
+        // null otherwise, so the template can decide what to show instead.
+        const trialDaysLeft = computed(() => {
+            if (myTeamSubStatus.value !== 'trialing' || !myTeamTrialEnds.value) return null;
+            return Math.max(0, Math.ceil((new Date(myTeamTrialEnds.value) - new Date()) / 86400000));
+        });
         const myTeamCanceledAt = ref(null);
 
         // THEME — a personal preference, not a team setting. Defaults to
@@ -5168,7 +5230,7 @@ createApp({
         // teamModules (order + on/off) instead of being hardcoded.
         // ============================================================
         const MODULE_DEFS = {
-            'dashboard': { label: 'Workouts', icon: '🏊', feature: 'workouts', activeViews: ['dashboard'], onSelect: async () => { currentView.value = 'dashboard'; } },
+            'dashboard': { label: 'Workouts', icon: '🏊', feature: 'workouts', activeViews: ['dashboard'], onSelect: async () => { currentView.value = 'dashboard'; await Promise.all([loadMeets(), loadSwimmers().then(() => { loadTodayAttendanceSummary(); loadAttendanceSummary(); })]); } },
             'analytics': { label: 'Analytics', icon: '📊', feature: 'workouts', activeViews: ['analytics'], onSelect: async () => { currentView.value = 'analytics'; } },
             'season-planning': { label: 'Season', icon: '🗓️', feature: 'workouts', activeViews: ['season-planning','plan-builder'], onSelect: async () => { currentView.value = 'season-planning'; } },
             'groups': { label: 'Groups', icon: '👥', feature: 'roster', activeViews: ['groups','group-details'], onSelect: async () => { currentView.value = 'groups'; selectedGroupForEdit.value = null; await Promise.all([loadSwimmers(), loadSeasons(), loadAttendanceSummary()]); } },
@@ -5525,6 +5587,26 @@ createApp({
             showNewSeasonForm.value = false;
             await loadSeasons();
             loadAttendanceSummary();
+        }
+
+        // Dashboard stat card: today's attendance % across the WHOLE
+        // team (not scoped to a season or a single group) -- a simple,
+        // separate query rather than reusing loadAttendanceSummary,
+        // since that one is season-scoped and this always means
+        // literally today regardless of what season is selected
+        // elsewhere in the app.
+        const todayAttendancePercent = ref(null);
+        async function loadTodayAttendanceSummary() {
+            const swimmerIds = swimmers.value.map(s => s.id);
+            if (!swimmerIds.length) { todayAttendancePercent.value = null; return; }
+            const { data, error } = await client.from("attendance").select("status")
+                .eq('team_id', myTeam.value)
+                .in('swimmer_id', swimmerIds)
+                .eq('practice_date', getLocalTodayStr());
+            if (error) { console.error("Error loading today's attendance:", error.message); return; }
+            const rows = data || [];
+            const present = rows.filter(r => r.status === 'present' || r.status === 'excused').length;
+            todayAttendancePercent.value = rows.length > 0 ? Math.round((present / rows.length) * 100) : null;
         }
 
         async function loadAttendanceSummary(scopeToGroup = null) {
@@ -6422,7 +6504,7 @@ createApp({
                         loadTeamSettings(); loadGroups(); loadTeamLayout();
                         if (isParent.value || isAthlete.value) { currentView.value = 'parent-home'; loadMyLinkedSwimmers(); loadMeets(); loadCalendarEvents(); }
                         else if (isOffice.value) { currentView.value = 'groups'; selectedGroupForEdit.value = null; loadSwimmers(); loadAttendanceSummary(); }
-                        else { currentView.value = 'dashboard'; loadWorkouts(); loadSeasonPlans(); loadMyAssignedGroups(); }
+                        else { currentView.value = 'dashboard'; loadWorkouts(); loadSeasonPlans(); loadMyAssignedGroups(); loadMeets(); loadSwimmers().then(() => { loadTodayAttendanceSummary(); loadAttendanceSummary(); }); }
                     }
                 }
             });
@@ -6939,7 +7021,8 @@ createApp({
             user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, drawerRef, printTarget, joinCode, teamPassword,
             hasPendingInvite, isProcessingInvite, isCreatingVault, submitVaultSetupAndCheckout, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors, themeMode, themePreference, setThemePreference,
-            myTeamPlan, myTeamSubStatus, myTeamTrialEnds, myTeamCanceledAt, planStatusDisplay, openBillingPortal, hasFeature, demoTierOverride,
+            myTeamPlan, myTeamSubStatus, myTeamTrialEnds, myTeamCanceledAt, planStatusDisplay, trialDaysLeft, openBillingPortal, hasFeature, demoTierOverride,
+            todayAttendancePercent, nextUpcomingMeet,
             exportRosterCsv, exportAttendanceCsv, exportMeetResultsCsv, exportCalendarIcs, exportMeetEntriesHy3,
             exportAttendancePdf, exportCalendarPdf,
             myTeamSetupCompleted, setupTeamName, setupLocation, isSavingSetup, completeTeamSetup,
