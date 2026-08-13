@@ -1355,7 +1355,7 @@
                             </div>
                         </div>
                     </div>
-                    <div v-if="!filteredAccounts.length" class="p-12 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No matching accounts</div>
+                    <div v-if="!isPageLoading && !filteredAccounts.length" class="p-12 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No matching accounts</div>
                 </div>
             </div>
 
@@ -1503,7 +1503,7 @@
                                 <button @click="setAttendance(s.id, 'absent')" :class="attendanceMap[s.id] === 'absent' ? 'bg-red-500 text-white' : 'bg-slate-50 text-slate-400'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors">Absent</button>
                             </div>
                         </div>
-                        <div v-if="!filteredAttendanceSwimmers.length" class="p-12 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No swimmers in this group</div>
+                        <div v-if="!isPageLoading && !filteredAttendanceSwimmers.length" class="p-12 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No swimmers in this group</div>
 
                         <div v-if="showSwimmerHistoryFor" @click.self="closeSwimmerHistory" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                             <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
@@ -1645,6 +1645,7 @@
                 <div class="flex gap-6 border-b border-slate-100 pb-2">
                     <button @click="meetDetailTab = 'events'" :class="meetDetailTab === 'events' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'" class="font-black uppercase tracking-widest text-xs pb-2 transition-colors">Events</button>
                     <button @click="meetDetailTab = 'entries'" :class="meetDetailTab === 'entries' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'" class="font-black uppercase tracking-widest text-xs pb-2 transition-colors">Entries <span v-if="pendingEntriesCount" class="ml-1 bg-amber-500 text-white text-[9px] px-1.5 py-0.5 rounded-full">{{pendingEntriesCount}}</span></button>
+                    <button @click="meetDetailTab = 'lineup'" :class="meetDetailTab === 'lineup' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'" class="font-black uppercase tracking-widest text-xs pb-2 transition-colors">Lineup</button>
                     <button v-if="myRole === 'owner' || myRole === 'admin'" @click="meetDetailTab = 'settings'" :class="meetDetailTab === 'settings' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'" class="font-black uppercase tracking-widest text-xs pb-2 transition-colors">Settings</button>
                 </div>
 
@@ -1663,6 +1664,36 @@
                         </div>
                         <input type="checkbox" v-model="selectedMeet.allow_parent_event_selection" @change="updateMeetSetting('allow_parent_event_selection', selectedMeet.allow_parent_event_selection)" class="w-5 h-5 accent-slate-900 shrink-0">
                     </label>
+                </div>
+
+                <div v-if="meetDetailTab === 'lineup'" class="space-y-4">
+                    <div class="flex flex-wrap gap-2">
+                        <span v-for="g in teamGroupsList" :key="g.id" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase" :class="[groupColorFor(g.name).bg, groupColorFor(g.name).text]">
+                            <span class="w-2 h-2 rounded-full" :class="groupColorFor(g.name).dot"></span>{{g.name}}
+                        </span>
+                    </div>
+                    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-x-auto">
+                        <table class="border-collapse text-xs">
+                            <thead>
+                                <tr>
+                                    <th class="sticky left-0 z-10 bg-white p-3 text-left font-black uppercase tracking-widest text-slate-500 border-b border-r border-slate-100 min-w-[160px]">Swimmer</th>
+                                    <th v-for="e in meetEventsList" :key="e.id" class="p-2 font-black text-slate-500 border-b border-slate-100 text-center min-w-[64px] whitespace-nowrap">#{{e.event_number}}<div class="text-[9px] font-bold text-slate-400 normal-case">{{e.gender}} {{e.distance}} {{e.stroke}}</div></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="s in enterableSwimmers" :key="s.id" class="hover:bg-slate-50">
+                                    <td class="sticky left-0 z-10 bg-white p-3 border-r border-b border-slate-100 font-bold whitespace-nowrap" :class="groupColorFor(s.group_name).text">
+                                        <span class="w-2 h-2 rounded-full inline-block mr-2" :class="groupColorFor(s.group_name).dot"></span>{{s.first_name}} {{s.last_name}}
+                                    </td>
+                                    <td v-for="e in meetEventsList" :key="e.id" class="border-b border-slate-100 text-center">
+                                        <span v-if="isEnteredIn(s.id, e.id)" class="inline-block w-4 h-4 rounded-full" :class="groupColorFor(s.group_name).dot" :title="s.first_name + ' — Event ' + e.event_number"></span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div v-if="!isPageLoading && !enterableSwimmers.length" class="p-10 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No swimmers in this group</div>
+                        <div v-if="!isPageLoading && !meetEventsList.length" class="p-10 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No events yet — add on the Events tab or use Import</div>
+                    </div>
                 </div>
 
                 <div v-if="meetDetailTab === 'events'" class="space-y-4">
@@ -1746,7 +1777,7 @@
                                 <div v-if="!eventsJoinableBy(s).length" class="text-[10px] text-slate-400 font-bold text-center py-3">No events for this swimmer's gender yet</div>
                             </div>
                         </div>
-                        <div v-if="!enterableSwimmers.length" class="p-10 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No swimmers in this group</div>
+                        <div v-if="!isPageLoading && !enterableSwimmers.length" class="p-10 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No swimmers in this group</div>
                     </div>
 
                     <div v-else class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
@@ -1766,7 +1797,7 @@
                                 <button @click="addMeetEntry(newEntrySwimmerId[e.id], e.id); newEntrySwimmerId[e.id] = ''" class="bg-slate-900 text-white px-4 rounded-lg text-[10px] font-black uppercase shrink-0">Add</button>
                             </div>
                         </div>
-                        <div v-if="!filteredMeetEvents.length" class="p-10 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No events yet — add on the Events tab or use Import</div>
+                        <div v-if="!isPageLoading && !filteredMeetEvents.length" class="p-10 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No events yet — add on the Events tab or use Import</div>
                     </div>
                 </div>
             </div>
@@ -1931,7 +1962,7 @@
                                 </div>
                                 <p class="text-[9px] text-slate-300 font-black uppercase tracking-widest mt-2">Sent by {{a.senderName}}</p>
                             </div>
-                            <div v-if="!broadcastHistory.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No announcements yet</div>
+                            <div v-if="!isPageLoading && !broadcastHistory.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No announcements yet</div>
                         </div>
                     </div>
 
@@ -1944,7 +1975,7 @@
                                 <div v-for="c in myGroupConversations" :key="c.id" @click="openGroupConversationThread(c)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
                                     <div class="font-black text-slate-800 text-sm">{{c.coachName}} <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">+ Parent</span></div>
                                 </div>
-                                <div v-if="!myGroupConversations.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No conversations yet</div>
+                                <div v-if="!isPageLoading && !myGroupConversations.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No conversations yet</div>
                             </div>
                             <div class="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-2">
                                 <select v-model="selectedCoachForNewConvo" class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
@@ -2043,7 +2074,7 @@
                                 </div>
                                 <p class="text-[9px] text-slate-300 font-black uppercase tracking-widest mt-2">Sent by {{a.senderName}}</p>
                             </div>
-                            <div v-if="!broadcastHistory.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No announcements sent yet</div>
+                            <div v-if="!isPageLoading && !broadcastHistory.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No announcements sent yet</div>
                         </div>
                     </div>
 
@@ -2057,7 +2088,7 @@
                                 </div>
                                 <span class="text-[9px] font-black text-slate-300 uppercase shrink-0">{{formatPracticeDate(c.updated_at ? c.updated_at.split('T')[0] : '')}}</span>
                             </div>
-                            <div v-if="!conversationsList.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No conversations yet</div>
+                            <div v-if="!isPageLoading && !conversationsList.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No conversations yet</div>
                         </div>
 
                         <div v-else class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
@@ -2096,7 +2127,7 @@
                             <div v-for="c in coachGroupConversations" :key="c.id" @click="openGroupConversationThread(c)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
                                 <div class="font-black text-slate-800 text-sm">{{c.athleteName}} <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">+ Parent</span></div>
                             </div>
-                            <div v-if="!coachGroupConversations.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No athlete group chats yet</div>
+                            <div v-if="!isPageLoading && !coachGroupConversations.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No athlete group chats yet</div>
                         </div>
 
                         <div v-else class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
@@ -2149,7 +2180,7 @@
                                 </div>
                                 <p class="text-[9px] text-slate-300 font-black uppercase tracking-widest mt-2">Sent by {{a.senderName}}</p>
                             </div>
-                            <div v-if="!broadcastHistory.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No announcements yet</div>
+                            <div v-if="!isPageLoading && !broadcastHistory.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No announcements yet</div>
                         </div>
                     </div>
 
@@ -2164,7 +2195,7 @@
                                         <div class="text-xs text-slate-400 font-medium truncate max-w-[280px]">{{c.lastMessage}}</div>
                                     </div>
                                 </div>
-                                <div v-if="!myConversations.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No conversations yet</div>
+                                <div v-if="!isPageLoading && !myConversations.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No conversations yet</div>
                             </div>
 
                             <div class="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-2">
@@ -4205,18 +4236,23 @@ createApp({
 
         async function openMessages() {
             currentView.value = 'messages';
-            await loadBroadcastHistory();
-            if (isAthlete.value) {
-                await loadDmEnabledCoaches();
-                await loadMyGroupConversations();
-            } else if (isParent.value) {
-                await loadDmEnabledCoaches();
-                await loadMyConversations();
-            } else {
-                await loadTeamParents();
-                if (!swimmers.value.length) await loadSwimmers();
-                await loadConversationsList();
-                await loadCoachGroupConversations();
+            isPageLoading.value = true;
+            try {
+                await loadBroadcastHistory();
+                if (isAthlete.value) {
+                    await loadDmEnabledCoaches();
+                    await loadMyGroupConversations();
+                } else if (isParent.value) {
+                    await loadDmEnabledCoaches();
+                    await loadMyConversations();
+                } else {
+                    await loadTeamParents();
+                    if (!swimmers.value.length) await loadSwimmers();
+                    await loadConversationsList();
+                    await loadCoachGroupConversations();
+                }
+            } finally {
+                isPageLoading.value = false;
             }
         }
 
@@ -4396,6 +4432,22 @@ createApp({
 
         function isEnteredIn(swimmerId, meetEventId) {
             return meetEntriesList.value.some(en => en.swimmer_id === swimmerId && en.meet_event_id === meetEventId);
+        }
+
+        // Lineup grid color-coding -- a fixed, distinct palette cycled by
+        // each group's position in teamGroupsList, so a group's color
+        // stays stable across renders without needing a new DB column.
+        const LINEUP_PALETTE = [
+            { bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700', dot: 'bg-sky-500' },
+            { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+            { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', dot: 'bg-amber-500' },
+            { bg: 'bg-violet-50', border: 'border-violet-200', text: 'text-violet-700', dot: 'bg-violet-500' },
+            { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', dot: 'bg-rose-500' },
+            { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-700', dot: 'bg-cyan-500' },
+        ];
+        function groupColorFor(groupName) {
+            const idx = teamGroupsList.value.findIndex(g => g.name === groupName);
+            return LINEUP_PALETTE[idx >= 0 ? idx % LINEUP_PALETTE.length : 0];
         }
 
         // Direct toggle for the +/- buttons -- deliberately no confirm()
@@ -6927,7 +6979,7 @@ createApp({
             coachGroupLinksMap, myAssignedGroups, toggleCoachGroup,
             calendarEvents, newCalendarEvent, showNewCalendarEventForm, upcomingCalendarEvents, postableGroups, createCalendarEvent, deleteCalendarEvent,
             entriesViewMode, entriesGroupFilter, entriesEventFilter, newEntrySwimmerId, meetEntryGroups, enterableSwimmers, filteredMeetEvents, entriesForSwimmer, entriesForEvent, addMeetEntry, removeMeetEntry, rosterExportGroup, groupDetailTab,
-            expandedSwimmerId, toggleSwimmerExpand, eventsJoinableBy, isEnteredIn, toggleSwimmerEventEntry,
+            expandedSwimmerId, toggleSwimmerExpand, eventsJoinableBy, isEnteredIn, toggleSwimmerEventEntry, groupColorFor,
             meetParticipationList, participationFor, setParticipation, updateMeetSetting, parentMeetParticipation,
             calendarViewDate, calendarVisibilityFilter, selectedCalendarDay, calendarMonthLabel, calendarGridDays, eventsByDate,
             prevMonth, nextMonth, goToToday, openCalendarDay, closeCalendarDay, addEventOnDay,
