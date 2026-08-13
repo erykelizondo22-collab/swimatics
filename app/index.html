@@ -34,7 +34,7 @@
         :root {
             --pool-depth: #0B1E33; --pool-depth-2: #0F2A47; --pool-depth-3: #081426;
             --deck: #F7F8FA; --current: #0E7490; --current-light: #14919B;
-            --lane-brass: #A9825A; --slate-ink: #1E293B; --mist: #94A3B8; --hairline: #E2E8F0;
+            --slate-ink: #1E293B; --mist: #94A3B8; --hairline: #E2E8F0;
         }
 
         body { 
@@ -288,7 +288,7 @@
             <img :src="teamLogoUrl" alt="" style="width: 45vw; max-width: 480px; object-fit: contain;">
         </div>
         
-        <div class="glass-nav border-b border-slate-200/60 px-4 md:px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm transition-all md:pl-72">
+        <div class="glass-nav border-b border-slate-200/60 px-4 md:px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm transition-all md:ml-64">
             <div class="flex items-center gap-2 shrink-0" ref="navMenuRef">
                 <button v-if="myTeam" @click.stop="mobileNavOpen = !mobileNavOpen" class="md:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-[var(--pool-depth-3)] transition-colors shrink-0" aria-label="Toggle menu">
                     <svg v-if="!mobileNavOpen" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -877,7 +877,7 @@
                         <div v-for="g in teamGroupsList" :key="g.id" v-show="groupAttendanceSummary[g.name] !== undefined && groupAttendanceSummary[g.name] !== null" class="flex items-center gap-3">
                             <div class="w-24 shrink-0 text-xs font-bold text-slate-700 truncate">{{g.name}}</div>
                             <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                <div class="h-full rounded-full" :style="{ width: (groupAttendanceSummary[g.name] || 0) + '%', background: groupAttendanceSummary[g.name] >= 90 ? 'var(--current)' : groupAttendanceSummary[g.name] >= 75 ? 'var(--lane-brass)' : '#dc4c4c' }"></div>
+                                <div class="h-full rounded-full" :style="{ width: (groupAttendanceSummary[g.name] || 0) + '%', background: groupAttendanceSummary[g.name] >= 90 ? 'var(--current)' : groupAttendanceSummary[g.name] >= 75 ? '#D97706' : '#dc4c4c' }"></div>
                             </div>
                             <div class="font-mono-data text-xs font-bold w-10 text-right text-slate-600">{{groupAttendanceSummary[g.name]}}%</div>
                         </div>
@@ -912,7 +912,7 @@
                             Import Workouts
                         </button>
 
-                        <button v-if="hasDraft" @click="resumeDraft" class="w-full sm:w-auto text-[var(--pool-depth)] px-8 py-4 rounded-xl font-black shadow-lg hover:brightness-105 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2" style="background: var(--lane-brass);">
+                        <button v-if="hasDraft" @click="resumeDraft" class="w-full sm:w-auto text-white px-8 py-4 rounded-xl font-black shadow-lg hover:brightness-105 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2" style="background: var(--current);">
                             Resume Draft
                         </button>
                         <button @click="startNewWorkout" class="w-full sm:w-auto bg-white text-[var(--pool-depth)] px-8 py-4 rounded-xl font-black shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2">
@@ -2925,7 +2925,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 104;
+        const SW_VERSION = 106;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
