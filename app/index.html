@@ -3194,7 +3194,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 117;
+        const SW_VERSION = 118;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -6940,6 +6940,23 @@ createApp({
             return records;
         }
 
+        // Maps a Hy-Tek event code (e.g. "50A", "100C", "1500A") to
+        // distance + stroke deterministically -- verified against every
+        // distinct code actually present in a real meet file (50/100/200/
+        // 400/800/1500, A-E). This used to be sent to the AI to interpret,
+        // but that meant echoing back every single record through an AI
+        // call just to apply this same fixed lookup table -- expensive
+        // enough on a large roster match that it could exhaust the edge
+        // function's resource limit entirely (HTTP 546). A straight
+        // lookup needs no AI at all.
+        function parseHy3EventCode(code) {
+            if (!code) return { distance: 0, stroke: 'Free' };
+            const m = code.match(/^(\d+)([A-Z])$/);
+            if (!m) return { distance: 0, stroke: 'Free' };
+            const strokeMap = { A: 'Free', B: 'Back', C: 'Breast', D: 'Fly', E: 'IM' };
+            return { distance: parseInt(m[1]), stroke: strokeMap[m[2]] || 'Free' };
+        }
+
         async function handleGenericImport(event) {
             const file = event.target.files[0];
             if(!file) return;
@@ -6954,27 +6971,35 @@ createApp({
                 else if(ext === 'zip') text = await extractZipMeetEvents(file);
                 else text = await file.text();
 
-                importState.value = { status: 'analyzing', message: 'Analyzing with AI...' };
-
-                let prompt, historyPayload;
                 if (ext === 'hy3') {
-                    // Pre-extracted, guaranteed-complete record set (see
-                    // extractHy3ResultRecords above) rather than raw text --
-                    // the raw file can run 500KB+ and get truncated below,
-                    // silently dropping most of a real multi-team meet.
-                    // When triggered from a specific meet's Results tab,
-                    // filter to our own roster during extraction itself --
-                    // a 27-team meet file should never send 26 teams' worth
-                    // of irrelevant swimmers to the AI at all.
+                    // Fully client-side: extraction is deterministic regex
+                    // matching (verified against a real 1,994-result file),
+                    // and the event-code-to-stroke conversion is a fixed
+                    // lookup table -- no AI interpretation needed for
+                    // either step, so there's no edge function call here
+                    // to run out of resources on a large roster match.
                     const isMeetResults = importContext.value?.type === 'meet_results';
                     const extracted = extractHy3ResultRecords(text, isMeetResults ? swimmers.value : null);
-                    historyPayload = JSON.stringify(extracted);
-                    const scopeNote = isMeetResults ? ` These records have already been filtered to only our own team's swimmers -- every one belongs to us.` : '';
-                    prompt = `You are a data extraction engine for a swim team app. You've been given a pre-extracted, complete list of swim results from a Hy-Tek .hy3 file, as JSON objects with short keys: swimmer (name), gender (M/F), team, event_code (Hy-Tek's internal event code like "50A", "100C", "1500A" -- the leading number is the distance, the trailing letter conventionally indicates stroke: A=Free, B=Back, C=Breast, D=Fly, E=IM, though this convention is not something you should treat as absolutely certain for every meet), and time (seconds, as "SS.hh" or "M:SS.hh").${scopeNote} Convert every record into a "times" row: swimmer name, distance (integer), stroke (Free/Back/Breast/Fly/IM), course "LCM" (this is a long-course-meters meet), time (as given), meet_name (infer a reasonable name if not otherwise available). Do not drop or skip any record. Respond with ONLY a valid JSON object, no markdown, no intro text: {"detected_type": "times", "records": [ {...} ]}.`;
-                } else {
-                    prompt = `You are a data extraction engine for a swim team app. Classify the attached file content into exactly ONE of these types: "roster" (swimmer names/birthdates/groups), "times" (swim times/results, one row per swim: swimmer name, distance, stroke, course SCY/SCM/LCM, time, date, meet name), "meet_events" (a meet's event list: event number, gender, distance, stroke, age range, qualifying time), or "attendance" (swimmer name, date, present/absent). For meet_events records specifically, the "gender" field MUST be exactly "M", "F", or "X" (the database rejects anything else, including full words like "Boys"/"Girls"/"Male"/"Female" -- convert to the single-letter code). If the content is already a pre-parsed "Events:" summary from a Hy-Tek .ev3 file, use it directly as meet_events records -- carry over any [WARNING: ...] notes into a "warning" field on that record rather than guessing a real value. If the file is raw Hy-Tek CL2 fixed-width export (A0/B1/C1/D0/D3 style records), parse its record structure accordingly. Respond with ONLY a valid JSON object, no markdown, no intro text, in exactly this shape: {"detected_type": "roster|times|meet_events|attendance|unknown", "records": [ {...one object per row, using short lowercase snake_case keys appropriate to the type...} ]}. If you cannot confidently classify or parse the file, return {"detected_type": "unknown", "records": []}.`;
-                    historyPayload = text.slice(0, 30000);
+                    if (!extracted.length) throw new Error("No matching results found in this file for your roster.");
+                    const records = extracted.map(r => {
+                        const { distance, stroke } = parseHy3EventCode(r.event_code);
+                        return {
+                            swimmer_name: r.swimmer, distance, stroke, course: 'LCM',
+                            time: r.time, meet_name: importContext.value?.meetName || file.name.replace(/\.hy3$/i, ''),
+                            _include: true
+                        };
+                    });
+                    importPreview.value = { detected_type: 'times', records };
+                    importColumns.value = Object.keys(records[0]).filter(k => k !== '_include');
+                    importState.value = { status: 'preview', message: '' };
+                    event.target.value = '';
+                    return;
                 }
+
+                importState.value = { status: 'analyzing', message: 'Analyzing with AI...' };
+
+                const prompt = `You are a data extraction engine for a swim team app. Classify the attached file content into exactly ONE of these types: "roster" (swimmer names/birthdates/groups), "times" (swim times/results, one row per swim: swimmer name, distance, stroke, course SCY/SCM/LCM, time, date, meet name), "meet_events" (a meet's event list: event number, gender, distance, stroke, age range, qualifying time), or "attendance" (swimmer name, date, present/absent). For meet_events records specifically, the "gender" field MUST be exactly "M", "F", or "X" (the database rejects anything else, including full words like "Boys"/"Girls"/"Male"/"Female" -- convert to the single-letter code). If the content is already a pre-parsed "Events:" summary from a Hy-Tek .ev3 file, use it directly as meet_events records -- carry over any [WARNING: ...] notes into a "warning" field on that record rather than guessing a real value. If the file is raw Hy-Tek CL2 fixed-width export (A0/B1/C1/D0/D3 style records), parse its record structure accordingly. Respond with ONLY a valid JSON object, no markdown, no intro text, in exactly this shape: {"detected_type": "roster|times|meet_events|attendance|unknown", "records": [ {...one object per row, using short lowercase snake_case keys appropriate to the type...} ]}. If you cannot confidently classify or parse the file, return {"detected_type": "unknown", "records": []}.`;
+                const historyPayload = text.slice(0, 30000);
                 const context = `Existing team groups: ${teamGroupsList.value.map(g=>g.name).join(', ') || 'none'}. Existing roster: ${swimmers.value.map(s=>s.first_name+' '+s.last_name).join(', ') || 'none yet'}.`;
 
                 const { data: { session } } = await client.auth.getSession();
