@@ -2367,6 +2367,17 @@
 
                         <div v-if="importState.status === 'error'" class="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl font-bold text-sm">{{importState.message}} <button @click="resetImport" class="block mt-3 text-[10px] font-black uppercase underline">Try Again</button></div>
 
+                        <div v-if="importState.status === 'select-team'" class="space-y-4">
+                            <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-xs font-bold text-amber-700">Found {{hy3DetectedTeams.length}} team(s) in this file — which one's results do you want to pull?</div>
+                            <button @click="confirmHy3TeamSelection(null)" class="w-full text-left bg-[var(--pool-depth)] text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[var(--pool-depth-3)] transition-colors">Match Against My Own Roster</button>
+                            <div class="max-h-80 overflow-y-auto space-y-1.5 border-t border-slate-100 pt-3">
+                                <button v-for="t in hy3DetectedTeams" :key="t.code" @click="confirmHy3TeamSelection(t.code)" class="w-full flex justify-between items-center bg-slate-50 hover:bg-slate-100 border border-slate-200 p-3 rounded-xl text-left transition-colors">
+                                    <span class="font-bold text-sm text-slate-800">{{t.name}} <span class="text-slate-400 font-normal">({{t.code}})</span></span>
+                                    <span class="text-[10px] font-black uppercase text-slate-400 shrink-0">{{t.swimmerCount}} swimmers</span>
+                                </button>
+                            </div>
+                        </div>
+
                         <div v-if="importState.status === 'preview'" class="space-y-4">
                             <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-xs font-bold text-amber-700">Detected: <span class="uppercase font-black">{{importPreview.detected_type}}</span> — review below, uncheck anything wrong, then confirm.</div>
                             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
@@ -3194,7 +3205,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 121;
+        const SW_VERSION = 122;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -6760,6 +6771,9 @@ createApp({
         // records with the right meet_id) rather than the generic,
         // unscoped import path.
         const importContext = ref(null);
+        const hy3DetectedTeams = ref([]);
+        const hy3PendingText = ref('');
+        const hy3PendingFileName = ref('');
         function triggerGenericImportUpload(context = null) {
             importContext.value = context;
             document.getElementById('genericImportUpload').click();
@@ -6770,6 +6784,9 @@ createApp({
             importPreview.value = { detected_type: '', records: [] };
             importColumns.value = [];
             importContext.value = null;
+            hy3DetectedTeams.value = [];
+            hy3PendingText.value = '';
+            hy3PendingFileName.value = '';
         }
 
         async function extractPdfTextGeneric(file) {
@@ -6893,9 +6910,35 @@ createApp({
         // guaranteeing complete coverage regardless of file size, while
         // still leaning on the AI for the genuinely ambiguous part (what
         // "50A" vs "50B" actually means in eventcode terms).
-        function extractHy3ResultRecords(text, rosterFilter = null) {
+        // Lists every team present in a Hy-Tek .hy3 file with a swimmer
+        // count each, using fixed column positions (verified against a
+        // real 27-team file) rather than whitespace splitting -- a team
+        // name that runs right up against the next column with no gap
+        // (e.g. "City Of Hialeah Storm Swim TeaCity Of Hialeah") or a
+        // hyphenated code ("UN-03") both break a whitespace-based split,
+        // but column positions don't care where the actual words fall.
+        function extractHy3Teams(text) {
             const lines = text.split('\n');
-            let currentSwimmer = null, currentTeam = null, pending = null;
+            const teams = [];
+            let current = null;
+            for (let rawLine of lines) {
+                const line = rawLine.replace(/\r$/, '');
+                if (!line) continue;
+                const rtype = line.slice(0, 2);
+                if (rtype === 'C1') {
+                    if (current) teams.push(current);
+                    current = { code: line.substring(2, 7).trim(), name: line.substring(7, 37).trim(), swimmerCount: 0 };
+                } else if (rtype === 'D1' && current) {
+                    current.swimmerCount++;
+                }
+            }
+            if (current) teams.push(current);
+            return teams;
+        }
+
+        function extractHy3ResultRecords(text, rosterFilter = null, teamCodeFilter = null) {
+            const lines = text.split('\n');
+            let currentSwimmer = null, currentTeamCode = null, currentTeamName = null, pending = null;
             const records = [];
             const scratchedSwimmers = new Set();
             // When importing for a specific meet, only our own team's
@@ -6922,12 +6965,17 @@ createApp({
                 if (!line) continue;
                 const rtype = line.slice(0, 2);
                 if (rtype === 'C1') {
-                    const m = line.match(/^C1\S*\s+(.+?)\s{2,}/);
-                    currentTeam = m ? m[1].trim() : null;
+                    currentTeamCode = line.substring(2, 7).trim();
+                    currentTeamName = line.substring(7, 37).trim();
                 } else if (rtype === 'D1') {
+                    // A specific team was chosen -- skip parsing swimmers
+                    // from every other team entirely rather than
+                    // extracting everyone and filtering after the fact.
+                    if (teamCodeFilter && currentTeamCode !== teamCodeFilter) { currentSwimmer = null; continue; }
                     const m = line.match(/^D1([MF])\s*(\d+)([A-Za-z'-]+)\s{2,}([A-Za-z'-. ]+?)\s{2,}/);
-                    if (m) currentSwimmer = { gender: m[1], last: m[3].trim(), first: m[4].trim(), team: currentTeam };
+                    if (m) currentSwimmer = { gender: m[1], last: m[3].trim(), first: m[4].trim(), team: currentTeamName };
                 } else if (rtype === 'E1') {
+                    if (teamCodeFilter && currentTeamCode !== teamCodeFilter) { pending = null; continue; }
                     const m = line.match(/\s(\d{2,4}[A-Z])\s/);
                     const swimmerName = currentSwimmer ? `${currentSwimmer.last}, ${currentSwimmer.first}` : null;
                     let inRoster = !rosterNamesFull;
@@ -6997,51 +7045,17 @@ createApp({
                 else text = await file.text();
 
                 if (ext === 'hy3') {
-                    // Fully client-side: extraction is deterministic regex
-                    // matching (verified against a real 1,994-result file),
-                    // and the event-code-to-stroke conversion is a fixed
-                    // lookup table -- no AI interpretation needed for
-                    // either step, so there's no edge function call here
-                    // to run out of resources on a large roster match.
-                    const isMeetResults = importContext.value?.type === 'meet_results';
-                    // Force a fresh roster load right before filtering --
-                    // navigating to Past Meets only loads meets, never
-                    // swimmers, so swimmers.value could be empty or, worse,
-                    // still hold a previously-viewed team's roster if the
-                    // coach switched teams without visiting a page that
-                    // reloads it. Filtering against stale or wrong-team
-                    // data would explain both unmatched swimmers and
-                    // matches that don't belong to the current roster.
-                    if (isMeetResults) await loadSwimmers();
-                    // Distinct from "no matches found below" -- an empty
-                    // roster means there was nothing to check the file
-                    // against in the first place, which is a different,
-                    // more fundamental problem than "your roster has
-                    // people, just none of them swam in this meet."
-                    if (isMeetResults && !swimmers.value.length) throw new Error("No active swimmers on your roster to match against -- add swimmers first, then import results.");
-                    const { records: extracted, scratchedSwimmers } = extractHy3ResultRecords(text, isMeetResults ? swimmers.value : null);
-                    if (!extracted.length) {
-                        if (scratchedSwimmers.length) {
-                            // Real roster swimmers were found and matched --
-                            // they just didn't have a completed race in this
-                            // file (scratched/DQ'd/no-show on every entry).
-                            // That's a genuinely different situation from a
-                            // matching failure, and needs a different message.
-                            throw new Error(`Found ${scratchedSwimmers.length} of your swimmer(s) in this file (${scratchedSwimmers.join(', ')}), but every one of their events shows a scratch or no-show (0.00) -- there's nothing to import for them from this meet.`);
-                        }
-                        throw new Error("No matching results found in this file for your roster.");
-                    }
-                    const records = extracted.map(r => {
-                        const { distance, stroke } = parseHy3EventCode(r.event_code);
-                        return {
-                            swimmer_name: r.swimmer, distance, stroke, course: 'LCM',
-                            time: r.time, meet_name: importContext.value?.meetName || file.name.replace(/\.hy3$/i, ''),
-                            _include: true
-                        };
-                    });
-                    importPreview.value = { detected_type: 'times', records };
-                    importColumns.value = Object.keys(records[0]).filter(k => k !== '_include');
-                    importState.value = { status: 'preview', message: '' };
+                    // Show every team actually present in the file rather
+                    // than assuming which one to pull -- a real meet file
+                    // can hold dozens of teams, and defaulting to only
+                    // "our own roster" would mean the software could never
+                    // pull results for any team someone actually asks for.
+                    const teams = extractHy3Teams(text);
+                    if (!teams.length) throw new Error("Couldn't find any teams in this file.");
+                    hy3DetectedTeams.value = teams;
+                    hy3PendingText.value = text;
+                    hy3PendingFileName.value = file.name;
+                    importState.value = { status: 'select-team', message: '' };
                     event.target.value = '';
                     return;
                 }
@@ -7089,6 +7103,62 @@ createApp({
                 importState.value = { status: 'error', message: err.message };
             }
             event.target.value = '';
+        }
+
+        // Runs after the team-picker step -- teamCode is either a specific
+        // team's code (pull that team's swimmers directly, no roster
+        // matching at all) or null (match against our own active roster
+        // instead, the original behavior). Fully client-side: extraction
+        // is deterministic regex matching (verified against a real
+        // 1,994-result, 27-team file) and the event-code-to-stroke
+        // conversion is a fixed lookup table -- no AI interpretation
+        // needed for either step.
+        async function confirmHy3TeamSelection(teamCode) {
+            try {
+                importState.value = { status: 'analyzing', message: 'Extracting results...' };
+                const text = hy3PendingText.value;
+                let rosterFilter = null;
+                if (!teamCode) {
+                    // "My own roster" -- force a fresh load rather than
+                    // trust whatever's already in memory. Navigating to
+                    // Past Meets only loads meets, never swimmers, so
+                    // swimmers.value could be empty or, worse, still hold
+                    // a previously-viewed team's roster if the coach
+                    // switched teams without visiting a page that reloads
+                    // it. Filtering against stale or wrong-team data would
+                    // explain both unmatched swimmers and matches that
+                    // don't belong to the current roster.
+                    await loadSwimmers();
+                    if (!swimmers.value.length) throw new Error("No active swimmers on your roster to match against -- add swimmers first, then import results.");
+                    rosterFilter = swimmers.value;
+                }
+                const { records: extracted, scratchedSwimmers } = extractHy3ResultRecords(text, rosterFilter, teamCode);
+                if (!extracted.length) {
+                    if (scratchedSwimmers.length) {
+                        // Real swimmers were found and matched -- they just
+                        // didn't have a completed race in this file
+                        // (scratched/DQ'd/no-show on every entry). That's a
+                        // genuinely different situation from a matching
+                        // failure, and needs a different message.
+                        throw new Error(`Found ${scratchedSwimmers.length} matching swimmer(s) (${scratchedSwimmers.join(', ')}), but every one of their events shows a scratch or no-show (0.00) -- there's nothing to import for them from this meet.`);
+                    }
+                    throw new Error(teamCode ? "No results found for this team in this file." : "No matching results found in this file for your roster.");
+                }
+                const teamLabel = teamCode ? hy3DetectedTeams.value.find(t => t.code === teamCode)?.name : null;
+                const records = extracted.map(r => {
+                    const { distance, stroke } = parseHy3EventCode(r.event_code);
+                    return {
+                        swimmer_name: r.swimmer, distance, stroke, course: 'LCM',
+                        time: r.time, meet_name: importContext.value?.meetName || teamLabel || hy3PendingFileName.value.replace(/\.hy3$/i, ''),
+                        _include: true
+                    };
+                });
+                importPreview.value = { detected_type: 'times', records };
+                importColumns.value = Object.keys(records[0]).filter(k => k !== '_include');
+                importState.value = { status: 'preview', message: '' };
+            } catch (err) {
+                importState.value = { status: 'error', message: err.message };
+            }
         }
 
         // ============================================================
@@ -8242,6 +8312,7 @@ createApp({
             seasonsList, selectedSeasonId, selectedSeasonName, showNewSeasonForm, newSeasonName, newSeasonStart, newSeasonEnd, loadSeasons, addSeason,
             meetsList, upcomingMeetsList, pastMeetsList, newMeet, selectedMeet, coachEntryDeadlinePassed, meetDetailTab, meetEventsList, newMeetEvent, meetEntriesList, overrideTimes, exportMeetEventsCsv, deleteMeet,
             meetResultsList, resultsForEvent, newResultSwimmerId, newResultTime, isAddingResult, addMeetResult, deleteMeetResult, formatSwimTime,
+            hy3DetectedTeams, confirmHy3TeamSelection,
             loadMeets, createMeet, isCreatingMeet, openMeetDetail, addMeetEvent, deleteMeetEvent, pendingEntriesCount, swimmerName, eventLabel, approveMeetEntry, declineMeetEntry,
             myLinkedSwimmers, parentMeetEntryTarget, parentMeetEntryEvents, parentEntryDeadlinePassed, openParentMeetEntry, entryExistsFor, entryStatusFor, requestMeetEntry,
             importState, importPreview, importColumns, triggerGenericImportUpload, handleGenericImport, confirmImport, resetImport
