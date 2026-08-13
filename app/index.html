@@ -602,7 +602,7 @@
             </template>
         </div>
 
-        <div :key="currentView" class="page-transition max-w-[1200px] mx-auto p-4 md:p-6 mt-6 md:mt-[132px] relative md:ml-64">
+        <div :key="currentView" class="page-transition max-w-[1200px] p-4 md:p-6 mt-6 md:mt-[132px] relative md:ml-64">
             
             <div v-if="myTeam && !myTeamPlan && currentView !== 'settings'" class="mb-6 bg-[var(--pool-depth)] text-white p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
@@ -3037,7 +3037,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 111;
+        const SW_VERSION = 112;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
