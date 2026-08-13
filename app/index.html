@@ -226,6 +226,19 @@
             margin-top: 24px;
             position: relative;
         }
+        /* The sidebar's own width and fixed positioning, hand-written for
+           the same reason as above -- if Tailwind's CDN script fails to
+           load for any reason (network filter, ad-blocker, CDN hiccup),
+           its w-64/fixed/inset-y-0 utility classes never generate any
+           CSS at all, and this element -- z-index 40, meant to be a
+           256px-wide column -- expands to the full viewport width and
+           sits on top of everything to its right. That's a complete,
+           different explanation from anything about the content's own
+           offset, and fully explains "the banner is over" the content
+           regardless of how correctly that content itself is positioned. */
+        .app-sidebar {
+            display: none;
+        }
         @media (min-width: 768px) {
             .main-content-area {
                 max-width: 1200px;
@@ -238,6 +251,17 @@
             }
             .category-bar-offset {
                 left: 256px;
+            }
+            .app-sidebar {
+                display: flex;
+                flex-direction: column;
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                z-index: 40;
+                width: 256px;
+                flex-shrink: 0;
             }
         }
 
@@ -349,7 +373,7 @@
             </div>
         </div>
 
-        <div v-if="myTeam" class="hidden md:flex md:flex-col fixed inset-y-0 left-0 z-40 w-64 shrink-0" style="background: linear-gradient(165deg, var(--pool-depth-2) 0%, var(--pool-depth) 55%, var(--pool-depth-3) 100%);">
+        <div v-if="myTeam" class="app-sidebar" style="background: linear-gradient(165deg, var(--pool-depth-2) 0%, var(--pool-depth) 55%, var(--pool-depth-3) 100%);">
             <div class="p-6 text-white shrink-0 relative overflow-hidden">
                 <div class="absolute pointer-events-none" style="top: -40%; right: -20%; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(14,116,144,0.22), transparent 70%);"></div>
                 <div class="flex items-center gap-3 relative cursor-pointer" @click="currentView = myTeam ? (isParent ? 'parent-home' : (isOffice ? 'groups' : 'home')) : 'onboarding'">
@@ -2081,6 +2105,7 @@
                 <div class="flex justify-between items-end border-b border-slate-200 pb-6">
                     <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Meets</h2>
                     <button v-if="myRole === 'owner' || myRole === 'admin'" @click="triggerGenericImportUpload" class="bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-sm hover:bg-slate-50 transition-colors">Import Meets</button>
+                    <button v-if="myRole === 'owner' || myRole === 'admin'" @click="triggerGenericImportUpload({ type: 'meet_results' })" class="bg-[var(--pool-depth)] text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-[var(--pool-depth-3)] transition-colors">Import Results</button>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div v-for="m in upcomingMeetsList" :key="m.id" @click="openMeetDetail(m)" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg cursor-pointer transition-all">
@@ -2186,7 +2211,10 @@
                 </div>
 
                 <div v-if="meetDetailTab === 'results' && !isParent && !isAthlete" class="space-y-4">
-                    <p v-if="!(myRole === 'owner' || myRole === 'admin')" class="text-[11px] text-slate-400 font-bold bg-slate-50 border border-slate-200 rounded-xl p-3">Only owners and admins can upload results — you can still view what's been entered below.</p>
+                    <div class="flex justify-between items-center">
+                        <p v-if="!(myRole === 'owner' || myRole === 'admin')" class="text-[11px] text-slate-400 font-bold bg-slate-50 border border-slate-200 rounded-xl p-3">Only owners and admins can upload results — you can still view what's been entered below.</p>
+                        <button v-if="myRole === 'owner' || myRole === 'admin'" @click="triggerGenericImportUpload({ type: 'meet_results', meetId: selectedMeet.id, meetName: selectedMeet.name, meetDate: selectedMeet.start_date, meetEvents: meetEventsList })" class="ml-auto bg-[var(--pool-depth)] text-white px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-[var(--pool-depth-3)] transition-colors">Import Results</button>
+                    </div>
                     <div v-for="e in meetEventsList" :key="e.id" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-2">
                         <div class="font-bold text-slate-800 text-sm">#{{e.event_number}} — {{e.gender}} {{e.distance}} {{e.stroke}}</div>
                         <div class="flex flex-wrap gap-1.5">
@@ -3163,7 +3191,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 114;
+        const SW_VERSION = 116;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -6723,12 +6751,22 @@ createApp({
         // the AI to classify + structure it, then shows an editable
         // preview. Nothing writes to real tables until "Confirm Import".
         // ============================================================
-        function triggerGenericImportUpload() { document.getElementById('genericImportUpload').click(); }
+        // Set right before opening the file picker, read by
+        // handleGenericImport -- lets it know this is a results import for
+        // a specific meet (so it can filter to our own roster and tag
+        // records with the right meet_id) rather than the generic,
+        // unscoped import path.
+        const importContext = ref(null);
+        function triggerGenericImportUpload(context = null) {
+            importContext.value = context;
+            document.getElementById('genericImportUpload').click();
+        }
 
         function resetImport() {
             importState.value = { status: 'idle', message: '' };
             importPreview.value = { detected_type: '', records: [] };
             importColumns.value = [];
+            importContext.value = null;
         }
 
         async function extractPdfTextGeneric(file) {
@@ -6852,10 +6890,19 @@ createApp({
         // guaranteeing complete coverage regardless of file size, while
         // still leaning on the AI for the genuinely ambiguous part (what
         // "50A" vs "50B" actually means in eventcode terms).
-        function extractHy3ResultRecords(text) {
+        function extractHy3ResultRecords(text, rosterFilter = null) {
             const lines = text.split('\n');
             let currentSwimmer = null, currentTeam = null, pending = null;
             const records = [];
+            // When importing for a specific meet, only our own team's
+            // swimmers matter -- filtering here (not after the AI call)
+            // means a 27-team meet file never sends 26 teams' worth of
+            // irrelevant data to the AI at all, cutting payload size and
+            // cost, and avoiding any risk of the AI's own response being
+            // truncated by having to echo back ~2,000 records.
+            const rosterNames = rosterFilter
+                ? new Set(rosterFilter.map(s => `${s.last_name}, ${s.first_name}`.toLowerCase().trim()))
+                : null;
             for (let rawLine of lines) {
                 const line = rawLine.replace(/\r$/, '');
                 if (!line) continue;
@@ -6868,12 +6915,14 @@ createApp({
                     if (m) currentSwimmer = { gender: m[1], last: m[3].trim(), first: m[4].trim(), team: currentTeam };
                 } else if (rtype === 'E1') {
                     const m = line.match(/\s(\d{2,4}[A-Z])\s/);
-                    pending = {
-                        swimmer: currentSwimmer ? `${currentSwimmer.last}, ${currentSwimmer.first}` : null,
+                    const swimmerName = currentSwimmer ? `${currentSwimmer.last}, ${currentSwimmer.first}` : null;
+                    const inRoster = !rosterNames || (swimmerName && rosterNames.has(swimmerName.toLowerCase()));
+                    pending = inRoster ? {
+                        swimmer: swimmerName,
                         gender: currentSwimmer ? currentSwimmer.gender : null,
                         team: currentSwimmer ? currentSwimmer.team : null,
                         event_code: m ? m[1] : null,
-                    };
+                    } : null;
                 } else if (rtype === 'E2' && pending) {
                     // P = prelim, F = finals -- both contain a real result;
                     // seconds can run 1-4 digits (a DQ/no-show shows as a
@@ -6910,9 +6959,15 @@ createApp({
                     // extractHy3ResultRecords above) rather than raw text --
                     // the raw file can run 500KB+ and get truncated below,
                     // silently dropping most of a real multi-team meet.
-                    const extracted = extractHy3ResultRecords(text);
+                    // When triggered from a specific meet's Results tab,
+                    // filter to our own roster during extraction itself --
+                    // a 27-team meet file should never send 26 teams' worth
+                    // of irrelevant swimmers to the AI at all.
+                    const isMeetResults = importContext.value?.type === 'meet_results';
+                    const extracted = extractHy3ResultRecords(text, isMeetResults ? swimmers.value : null);
                     historyPayload = JSON.stringify(extracted);
-                    prompt = `You are a data extraction engine for a swim team app. You've been given a pre-extracted, complete list of swim results from a Hy-Tek .hy3 file, as JSON objects with short keys: swimmer (name), gender (M/F), team, event_code (Hy-Tek's internal event code like "50A", "100C", "1500A" -- the leading number is the distance, the trailing letter conventionally indicates stroke: A=Free, B=Back, C=Breast, D=Fly, E=IM, though this convention is not something you should treat as absolutely certain for every meet), and time (seconds, as "SS.hh" or "M:SS.hh"). Convert every record into a "times" row: swimmer name, distance (integer), stroke (Free/Back/Breast/Fly/IM), course "LCM" (this is a long-course-meters meet), time (as given), meet_name (infer a reasonable name if not otherwise available). Do not drop or skip any record. Respond with ONLY a valid JSON object, no markdown, no intro text: {"detected_type": "times", "records": [ {...} ]}.`;
+                    const scopeNote = isMeetResults ? ` These records have already been filtered to only our own team's swimmers -- every one belongs to us.` : '';
+                    prompt = `You are a data extraction engine for a swim team app. You've been given a pre-extracted, complete list of swim results from a Hy-Tek .hy3 file, as JSON objects with short keys: swimmer (name), gender (M/F), team, event_code (Hy-Tek's internal event code like "50A", "100C", "1500A" -- the leading number is the distance, the trailing letter conventionally indicates stroke: A=Free, B=Back, C=Breast, D=Fly, E=IM, though this convention is not something you should treat as absolutely certain for every meet), and time (seconds, as "SS.hh" or "M:SS.hh").${scopeNote} Convert every record into a "times" row: swimmer name, distance (integer), stroke (Free/Back/Breast/Fly/IM), course "LCM" (this is a long-course-meters meet), time (as given), meet_name (infer a reasonable name if not otherwise available). Do not drop or skip any record. Respond with ONLY a valid JSON object, no markdown, no intro text: {"detected_type": "times", "records": [ {...} ]}.`;
                 } else {
                     prompt = `You are a data extraction engine for a swim team app. Classify the attached file content into exactly ONE of these types: "roster" (swimmer names/birthdates/groups), "times" (swim times/results, one row per swim: swimmer name, distance, stroke, course SCY/SCM/LCM, time, date, meet name), "meet_events" (a meet's event list: event number, gender, distance, stroke, age range, qualifying time), or "attendance" (swimmer name, date, present/absent). For meet_events records specifically, the "gender" field MUST be exactly "M", "F", or "X" (the database rejects anything else, including full words like "Boys"/"Girls"/"Male"/"Female" -- convert to the single-letter code). If the content is already a pre-parsed "Events:" summary from a Hy-Tek .ev3 file, use it directly as meet_events records -- carry over any [WARNING: ...] notes into a "warning" field on that record rather than guessing a real value. If the file is raw Hy-Tek CL2 fixed-width export (A0/B1/C1/D0/D3 style records), parse its record structure accordingly. Respond with ONLY a valid JSON object, no markdown, no intro text, in exactly this shape: {"detected_type": "roster|times|meet_events|attendance|unknown", "records": [ {...one object per row, using short lowercase snake_case keys appropriate to the type...} ]}. If you cannot confidently classify or parse the file, return {"detected_type": "unknown", "records": []}.`;
                     historyPayload = text.slice(0, 30000);
@@ -7290,13 +7345,28 @@ createApp({
                             }
                             if(!match) { skipped++; continue; }
                             if(type === 'times') {
-                                const { error } = await client.from("swim_times").insert({
+                                const isMeetResults = importContext.value?.type === 'meet_results';
+                                const payload = {
                                     team_id: myTeam.value, swimmer_id: match.id,
                                     distance: parseInt(r.distance) || 0, stroke: r.stroke || 'Free',
                                     course: r.course || 'SCY', time_seconds: parseTimeToSeconds(r.time),
                                     swim_date: r.date || r.swim_date || null, meet_name: r.meet_name || null,
                                     source: 'import'
-                                });
+                                };
+                                if (isMeetResults && importContext.value.meetId) {
+                                    payload.meet_id = importContext.value.meetId;
+                                    payload.meet_name = importContext.value.meetName || payload.meet_name;
+                                    payload.swim_date = importContext.value.meetDate || payload.swim_date;
+                                    payload.source = 'coach_verified';
+                                    // Match the precise event this result belongs
+                                    // to, if that meet's events have been set up --
+                                    // this is what makes the result show up
+                                    // correctly on the meet's own Results tab.
+                                    const matchingEvent = (importContext.value.meetEvents || []).find(e =>
+                                        e.distance === payload.distance && e.stroke === payload.stroke);
+                                    if (matchingEvent) payload.meet_event_id = matchingEvent.id;
+                                }
+                                const { error } = await client.from("swim_times").insert(payload);
                                 if(!error) inserted++; else skipped++;
                             } else {
                                 const { error } = await client.from("attendance").upsert({
@@ -7313,6 +7383,7 @@ createApp({
 
                 importState.value = { status: 'done', message: `${createdMeetName ? `Created "${createdMeetName}" and imported` : 'Imported'} ${inserted} row(s)${skipped ? `, skipped ${skipped} (no matching swimmer found)` : ''}.` };
                 if(type === 'roster') loadSwimmers();
+                if(type === 'times' && importContext.value?.type === 'meet_results' && importContext.value.meetId) loadMeetResults(importContext.value.meetId);
 
             } catch(err) {
                 importState.value = { status: 'error', message: err.message };
