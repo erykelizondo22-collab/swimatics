@@ -1298,6 +1298,7 @@
                                 <template v-if="acc.id !== user.id && (myRole === 'owner' || myRole === 'admin')">
                                     <button @click.stop="promoteToCoach(acc.id, acc.name || acc.email)" class="text-[10px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-2 rounded-lg hover:bg-emerald-100 transition-colors">Promote to Coach</button>
                                     <button @click.stop="promoteToOffice(acc.id, acc.name || acc.email)" class="text-[10px] font-black uppercase bg-blue-50 text-blue-600 border border-blue-100 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors">Promote to Office</button>
+                                    <button v-if="acc.role !== 'parent'" @click.stop="demoteToParent(acc.id, acc.name || acc.email)" class="text-[10px] font-black uppercase bg-slate-50 text-slate-500 border border-slate-200 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors">Demote to Parent</button>
                                 </template>
                                 <span class="text-slate-300 text-lg shrink-0" :class="{'rotate-180': expandedAccountId === acc.id}">▾</span>
                             </div>
@@ -1376,6 +1377,7 @@
                             <option value="">All-Time</option>
                             <option v-for="s in seasonsList" :key="s.id" :value="s.id">{{s.name}}</option>
                         </select>
+                        <button v-if="myRole === 'owner' || myRole === 'admin'" @click="showNewSeasonForm = !showNewSeasonForm" class="text-[10px] font-black text-slate-500 bg-white border border-slate-200 px-3 py-2.5 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors">+ New Season</button>
                         <select v-model="rosterExportGroup" class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none">
                             <option value="">All Groups</option>
                             <option v-for="g in teamGroupsList" :key="g.name" :value="g.name">{{g.name}}</option>
@@ -1386,6 +1388,21 @@
                     </div>
                 </div>
 
+                <div v-if="showNewSeasonForm" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-end gap-3 mb-6">
+                    <div class="flex-1 min-w-[140px]">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Name</label>
+                        <input v-model="newSeasonName" placeholder="Fall 2026" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Start</label>
+                        <input type="date" v-model="newSeasonStart" class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">End</label>
+                        <input type="date" v-model="newSeasonEnd" class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none">
+                    </div>
+                    <button @click="addSeason" class="bg-[var(--pool-depth)] text-white px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs">Add</button>
+                </div>
                 <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex gap-3 mb-8">
                         <input v-model="newGroupName" placeholder="New Group Name" class="flex-1 bg-slate-50 p-4 rounded-xl font-black uppercase outline-none border border-slate-200 transition-all text-slate-800">
@@ -2662,12 +2679,7 @@ createApp({
         })());
         const attendanceGroupFilter = ref('');
         const attendanceMap = ref({}); // { swimmerId: 'present'|'absent'|'excused' }
-        const attendanceViewTab = ref('mark');
         const attendanceMarkGroup = ref(null);
-        const attendanceAnalyticsGroup = ref(null);
-        const attendanceAnalyticsStart = ref('');
-        const attendanceAnalyticsEnd = ref('');
-        const attendanceAnalyticsData = ref([]);
         const groupAttendanceSummary = ref({}); // { groupName: percent|null }
         const swimmerAttendancePercent = ref({}); // { swimmerId: percent|null }
         const showSwimmerHistoryFor = ref(null);
@@ -2724,9 +2736,6 @@ createApp({
         const pendingCoachRequests = ref([]);
         const qrCodeDataUrl = ref('');
         const teamPassword = ref(""); 
-        const newTeamId = ref(""); 
-        const newTeamPassword = ref("");
-        const newVaultPassword = ref("");
         const teamLogoUrl = ref("");
         const isUploadingLogo = ref(false);
         const teamColors = ref({ primary: '#0ea5e9', secondary: '#0284c7' });
@@ -3077,32 +3086,6 @@ createApp({
             location.reload(); 
         }
 
-        const joinAsAthlete = ref(false);
-        const athleteSearchQuery = ref('');
-        const athleteSearchResults = ref([]);
-        const selectedAthleteSwimmerId = ref('');
-
-        async function searchForMyAthleteProfile() {
-            selectedAthleteSwimmerId.value = '';
-            const code = (joinCode.value || '').trim().toUpperCase();
-            const q = athleteSearchQuery.value.trim();
-            if (!code || q.length < 2) { athleteSearchResults.value = []; return; }
-            const { data, error } = await client.rpc('search_unclaimed_swimmers', { p_team_id: code, p_search: q });
-            if (error) { console.error(error.message); return; }
-            athleteSearchResults.value = data || [];
-        }
-
-        async function submitAthleteRegistration() {
-            if (!selectedAthleteSwimmerId.value) return;
-            const code = (joinCode.value || '').trim().toUpperCase();
-            const pwdHash = await sha256Hex(teamPassword.value);
-            const { error } = await client.rpc('join_team_as_athlete', {
-                p_team_id: code, p_password_hash: pwdHash, p_swimmer_id: selectedAthleteSwimmerId.value
-            });
-            if (error) { alert(error.message); return; }
-            location.reload();
-        }
-
         async function joinTeam(preHashedPassword, roleOverride) {
             const code = (joinCode.value || "").trim().toUpperCase();
             // FIX: invite links carry an already-hashed credential (see copyInviteLink) —
@@ -3189,23 +3172,6 @@ createApp({
             if (error) { alert("Error: " + error.message); return; }
             loadPendingCoachRequests();
             if (approve) loadStaff();
-        }
-
-        async function createTeam() {
-            const upperCode = (newTeamId.value || "").trim().toUpperCase();
-            const hashedPwd = await sha256Hex(newTeamPassword.value);
-            const { error } = await client.from('teams').insert({ id: upperCode, password: hashedPwd });
-            
-            if (error) {
-                if(error.code === '23505') return alert("That Team Code is already taken! Please add a number or choose a different name.");
-                return alert("Error: " + error.message);
-            }
-            
-            // Not routed through the capped RPC on purpose -- a brand new team has
-            // no plan selected yet, so its first owner must always be allowed
-            // through regardless of any staff limit.
-            await client.auth.updateUser({ data: { team_id: upperCode, team_role: 'owner' } });
-            location.reload();
         }
 
         // REPLACES the old autoCreateVault. No team is created here at
@@ -5421,52 +5387,6 @@ createApp({
             loadAttendanceSummary();
         }
 
-        // ============================================================
-        // ATTENDANCE ANALYTICS — pick a group (scoped to the coach's
-        // own assigned groups via postableGroups), a date range, and
-        // see overall + per-swimmer attendance percentages.
-        // ============================================================
-        function resetAttendanceAnalyticsDates() {
-            let d = new Date();
-            d.setDate(d.getDate() - 30);
-            attendanceAnalyticsStart.value = d.toISOString().split('T')[0];
-            attendanceAnalyticsEnd.value = getLocalTodayStr();
-        }
-
-        async function openAttendanceAnalytics(groupName) {
-            attendanceAnalyticsGroup.value = groupName;
-            if(!attendanceAnalyticsStart.value || !attendanceAnalyticsEnd.value) resetAttendanceAnalyticsDates();
-            await loadAttendanceAnalytics();
-        }
-
-        async function loadGroupAttendanceSummary() {
-            if(!attendanceAnalyticsStart.value || !attendanceAnalyticsEnd.value) resetAttendanceAnalyticsDates();
-            const relevantGroups = postableGroups.value;
-            if(!relevantGroups.length) { groupAttendanceSummary.value = {}; return; }
-
-            const groupSwimmers = swimmers.value.filter(s => relevantGroups.includes(s.group_name));
-            const swimmerIds = groupSwimmers.map(s => s.id);
-            if(!swimmerIds.length) { groupAttendanceSummary.value = {}; return; }
-
-            const { data, error } = await client.from("attendance").select("*")
-                .eq('team_id', myTeam.value)
-                .in('swimmer_id', swimmerIds)
-                .gte('practice_date', attendanceAnalyticsStart.value)
-                .lte('practice_date', attendanceAnalyticsEnd.value);
-            if(error) { console.error("Error loading group attendance summary:", error.message); return; }
-
-            const rows = data || [];
-            const summary = {};
-            relevantGroups.forEach(g => {
-                const idsInGroup = groupSwimmers.filter(s => s.group_name === g).map(s => s.id);
-                const groupRows = rows.filter(r => idsInGroup.includes(r.swimmer_id));
-                const present = groupRows.filter(r => r.status === 'present').length;
-                const total = groupRows.length;
-                summary[g] = total > 0 ? Math.round((present / total) * 100) : null;
-            });
-            groupAttendanceSummary.value = summary;
-        }
-
         // Roster page shows every swimmer, grouped by their group_name, in
         // the team's configured group order (plus an "unassigned" bucket).
         const swimmersByGroup = computed(() => {
@@ -5604,37 +5524,6 @@ createApp({
             // In case the edited day is today, keep the marking buttons in sync too.
             if (record.practice_date === attendanceDate.value) loadAttendanceForDate();
         }
-
-        async function loadAttendanceAnalytics() {
-            if(!attendanceAnalyticsGroup.value) return;
-            const groupSwimmers = swimmers.value.filter(s => s.group_name === attendanceAnalyticsGroup.value);
-            const swimmerIds = groupSwimmers.map(s => s.id);
-            if(!swimmerIds.length) { attendanceAnalyticsData.value = []; return; }
-
-            const { data, error } = await client.from("attendance").select("*")
-                .eq('team_id', myTeam.value)
-                .in('swimmer_id', swimmerIds)
-                .gte('practice_date', attendanceAnalyticsStart.value)
-                .lte('practice_date', attendanceAnalyticsEnd.value);
-            if(error) { alert("Error loading attendance analytics: " + error.message); return; }
-
-            const rows = data || [];
-            attendanceAnalyticsData.value = groupSwimmers.map(s => {
-                const swimmerRows = rows.filter(r => r.swimmer_id === s.id);
-                const present = swimmerRows.filter(r => r.status === 'present').length;
-                const excused = swimmerRows.filter(r => r.status === 'excused').length;
-                const absent = swimmerRows.filter(r => r.status === 'absent').length;
-                const total = present + excused + absent;
-                const percent = total > 0 ? Math.round((present / total) * 100) : 0;
-                return { swimmerId: s.id, name: `${s.first_name} ${s.last_name}`, present, excused, absent, total, percent };
-            }).sort((a, b) => a.name.localeCompare(b.name));
-        }
-
-        const groupAttendancePercent = computed(() => {
-            const totalPresent = attendanceAnalyticsData.value.reduce((sum, r) => sum + r.present, 0);
-            const totalMarked = attendanceAnalyticsData.value.reduce((sum, r) => sum + r.total, 0);
-            return totalMarked > 0 ? Math.round((totalPresent / totalMarked) * 100) : 0;
-        });
 
         // ============================================================
         // TIME PARSING HELPERS (m:ss.hh <-> seconds, for meets)
@@ -6954,7 +6843,7 @@ createApp({
         }
 
         return {
-            user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, drawerRef, printTarget, joinCode, teamPassword, newTeamId, newTeamPassword, newVaultPassword,
+            user, login, logout, switchAccount, currentView, mobileNavOpen, navMenuRef, drawerRef, printTarget, joinCode, teamPassword,
             hasPendingInvite, isProcessingInvite, isCreatingVault, submitVaultSetupAndCheckout, currentWorkoutId, fontSize, teamLogoUrl, isUploadingLogo, uploadLogo, deleteLogo,
             teamColors, saveColors, themeMode, themePreference, setThemePreference,
             myTeamPlan, myTeamSubStatus, myTeamTrialEnds, myTeamCanceledAt, planStatusDisplay, openBillingPortal, hasFeature, demoTierOverride,
@@ -6969,7 +6858,7 @@ createApp({
             seasonPlans, activePlanContext, teamGroupsList, staffList, planForm, newGroupName, myRole, myTeam,
             filterGroup, workoutsTab, pastRangeStart, pastRangeEnd, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
             formatTime, formattedStartTime, save, loadWorkout, startNewWorkout, formatPracticeDate, startNewPlan, editPlan, addWeek, savePlan, deletePlan, deleteWorkout,
-            addGroup, updateGroupStartTime, deleteGroup, removeStaff, changeRole, copyInviteLink, showInviteQRCode, showQRCode, qrCodeDataUrl, closeQRCode, joinTeam, createTeam, discardDraft, loadStaff, visibleStaffList,
+            addGroup, updateGroupStartTime, deleteGroup, removeStaff, changeRole, copyInviteLink, showInviteQRCode, showQRCode, qrCodeDataUrl, closeQRCode, joinTeam, discardDraft, loadStaff, visibleStaffList,
             showTimeWheelFor, wheelHour, wheelMinute, wheelAmPm, formatTime12h, openTimeWheel, closeTimeWheel, confirmTimeWheel,
             hasDraft, resumeDraft, currentSetPace, updateCursor, stressScore, stressColor,
             analyticsGroup, analyticsStartDate, analyticsEndDate, analyticsStats, resetAnalyticsDates,
@@ -6979,7 +6868,6 @@ createApp({
             addAlias, removeAlias, saveGroupAliases, editorSystemTotals,
             selectedGroupForEdit, openGroupDetails, dragStart, drop, draggedGroupIndex, importSourceGroup, importSystemsAndAliases,
             isParent, isOffice, isAthlete, secToTime,
-            joinAsAthlete, athleteSearchQuery, athleteSearchResults, selectedAthleteSwimmerId, searchForMyAthleteProfile, submitAthleteRegistration,
             myGroupConversations, openGroupConvoId, groupConversationThread, loadMyGroupConversations, startGroupChatWithCoach, openGroupConversationThread, closeGroupConversation, sendGroupMessage,
             messageAthleteSwimmerId, coachGroupConversations, loadCoachGroupConversations,
             accountsList, accountSearchQuery, filteredAccounts, loadAccounts, promoteToCoach, promoteToOffice, demoteToParent,
@@ -7002,8 +6890,7 @@ createApp({
             navModules, selectModule, isModuleActive, navigateTo, isPageLoading,
             swimmers, newSwimmer, teamParents, parentLinksBySwimmer, loadSwimmers, addSwimmer, deleteSwimmer, updateSwimmerGroup, linkParentToSwimmer, unlinkParent,
             attendanceDate, attendanceGroupFilter, attendanceMap, filteredAttendanceSwimmers, loadAttendanceForDate, setAttendance,
-            attendanceViewTab, attendanceMarkGroup, attendanceAnalyticsGroup, attendanceAnalyticsStart, attendanceAnalyticsEnd, attendanceAnalyticsData,
-            openAttendanceAnalytics, loadAttendanceAnalytics, groupAttendancePercent, groupAttendanceSummary, loadGroupAttendanceSummary,
+            attendanceMarkGroup, groupAttendanceSummary,
             swimmersByGroup, swimmerAttendancePercent, loadAttendanceSummary,
             showSwimmerHistoryFor, swimmerHistoryRecords, openSwimmerHistory, closeSwimmerHistory, updateHistoricalAttendance,
             seasonsList, selectedSeasonId, selectedSeasonName, showNewSeasonForm, newSeasonName, newSeasonStart, newSeasonEnd, loadSeasons, addSeason,
