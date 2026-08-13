@@ -114,24 +114,24 @@
            ============================================================ */
         @media screen {
         [data-theme="dark"] body {
-            background: radial-gradient(ellipse 60% 40% at 15% 0%, rgba(14,165,233,0.06), transparent), #0f172a !important;
+            background: radial-gradient(ellipse 60% 40% at 15% 0%, rgba(14,116,144,0.08), transparent), var(--pool-depth) !important;
         }
-        [data-theme="dark"] .bg-white { background-color: #1e293b !important; }
-        [data-theme="dark"] .bg-slate-50 { background-color: #0f172a !important; }
-        [data-theme="dark"] .bg-slate-100 { background-color: #1e293b !important; }
-        [data-theme="dark"] .bg-slate-200 { background-color: #334155 !important; }
-        [data-theme="dark"] .hover\:bg-slate-50:hover { background-color: #334155 !important; }
-        [data-theme="dark"] .hover\:bg-slate-100:hover { background-color: #334155 !important; }
-        [data-theme="dark"] .hover\:bg-white:hover { background-color: #1e293b !important; }
+        [data-theme="dark"] .bg-white { background-color: var(--pool-depth-2) !important; }
+        [data-theme="dark"] .bg-slate-50 { background-color: var(--pool-depth) !important; }
+        [data-theme="dark"] .bg-slate-100 { background-color: var(--pool-depth-2) !important; }
+        [data-theme="dark"] .bg-slate-200 { background-color: #1a3a5c !important; }
+        [data-theme="dark"] .hover\:bg-slate-50:hover { background-color: #1a3a5c !important; }
+        [data-theme="dark"] .hover\:bg-slate-100:hover { background-color: #1a3a5c !important; }
+        [data-theme="dark"] .hover\:bg-white:hover { background-color: var(--pool-depth-2) !important; }
         [data-theme="dark"] .hover\:bg-red-50:hover { background-color: rgba(239,68,68,0.2) !important; }
-        [data-theme="dark"] .group:hover .group-hover\:text-slate-900 { color: #f1f5f9 !important; }
-        [data-theme="dark"] .text-slate-900 { color: #f1f5f9 !important; }
-        [data-theme="dark"] .text-slate-800 { color: #e2e8f0 !important; }
-        [data-theme="dark"] .text-slate-700 { color: #cbd5e1 !important; }
-        [data-theme="dark"] .text-slate-600 { color: #94a3b8 !important; }
-        [data-theme="dark"] .text-slate-500 { color: #94a3b8 !important; }
-        [data-theme="dark"] .text-slate-400 { color: #64748b !important; }
-        [data-theme="dark"] .text-slate-300 { color: #475569 !important; }
+        [data-theme="dark"] .group:hover .group-hover\:text-slate-900 { color: #f7f8fa !important; }
+        [data-theme="dark"] .text-slate-900 { color: #f7f8fa !important; }
+        [data-theme="dark"] .text-slate-800 { color: #e5e9ee !important; }
+        [data-theme="dark"] .text-slate-700 { color: var(--mist) !important; }
+        [data-theme="dark"] .text-slate-600 { color: var(--mist) !important; }
+        [data-theme="dark"] .text-slate-500 { color: var(--mist) !important; }
+        [data-theme="dark"] .text-slate-400 { color: #64809c !important; }
+        [data-theme="dark"] .text-slate-300 { color: #3d5a7a !important; }
 
         /* Colored badges, alerts, and status chips (emerald/blue/amber/
            red/purple/indigo) -- pastel light-mode backgrounds swap for
@@ -165,16 +165,16 @@
         /* Opacity-modified classes (bg-slate-50/50 etc.) compile to their
            own distinct class names in Tailwind, so the plain bg-slate-50
            rule above never touches them -- same idea, covered separately. */
-        [data-theme="dark"] .bg-slate-50\/50, [data-theme="dark"] .bg-slate-50\/60 { background-color: rgba(30,41,59,0.5) !important; }
-        [data-theme="dark"] .bg-white\/90 { background-color: rgba(30,41,59,0.9) !important; }
-        [data-theme="dark"] .bg-slate-200\/50 { background-color: rgba(51,65,85,0.5) !important; }
-        [data-theme="dark"] .border-slate-200\/60 { border-color: rgba(51,65,85,0.6) !important; }
+        [data-theme="dark"] .bg-slate-50\/50, [data-theme="dark"] .bg-slate-50\/60 { background-color: rgba(11,30,51,0.5) !important; }
+        [data-theme="dark"] .bg-white\/90 { background-color: rgba(15,42,71,0.9) !important; }
+        [data-theme="dark"] .bg-slate-200\/50 { background-color: rgba(26,58,92,0.5) !important; }
+        [data-theme="dark"] .border-slate-200\/60 { border-color: rgba(26,58,92,0.6) !important; }
         [data-theme="dark"] .text-amber-700\/80 { color: rgba(251,191,36,0.8) !important; }
-        [data-theme="dark"] .border-slate-200 { border-color: #334155 !important; }
-        [data-theme="dark"] .border-slate-100 { border-color: #1e293b !important; }
-        [data-theme="dark"] .border-slate-300 { border-color: #475569 !important; }
-        [data-theme="dark"] .divide-slate-100 > * + * { border-color: #1e293b !important; }
-        [data-theme="dark"] .glass-nav { background: rgba(15, 23, 42, 0.85) !important; }
+        [data-theme="dark"] .border-slate-200 { border-color: #1a3a5c !important; }
+        [data-theme="dark"] .border-slate-100 { border-color: var(--pool-depth-2) !important; }
+        [data-theme="dark"] .border-slate-300 { border-color: #2a4d70 !important; }
+        [data-theme="dark"] .divide-slate-100 > * + * { border-color: var(--pool-depth-2) !important; }
+        [data-theme="dark"] .glass-nav { background: rgba(11, 30, 51, 0.85) !important; }
         [data-theme="dark"] .shadow-sm, [data-theme="dark"] .shadow-md, [data-theme="dark"] .shadow-lg,
         [data-theme="dark"] .shadow-xl, [data-theme="dark"] .shadow-2xl {
             box-shadow: 0 4px 24px rgba(0,0,0,0.5) !important;
@@ -283,10 +283,14 @@
                     <svg v-else class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
                 <div class="flex items-center gap-3 cursor-pointer group" @click="currentView = myTeam ? (isParent ? 'parent-home' : (isOffice ? 'groups' : 'dashboard')) : 'onboarding'; mobileNavOpen = false">
-                    <div class="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl group-hover:scale-105 transition-transform duration-300 overflow-hidden" :style="{ backgroundColor: teamColors.primary + '20' }">
-                        <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain p-1">
+                    <div class="w-10 h-10 flex items-center justify-center rounded-xl group-hover:scale-105 transition-transform duration-300 overflow-hidden" :style="{ backgroundColor: teamColors.primary + '20' }">
+                        <svg width="24" height="24" viewBox="0 0 32 32">
+                            <circle cx="16" cy="16" r="15" fill="none" stroke="var(--lane-brass)" stroke-width="1.5"/>
+                            <circle cx="16" cy="16" r="15" fill="none" stroke="var(--current-light)" stroke-width="1.5" stroke-dasharray="47 47" stroke-dashoffset="23.5"/>
+                            <circle cx="16" cy="16" r="4.5" fill="var(--lane-brass)"/>
+                        </svg>
                     </div>
-                    <span class="font-black text-2xl tracking-tight hidden sm:inline-block text-slate-900 group-hover:opacity-80 transition-opacity">Swimatics</span>
+                    <span class="font-display font-black text-2xl tracking-tight hidden sm:inline-block text-slate-900 group-hover:opacity-80 transition-opacity">Swimatics</span>
                 </div>
             </div>
 
@@ -2610,7 +2614,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 88;
+        const SW_VERSION = 89;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
