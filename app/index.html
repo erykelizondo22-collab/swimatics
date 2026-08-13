@@ -393,9 +393,6 @@
                     <button @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary])" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all text-white/55 hover:bg-white/10">
                         <span class="text-lg w-6 text-center shrink-0">⚙️</span><span class="font-black uppercase tracking-widest text-xs">Group Settings</span>
                     </button>
-                    <button @click="selectModule('import')" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'import' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'import' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
-                        <span class="text-lg w-6 text-center shrink-0">📥</span><span class="font-black uppercase tracking-widest text-xs">Import</span>
-                    </button>
                 </template>
                 <template v-else-if="activeNavCategory === 'team'">
                     <button @click="selectModule('staff')" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'staff' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'staff' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
@@ -508,7 +505,6 @@
                     </button>
                     <div v-if="mobileDrawerExpanded === 'groups'" class="pl-8 pr-2 py-1 space-y-0.5">
                         <button @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary]); mobileNavOpen = false" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:bg-slate-50">Roster</button>
-                        <button @click="selectModule('import'); mobileNavOpen = false" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:bg-slate-50">Import</button>
                     </div>
                 </div>
 
@@ -913,7 +909,7 @@
                         <input type="file" id="pdfUpload" accept="application/pdf" @change="importPdf" class="hidden">
                         <button @click="triggerPdfUpload" :disabled="isImportingPdf" class="w-full sm:w-auto bg-white/10 border border-white/20 text-white px-8 py-4 rounded-xl font-black shadow-lg hover:bg-white/20 transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                            Import PDF
+                            Import Workouts
                         </button>
 
                         <button v-if="hasDraft" @click="resumeDraft" class="w-full sm:w-auto text-[var(--pool-depth)] px-8 py-4 rounded-xl font-black shadow-lg hover:brightness-105 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2" style="background: var(--lane-brass);">
@@ -1642,6 +1638,7 @@
                             <option v-for="g in teamGroupsList" :key="g.name" :value="g.name">{{g.name}}</option>
                         </select>
                         <button @click="exportRosterCsv" class="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-slate-50 transition-colors">Roster CSV</button>
+                        <button @click="triggerGenericImportUpload" class="bg-[var(--pool-depth)] text-white px-4 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-[var(--pool-depth-3)] transition-colors">Import Roster</button>
                     </div>
                 </div>
 
@@ -1916,7 +1913,10 @@
             <div v-if="currentView === 'meets'" class="max-w-5xl mx-auto space-y-6 mt-6">
                 <div class="flex justify-between items-end border-b border-slate-200 pb-6">
                     <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Meets</h2>
-                    <button @click="showNewMeetForm = !showNewMeetForm" class="bg-[var(--pool-depth)] text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs">+ New Meet</button>
+                    <div class="flex gap-2">
+                        <button @click="triggerGenericImportUpload" class="bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-sm hover:bg-slate-50 transition-colors">Import Meets</button>
+                        <button @click="showNewMeetForm = !showNewMeetForm" class="bg-[var(--pool-depth)] text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs">+ New Meet</button>
+                    </div>
                 </div>
                 <div v-if="showNewMeetForm" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-3">
                     <input v-model="newMeet.name" placeholder="Meet Name" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none md:col-span-2">
@@ -2116,45 +2116,48 @@
                 </div>
             </div>
 
-            <div v-if="currentView === 'import'" class="max-w-3xl mx-auto space-y-6 mt-6">
-                <div class="border-b border-slate-200 pb-6">
-                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Smart Import</h2>
-                    <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Upload a roster, times, or meet event file</p>
-                </div>
+            <input type="file" id="genericImportUpload" @change="handleGenericImport" class="hidden">
 
-                <div v-if="importState.status === 'idle'" class="bg-white p-10 rounded-2xl shadow-sm border-2 border-dashed border-slate-200 text-center">
-                    <input type="file" id="genericImportUpload" @change="handleGenericImport" class="hidden">
-                    <button @click="triggerGenericImportUpload" class="bg-[var(--pool-depth)] text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs">Choose File</button>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">PDF, CSV, TXT, XLSX, or Hy-Tek exports (HY3/CL2/EV3)</p>
-                </div>
-
-                <div v-if="importState.status === 'reading' || importState.status === 'analyzing'" class="bg-indigo-50 border border-indigo-200 text-indigo-700 p-6 rounded-2xl font-black uppercase tracking-widest text-xs text-center animate-pulse">{{importState.message}}</div>
-
-                <div v-if="importState.status === 'error'" class="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl font-bold text-sm">{{importState.message}} <button @click="resetImport" class="block mt-3 text-[10px] font-black uppercase underline">Try Again</button></div>
-
-                <div v-if="importState.status === 'preview'" class="space-y-4">
-                    <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-xs font-bold text-amber-700">Detected: <span class="uppercase font-black">{{importPreview.detected_type}}</span> — review below, uncheck anything wrong, then confirm.</div>
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
-                        <table class="w-full text-xs">
-                            <thead><tr class="border-b border-slate-100 text-slate-400 uppercase font-black">
-                                <th class="p-3 text-left">Include</th>
-                                <th v-for="col in importColumns" :key="col" class="p-3 text-left">{{col}}</th>
-                            </tr></thead>
-                            <tbody>
-                                <tr v-for="(row, i) in importPreview.records" :key="i" class="border-b border-slate-50">
-                                    <td class="p-3"><input type="checkbox" v-model="row._include"></td>
-                                    <td v-for="col in importColumns" :key="col" class="p-3"><input v-model="row[col]" class="bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full outline-none"></td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div v-if="importState.status !== 'idle'" @click.self="importState.status === 'preview' ? null : resetImport()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                <div class="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+                    <div class="p-6 flex justify-between items-center text-white shrink-0" style="background: linear-gradient(to right, var(--pool-depth), var(--pool-depth-3));">
+                        <div>
+                            <h3 class="font-black text-xl leading-tight">Import</h3>
+                            <p class="text-[10px] text-white/80 uppercase tracking-widest mt-1">PDF, CSV, TXT, XLSX, or Hy-Tek (HY3/CL2/EV3)</p>
+                        </div>
+                        <button v-if="importState.status !== 'reading' && importState.status !== 'analyzing'" @click="resetImport" aria-label="Close" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0">X</button>
                     </div>
-                    <div class="flex gap-3">
-                        <button @click="confirmImport" class="flex-1 bg-[var(--pool-depth)] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-sm">Confirm Import ({{importPreview.records.filter(r=>r._include).length}} rows)</button>
-                        <button @click="resetImport" class="px-8 bg-slate-50 border border-slate-200 rounded-2xl font-black uppercase tracking-widest text-xs">Cancel</button>
+
+                    <div class="overflow-y-auto p-6 space-y-4">
+                        <div v-if="importState.status === 'reading' || importState.status === 'analyzing'" class="bg-indigo-50 border border-indigo-200 text-indigo-700 p-6 rounded-2xl font-black uppercase tracking-widest text-xs text-center animate-pulse">{{importState.message}}</div>
+
+                        <div v-if="importState.status === 'error'" class="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl font-bold text-sm">{{importState.message}} <button @click="resetImport" class="block mt-3 text-[10px] font-black uppercase underline">Try Again</button></div>
+
+                        <div v-if="importState.status === 'preview'" class="space-y-4">
+                            <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-xs font-bold text-amber-700">Detected: <span class="uppercase font-black">{{importPreview.detected_type}}</span> — review below, uncheck anything wrong, then confirm.</div>
+                            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+                                <table class="w-full text-xs">
+                                    <thead><tr class="border-b border-slate-100 text-slate-400 uppercase font-black">
+                                        <th class="p-3 text-left">Include</th>
+                                        <th v-for="col in importColumns" :key="col" class="p-3 text-left">{{col}}</th>
+                                    </tr></thead>
+                                    <tbody>
+                                        <tr v-for="(row, i) in importPreview.records" :key="i" class="border-b border-slate-50">
+                                            <td class="p-3"><input type="checkbox" v-model="row._include"></td>
+                                            <td v-for="col in importColumns" :key="col" class="p-3"><input v-model="row[col]" class="bg-slate-50 border border-slate-200 rounded px-2 py-1 w-full outline-none"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="flex gap-3">
+                                <button @click="confirmImport" class="flex-1 bg-[var(--pool-depth)] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-sm">Confirm Import ({{importPreview.records.filter(r=>r._include).length}} rows)</button>
+                                <button @click="resetImport" class="px-8 bg-slate-50 border border-slate-200 rounded-2xl font-black uppercase tracking-widest text-xs">Cancel</button>
+                            </div>
+                        </div>
+
+                        <div v-if="importState.status === 'done'" class="bg-emerald-50 border border-emerald-200 text-emerald-700 p-6 rounded-2xl font-black uppercase tracking-widest text-xs text-center">{{importState.message}} <button @click="resetImport" class="block mt-3 text-[10px] font-black uppercase underline">Import Another</button></div>
                     </div>
                 </div>
-
-                <div v-if="importState.status === 'done'" class="bg-emerald-50 border border-emerald-200 text-emerald-700 p-6 rounded-2xl font-black uppercase tracking-widest text-xs text-center">{{importState.message}} <button @click="resetImport" class="block mt-3 text-[10px] font-black uppercase underline">Import Another</button></div>
             </div>
 
             <div v-if="currentView === 'layout'" class="max-w-2xl mx-auto space-y-6 mt-6">
@@ -2895,7 +2898,7 @@ createApp({
             if (currentView.value === 'attendance') return 'practice';
             if (currentView.value === 'group-details') return groupDetailTab.value === 'attendance' ? 'practice' : 'groups';
             if (['dashboard', 'analytics', 'season-planning', 'plan-builder'].includes(currentView.value)) return 'practice';
-            if (['groups', 'import'].includes(currentView.value)) return 'groups';
+            if (currentView.value === 'groups') return 'groups';
             if (['staff', 'accounts', 'layout'].includes(currentView.value) && (myRole.value === 'owner' || myRole.value === 'admin')) return 'team';
             return null;
         });
@@ -2922,7 +2925,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 103;
+        const SW_VERSION = 104;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -2966,7 +2969,6 @@ createApp({
             { key: 'roster', label: 'Roster', icon: '📋' },
             { key: 'attendance', label: 'Attendance', icon: '✅' },
             { key: 'meets', label: 'Meets', icon: '🏆' },
-            { key: 'import', label: 'Smart Import', icon: '📥' },
             { key: 'calendar', label: 'Calendar', icon: '📅' },
             { key: 'staff', label: 'Staff', icon: '🧑\u200d🏫' },
             { key: 'accounts', label: 'Accounts', icon: '👤' },
@@ -5579,7 +5581,6 @@ createApp({
             'groups': { label: 'Groups', icon: '👥', feature: 'roster', activeViews: ['groups','group-details'], onSelect: async () => { currentView.value = 'groups'; selectedGroupForEdit.value = null; await Promise.all([loadSwimmers(), loadSeasons(), loadAttendanceSummary()]); } },
             'attendance': { label: 'Attendance', icon: '✅', feature: 'attendance', activeViews: ['attendance'], onSelect: async () => { currentView.value = 'attendance'; selectedGroupForEdit.value = null; await Promise.all([loadSwimmers(), loadSeasons(), loadAttendanceSummary()]); } },
             'meets': { label: 'Meets', icon: '🏆', feature: 'meets', activeViews: ['meets','meet-detail'], onSelect: async () => { currentView.value = 'meets'; await loadMeets(); } },
-            'import': { label: 'Import', icon: '📥', feature: 'roster', activeViews: ['import'], onSelect: async () => { currentView.value = 'import'; resetImport(); } },
             'calendar': { label: 'Calendar', icon: '📅', feature: 'calendar', activeViews: ['calendar'], onSelect: async () => { currentView.value = 'calendar'; await Promise.all([loadCalendarEvents(), loadMyAssignedGroups()]); } },
             'staff': { label: 'Staff', icon: '🧑\u200d🏫', feature: 'admin', activeViews: ['staff'], onSelect: async () => { currentView.value = 'staff'; await Promise.all([loadStaff(), loadCoachGroupLinks(), loadPendingCoachRequests()]); } },
             'accounts': { label: 'Accounts', icon: '👤', feature: 'admin', activeViews: ['accounts'], onSelect: async () => { currentView.value = 'accounts'; await Promise.all([loadAccounts(), loadFamilyAccounts()]); } },
@@ -6465,16 +6466,42 @@ createApp({
             downloadTextFile(`${myTeam.value}-roster${group ? '-' + group : ''}.csv`, csv);
         }
 
+        // Exports a per-swimmer PERCENTAGE summary (one row per athlete),
+        // not the raw per-date records -- the on-screen marking UI (date
+        // picker, present/excused/absent toggles, per-swimmer history
+        // modal) is completely untouched; only what gets exported changed.
+        // Respects whichever season is currently selected on-screen, same
+        // as the percentages already shown there, rather than always
+        // being all-time regardless of what's selected.
+        function buildAttendancePercentRows(data, groupName) {
+            const relevantSwimmers = groupName ? swimmers.value.filter(s => s.group_name === groupName) : swimmers.value.filter(s => s.group_name);
+            return relevantSwimmers.map(s => {
+                const sRows = (data || []).filter(r => r.swimmer_id === s.id);
+                const present = sRows.filter(r => r.status === 'present' || r.status === 'excused').length;
+                const total = sRows.length;
+                return {
+                    firstName: s.first_name, lastName: s.last_name, group: s.group_name,
+                    percent: total > 0 ? Math.round((present / total) * 100) : null,
+                    practicesTracked: total,
+                };
+            }).sort((a, b) => a.lastName.localeCompare(b.lastName));
+        }
+
         async function exportAttendanceCsv(groupName) {
-            let query = client.from('attendance').select('*, swimmers(first_name, last_name, group_name)').eq('team_id', myTeam.value).order('practice_date', { ascending: false });
+            const swimmerIds = (groupName ? swimmers.value.filter(s => s.group_name === groupName) : swimmers.value).map(s => s.id);
+            if (!swimmerIds.length) return alert('No swimmers to export.');
+            const selectedSeason = seasonsList.value.find(s => s.id === selectedSeasonId.value);
+            let query = client.from('attendance').select('swimmer_id, status').eq('team_id', myTeam.value).in('swimmer_id', swimmerIds);
+            if (selectedSeason) query = query.gte('practice_date', selectedSeason.start_date).lte('practice_date', selectedSeason.end_date);
             const { data, error } = await query;
             if (error) return alert('Error exporting attendance: ' + error.message);
-            const rows = groupName ? (data || []).filter(r => r.swimmers?.group_name === groupName) : (data || []);
+            const rows = buildAttendancePercentRows(data, groupName);
             const csv = toCsv(rows, [
-                { label: 'Date', get: r => r.practice_date },
-                { label: 'First Name', get: r => r.swimmers?.first_name },
-                { label: 'Last Name', get: r => r.swimmers?.last_name },
-                { label: 'Status', get: r => r.status },
+                { label: 'First Name', get: r => r.firstName },
+                { label: 'Last Name', get: r => r.lastName },
+                { label: 'Group', get: r => r.group },
+                { label: 'Attendance %', get: r => r.percent === null ? 'No data' : r.percent },
+                { label: 'Practices Tracked', get: r => r.practicesTracked },
             ]);
             downloadTextFile(`${myTeam.value}-${groupName || 'all'}-attendance.csv`, csv);
         }
@@ -6502,15 +6529,21 @@ createApp({
         }
 
         async function exportAttendancePdf(groupName) {
-            const { data, error } = await client.from('attendance').select('*, swimmers(first_name, last_name, group_name)').eq('team_id', myTeam.value).order('practice_date', { ascending: false });
+            const swimmerIds = (groupName ? swimmers.value.filter(s => s.group_name === groupName) : swimmers.value).map(s => s.id);
+            if (!swimmerIds.length) return alert('No swimmers to export.');
+            const selectedSeason = seasonsList.value.find(s => s.id === selectedSeasonId.value);
+            let query = client.from('attendance').select('swimmer_id, status').eq('team_id', myTeam.value).in('swimmer_id', swimmerIds);
+            if (selectedSeason) query = query.gte('practice_date', selectedSeason.start_date).lte('practice_date', selectedSeason.end_date);
+            const { data, error } = await query;
             if (error) return alert('Error exporting attendance: ' + error.message);
-            const rows = groupName ? (data || []).filter(r => r.swimmers?.group_name === groupName) : (data || []);
-            const doc = generateTablePdf(`${setupTeamName.value || myTeam.value} — ${groupName || 'All'} Attendance`, `Exported ${new Date().toLocaleDateString()}`,
+            const rows = buildAttendancePercentRows(data, groupName);
+            const doc = generateTablePdf(`${setupTeamName.value || myTeam.value} — ${groupName || 'All'} Attendance`, `${selectedSeason ? selectedSeason.name : 'All-Time'} — Exported ${new Date().toLocaleDateString()}`,
                 [
-                    { label: 'Date', get: r => r.practice_date },
-                    { label: 'First Name', get: r => r.swimmers?.first_name },
-                    { label: 'Last Name', get: r => r.swimmers?.last_name },
-                    { label: 'Status', get: r => r.status },
+                    { label: 'First Name', get: r => r.firstName },
+                    { label: 'Last Name', get: r => r.lastName },
+                    { label: 'Group', get: r => r.group },
+                    { label: 'Attendance %', get: r => r.percent === null ? 'No data' : r.percent + '%' },
+                    { label: 'Practices Tracked', get: r => r.practicesTracked },
                 ], rows);
             doc.save(`${myTeam.value}-${groupName || 'all'}-attendance.pdf`);
         }
