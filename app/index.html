@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -3568,26 +3568,40 @@ createApp({
                 // was. This is why "auto" was producing wildly oversized
                 // text and many extra pages no matter what.
                 //
-                // Fix: temporarily force it measurable (display:block)
-                // but positioned far off-screen, so scrollHeight reads
-                // the true content height without ever visually
-                // flashing the sheet in front of the coach. Every
-                // property touched here is restored to its exact
-                // original value afterward, not just cleared, so the
-                // element's normal display:none/position:relative
-                // state is fully intact for everything that runs next.
+                // FIX (continued): making it measurable wasn't enough on
+                // its own -- the measurement conditions still didn't
+                // match the true print conditions in two more ways:
+                //   1. #sheet keeps its 0.5in padding here (the
+                //      padding:0 override only applies inside @media
+                //      print), so naturalHeight was counting ~1in of
+                //      padding that won't exist during the real print.
+                //   2. #sheet is width:8.5in here, but during actual
+                //      print width:100% applies instead, which -- inside
+                //      an @page-margin-reduced content box -- is really
+                //      7.5in, not 8.5in. Text wraps differently at a
+                //      narrower width, which changes how tall the
+                //      content actually is, independent of anything
+                //      else here.
+                // Both are now set to match true print conditions before
+                // measuring, and targetHeight is the real printable
+                // area (11in page minus 0.5in top + 0.5in bottom @page
+                // margin = 10in), not the full page height.
                 sheet.style.minHeight = '0';
+                sheet.style.padding = '0';
+                sheet.style.width = '7.5in';
                 sheet.style.display = 'block';
                 sheet.style.position = 'fixed';
                 sheet.style.top = '-99999px';
                 sheet.style.left = '-99999px';
                 const naturalHeight = sheet.scrollHeight;
                 sheet.style.minHeight = '';
+                sheet.style.padding = '';
+                sheet.style.width = '';
                 sheet.style.display = 'none';
                 sheet.style.position = 'relative';
                 sheet.style.top = '';
                 sheet.style.left = '';
-                const targetHeight = 11 * 96; // 11in at the standard 96 CSS px/in browsers use for layout
+                const targetHeight = 10 * 96; // true printable height within the @page margins, not the full 11in page
                 scale = naturalHeight > 0 ? Math.max(0.5, Math.min(2.5, targetHeight / naturalHeight)) : 1;
             } else if (workoutFontSize.value !== 'auto') {
                 scale = workoutFontSize.value === 'small' ? 0.85 : workoutFontSize.value === 'large' ? 1.15 : 1;
@@ -3617,15 +3631,22 @@ createApp({
             // always compute to exactly 1 no matter how long the
             // workout actually was. Any team with a logo configured
             // would silently get a watermark only on the first printed
-            // page. Same off-screen-but-measurable technique, restored
-            // to its exact original state afterward.
+            // page. Same off-screen-but-measurable technique as the
+            // scale calculation above, including matching padding/width
+            // to true print conditions and using the real per-page
+            // printable height (10in, not the full 11in page) -- all
+            // restored to their exact original state afterward.
             if (sheet && teamLogoUrl.value) {
-                const pageHeightPx = 11 * 96;
+                const pageHeightPx = 10 * 96;
+                sheet.style.padding = '0';
+                sheet.style.width = '7.5in';
                 sheet.style.display = 'block';
                 sheet.style.position = 'fixed';
                 sheet.style.top = '-99999px';
                 sheet.style.left = '-99999px';
                 const finalHeight = sheet.scrollHeight;
+                sheet.style.padding = '';
+                sheet.style.width = '';
                 sheet.style.display = 'none';
                 sheet.style.position = 'relative';
                 sheet.style.top = '';
