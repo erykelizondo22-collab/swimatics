@@ -2117,9 +2117,12 @@
             </div>
 
             <div v-if="currentView === 'past-meets' && !isParent && !isAthlete" class="space-y-6 mt-6">
-                <div class="border-b border-slate-200 pb-6">
-                    <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Past Meets</h2>
-                    <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Upload results here once a meet concludes</p>
+                <div class="border-b border-slate-200 pb-6 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Past Meets</h2>
+                        <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Upload results here once a meet concludes</p>
+                    </div>
+                    <button v-if="myRole === 'owner' || myRole === 'admin'" @click="triggerGenericImportUpload({ type: 'meet_results' })" class="bg-[var(--pool-depth)] text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-[var(--pool-depth-3)] transition-colors shrink-0">Import Results</button>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div v-for="m in pastMeetsList" :key="m.id" @click="openMeetDetail(m)" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg cursor-pointer transition-all">
@@ -3191,7 +3194,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 116;
+        const SW_VERSION = 117;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -7414,11 +7417,56 @@ createApp({
             }
         }
 
+        // Direct, JS-based enforcement of the sidebar/content layout,
+        // independent of any CSS cascade or specificity question entirely.
+        // Inline styles set here have higher specificity than any class-
+        // based rule (Tailwind's or the hand-written .app-sidebar/
+        // .main-content-area rules), so this holds even if some other,
+        // still-unidentified rule is interfering with those. Runs on
+        // mount, on window resize (this *is* "detect screen size and
+        // have it automatically do it"), and after every view change,
+        // since main-content-area gets recreated on each navigation via
+        // its :key="currentView" binding.
+        function enforceLayoutPositioning() {
+            const isDesktop = window.innerWidth >= 768;
+            const sidebar = document.querySelector('.app-sidebar');
+            const mainContent = document.querySelector('.main-content-area');
+            const topBar = document.querySelector('.glass-nav');
+            const categoryBar = document.querySelector('.category-bar-offset');
+
+            if (sidebar) {
+                sidebar.style.display = isDesktop ? 'flex' : 'none';
+                sidebar.style.flexDirection = isDesktop ? 'column' : '';
+                sidebar.style.position = isDesktop ? 'fixed' : '';
+                sidebar.style.top = isDesktop ? '0' : '';
+                sidebar.style.bottom = isDesktop ? '0' : '';
+                sidebar.style.left = isDesktop ? '0' : '';
+                sidebar.style.zIndex = isDesktop ? '40' : '';
+                sidebar.style.width = isDesktop ? '256px' : '';
+                sidebar.style.flexShrink = isDesktop ? '0' : '';
+            }
+            if (mainContent) {
+                mainContent.style.marginLeft = isDesktop ? '256px' : '';
+                mainContent.style.maxWidth = isDesktop ? '1200px' : '';
+                mainContent.style.marginTop = isDesktop ? '132px' : '24px';
+                mainContent.style.padding = isDesktop ? '24px' : '16px';
+            }
+            if (topBar) {
+                topBar.style.marginLeft = isDesktop ? '256px' : '';
+            }
+            if (categoryBar) {
+                categoryBar.style.display = isDesktop ? 'flex' : 'none';
+                categoryBar.style.left = isDesktop ? '256px' : '';
+            }
+        }
+
         onMounted(async ()=>{
             checkUrlForInvite();
             checkDraft();
             resetAnalyticsDates();
             registerSwimaticsServiceWorker();
+            nextTick(enforceLayoutPositioning);
+            window.addEventListener('resize', enforceLayoutPositioning);
             
             const { data } = await client.auth.getUser();
             user.value = data?.user;
@@ -7904,6 +7952,12 @@ createApp({
                 Vue.nextTick(() => { renderCharts(); });
             }
         });
+
+        // main-content-area gets recreated on every navigation (it has
+        // :key="currentView", driving the page-transition animation), so
+        // the inline styles set by enforceLayoutPositioning need
+        // reapplying after each view change, not just once on mount.
+        watch(currentView, () => { nextTick(enforceLayoutPositioning); });
 
         // SEASON PLAN ANALYTICS ENGINE
         let energyPlanChartInst = null;
