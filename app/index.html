@@ -394,6 +394,20 @@
                         <span class="text-lg w-6 text-center shrink-0">⚙️</span><span class="font-black uppercase tracking-widest text-xs">Group Settings</span>
                     </button>
                 </template>
+                <template v-else-if="activeNavCategory === 'meets'">
+                    <button @click="selectModule('meets')" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'meets' || currentView === 'meet-detail' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'meets' || currentView === 'meet-detail' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                        <span class="text-lg w-6 text-center shrink-0">🏆</span><span class="font-black uppercase tracking-widest text-xs">Meets</span>
+                    </button>
+                    <template v-if="myRole === 'owner' || myRole === 'admin'">
+                        <button @click="selectedMeet = null; currentView = 'create-meet'" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'create-meet' && !selectedMeet ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'create-meet' && !selectedMeet ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                            <span class="text-lg w-6 text-center shrink-0">➕</span><span class="font-black uppercase tracking-widest text-xs">Create Meet</span>
+                        </button>
+                        <div v-if="meetsList.length" class="pl-8 pr-2 py-1 space-y-0.5">
+                            <div class="text-[9px] font-black text-white/30 uppercase tracking-widest px-3 pb-1">Created Meets</div>
+                            <button v-for="m in meetsList" :key="m.id" @click="selectedMeet = m; currentView = 'create-meet'" class="w-full text-left px-3 py-2 rounded-xl text-xs font-bold truncate transition-colors" :class="currentView === 'create-meet' && selectedMeet?.id === m.id ? 'text-white bg-white/15' : 'text-white/50 hover:bg-white/10'">{{m.name}}</button>
+                        </div>
+                    </template>
+                </template>
                 <template v-else-if="activeNavCategory === 'team'">
                     <button @click="selectModule('staff')" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'staff' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'staff' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
                         <span class="text-lg w-6 text-center shrink-0">🧑‍🏫</span><span class="font-black uppercase tracking-widest text-xs">Staff</span>
@@ -425,7 +439,7 @@
             <button @click="selectModule('home')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'home' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'home' ? { color: teamColors.primary } : {}">Home</button>
             <button v-if="hasFeature('workouts')" @click="selectModule('dashboard')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="activeNavCategory === 'practice' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="activeNavCategory === 'practice' ? { color: teamColors.primary } : {}">Practice</button>
             <button v-if="hasFeature('roster')" @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary])" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="activeNavCategory === 'groups' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="activeNavCategory === 'groups' ? { color: teamColors.primary } : {}">Groups</button>
-            <button v-if="hasFeature('meets')" @click="selectModule('meets')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="['meets','meet-detail','create-meet'].includes(currentView) ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="['meets','meet-detail','create-meet'].includes(currentView) ? { color: teamColors.primary } : {}">Meets</button>
+            <button v-if="hasFeature('meets')" @click="selectModule('meets')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="activeNavCategory === 'meets' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="activeNavCategory === 'meets' ? { color: teamColors.primary } : {}">Meets</button>
             <button v-if="hasFeature('calendar')" @click="selectModule('calendar')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'calendar' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'calendar' ? { color: teamColors.primary } : {}">Calendar</button>
             <button v-if="(myRole === 'owner' || myRole === 'admin') && hasFeature('admin')" @click="selectModule('staff')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="activeNavCategory === 'team' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="activeNavCategory === 'team' ? { color: teamColors.primary } : {}">Team</button>
         </div>
@@ -508,8 +522,11 @@
                     </div>
                 </div>
 
-                <button v-if="hasFeature('meets')" @click="selectModule('meets'); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="['meets','meet-detail','create-meet'].includes(currentView) ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="['meets','meet-detail','create-meet'].includes(currentView) ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                <button v-if="hasFeature('meets')" @click="selectModule('meets'); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="activeNavCategory === 'meets' && (currentView === 'meets' || currentView === 'meet-detail') ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="activeNavCategory === 'meets' && (currentView === 'meets' || currentView === 'meet-detail') ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
                     <span class="text-lg w-6 text-center shrink-0">🏆</span><span class="font-black uppercase tracking-widest text-xs">Meets</span>
+                </button>
+                <button v-if="hasFeature('meets') && (myRole === 'owner' || myRole === 'admin')" @click="selectedMeet = null; currentView = 'create-meet'; mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'create-meet' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'create-meet' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">➕</span><span class="font-black uppercase tracking-widest text-xs">Create Meet</span>
                 </button>
                 <button v-if="hasFeature('calendar')" @click="selectModule('calendar'); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'calendar' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'calendar' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
                     <span class="text-lg w-6 text-center shrink-0">📅</span><span class="font-black uppercase tracking-widest text-xs">Calendar</span>
@@ -1955,14 +1972,6 @@
                         <select v-model="newMeet.course" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
                             <option value="SCY">SCY</option><option value="SCM">SCM</option><option value="LCM">LCM</option>
                         </select>
-                        <label class="md:col-span-2 flex items-center gap-3 bg-slate-50 border border-slate-200 p-3 rounded-xl cursor-pointer">
-                            <input type="checkbox" v-model="newMeet.allow_opt_in_out" class="w-4 h-4 accent-slate-900">
-                            <span class="text-xs font-bold text-slate-700">Let families opt in/out of this meet</span>
-                        </label>
-                        <label class="md:col-span-2 flex items-center gap-3 bg-slate-50 border border-slate-200 p-3 rounded-xl cursor-pointer">
-                            <input type="checkbox" v-model="newMeet.allow_parent_event_selection" class="w-4 h-4 accent-slate-900">
-                            <span class="text-xs font-bold text-slate-700">Let parents pick their kid's events (off = coaches only)</span>
-                        </label>
                     </div>
 
                     <div class="border-t border-slate-100 pt-4">
@@ -2023,10 +2032,7 @@
             <div v-if="currentView === 'meets'" class="space-y-6 mt-6">
                 <div class="flex justify-between items-end border-b border-slate-200 pb-6">
                     <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Meets</h2>
-                    <div class="flex gap-2">
-                        <button @click="triggerGenericImportUpload" class="bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-sm hover:bg-slate-50 transition-colors">Import Meets</button>
-                        <button v-if="myRole === 'owner' || myRole === 'admin'" @click="selectedMeet = null; currentView = 'create-meet'" class="bg-[var(--pool-depth)] text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs">+ Create Meet</button>
-                    </div>
+                    <button v-if="myRole === 'owner' || myRole === 'admin'" @click="triggerGenericImportUpload" class="bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-sm hover:bg-slate-50 transition-colors">Import Meets</button>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div v-for="m in meetsList" :key="m.id" @click="openMeetDetail(m)" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg cursor-pointer transition-all">
@@ -2044,8 +2050,10 @@
                         <p class="text-sm font-bold uppercase tracking-widest mt-1 text-slate-400">{{selectedMeet.course}} • {{formatPracticeDate(selectedMeet.start_date)}}</p>
                     </div>
                     <div class="flex gap-2 items-center">
-                        <button @click="exportMeetResultsCsv" class="text-[10px] font-black text-slate-600 bg-white border border-slate-200 px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors">Export CSV</button>
-                        <button @click="exportMeetEntriesHy3" class="text-[10px] font-black text-white bg-slate-900 px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-[var(--pool-depth-3)] transition-colors">Export HY3</button>
+                        <template v-if="myRole === 'owner' || myRole === 'admin'">
+                            <button @click="exportMeetResultsCsv" class="text-[10px] font-black text-slate-600 bg-white border border-slate-200 px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors">Export CSV</button>
+                            <button @click="exportMeetEntriesHy3" class="text-[10px] font-black text-white bg-slate-900 px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-[var(--pool-depth-3)] transition-colors">Export HY3</button>
+                        </template>
                         <button @click="currentView = 'meets'" class="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl uppercase tracking-widest">Back</button>
                     </div>
                 </div>
@@ -2127,6 +2135,11 @@
                 </div>
 
                 <div v-if="meetDetailTab === 'entries'" class="space-y-4">
+                    <div v-if="selectedMeet.coach_entry_deadline" class="rounded-xl p-3 text-[11px] font-bold" :class="coachEntryDeadlinePassed ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-slate-50 text-slate-500 border border-slate-200'">
+                        <span v-if="coachEntryDeadlinePassed">Coach entry deadline passed — {{new Date(selectedMeet.coach_entry_deadline).toLocaleString()}}. Entries are locked for export.</span>
+                        <span v-else>Coach entries close {{new Date(selectedMeet.coach_entry_deadline).toLocaleString()}}<span v-if="selectedMeet.parent_entry_deadline"> (parents closed {{new Date(selectedMeet.parent_entry_deadline).toLocaleString()}})</span></span>
+                    </div>
+
                     <div v-if="meetEntriesList.some(en => en.status === 'pending_coach_approval')" class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
                         <div class="p-4 pb-0 text-[10px] font-black uppercase tracking-widest text-amber-600">Pending Approval</div>
                         <div v-for="en in meetEntriesList.filter(e => e.status === 'pending_coach_approval')" :key="en.id" class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2135,9 +2148,9 @@
                                 <div class="text-[10px] font-black uppercase tracking-widest mt-1 text-amber-600">⚠ Manual Override Needed</div>
                             </div>
                             <div class="flex items-center gap-2">
-                                <input v-model="overrideTimes[en.id]" placeholder="Time m:ss.hh" class="w-28 bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
-                                <button @click="approveMeetEntry(en.id)" class="bg-emerald-500 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase">Approve</button>
-                                <button @click="declineMeetEntry(en.id)" class="bg-red-50 text-red-500 px-3 py-2 rounded-lg text-[10px] font-black uppercase">Decline</button>
+                                <input v-model="overrideTimes[en.id]" :disabled="coachEntryDeadlinePassed" placeholder="Time m:ss.hh" class="w-28 bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none disabled:opacity-40">
+                                <button @click="approveMeetEntry(en.id)" :disabled="coachEntryDeadlinePassed" class="bg-emerald-500 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase disabled:opacity-40 disabled:cursor-not-allowed">Approve</button>
+                                <button @click="declineMeetEntry(en.id)" :disabled="coachEntryDeadlinePassed" class="bg-red-50 text-red-500 px-3 py-2 rounded-lg text-[10px] font-black uppercase disabled:opacity-40 disabled:cursor-not-allowed">Decline</button>
                             </div>
                         </div>
                     </div>
@@ -2166,8 +2179,8 @@
                                 </div>
                                 <div class="flex items-center gap-2 shrink-0">
                                     <div v-if="selectedMeet.allow_opt_in_out" @click.stop class="flex bg-slate-50 border border-slate-200 rounded-lg p-0.5">
-                                        <button @click="setParticipation(selectedMeet.id, s.id, 'opted_in')" :class="participationFor(s.id) === 'opted_in' ? 'bg-emerald-500 text-white' : 'text-slate-400'" class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase transition-colors">In</button>
-                                        <button @click="setParticipation(selectedMeet.id, s.id, 'opted_out')" :class="participationFor(s.id) === 'opted_out' ? 'bg-red-500 text-white' : 'text-slate-400'" class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase transition-colors">Out</button>
+                                        <button @click="setParticipation(selectedMeet.id, s.id, 'opted_in')" :disabled="coachEntryDeadlinePassed" :class="participationFor(s.id) === 'opted_in' ? 'bg-emerald-500 text-white' : 'text-slate-400'" class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase transition-colors disabled:opacity-40 disabled:cursor-not-allowed">In</button>
+                                        <button @click="setParticipation(selectedMeet.id, s.id, 'opted_out')" :disabled="coachEntryDeadlinePassed" :class="participationFor(s.id) === 'opted_out' ? 'bg-red-500 text-white' : 'text-slate-400'" class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Out</button>
                                         <span v-if="participationFor(s.id) === 'undeclared'" class="px-2.5 py-1 text-[9px] font-black uppercase text-amber-500">Undeclared</span>
                                     </div>
                                     <span class="w-6 h-6 flex items-center justify-center text-slate-400 font-black text-lg">{{ expandedSwimmerId === s.id ? '−' : '+' }}</span>
@@ -2176,9 +2189,9 @@
                             <div v-if="expandedSwimmerId === s.id" class="px-4 pb-4 space-y-1.5 bg-slate-50/60">
                                 <div v-for="e in eventsJoinableBy(s)" :key="e.id" class="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-2.5">
                                     <div class="text-xs font-bold text-slate-700">#{{e.event_number}} — {{e.gender}} {{e.distance}} {{e.stroke}}</div>
-                                    <button @click="toggleSwimmerEventEntry(s.id, e.id)"
+                                    <button @click="toggleSwimmerEventEntry(s.id, e.id)" :disabled="coachEntryDeadlinePassed"
                                             :class="isEnteredIn(s.id, e.id) ? 'bg-red-50 text-red-500 border-red-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'"
-                                            class="w-7 h-7 rounded-lg border font-black text-base flex items-center justify-center shrink-0 transition-colors">
+                                            class="w-7 h-7 rounded-lg border font-black text-base flex items-center justify-center shrink-0 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                                         {{ isEnteredIn(s.id, e.id) ? '−' : '+' }}
                                     </button>
                                 </div>
@@ -2194,15 +2207,15 @@
                             <div class="flex flex-wrap gap-1.5">
                                 <span v-for="en in entriesForEvent(e.id)" :key="en.id" class="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-full pl-3 pr-1.5 py-1 text-[10px] font-bold text-slate-600">
                                     {{swimmerName(en.swimmer_id)}}
-                                    <button @click="removeMeetEntry(en.id)" aria-label="Remove entry" class="text-slate-400 hover:text-red-500 font-black">×</button>
+                                    <button @click="removeMeetEntry(en.id)" :disabled="coachEntryDeadlinePassed" aria-label="Remove entry" class="text-slate-400 hover:text-red-500 font-black disabled:opacity-40 disabled:cursor-not-allowed">×</button>
                                 </span>
                             </div>
                             <div class="flex gap-2">
-                                <select v-model="newEntrySwimmerId[e.id]" class="flex-1 bg-slate-50 border border-slate-200 p-2 rounded-lg text-[11px] font-bold outline-none">
+                                <select v-model="newEntrySwimmerId[e.id]" :disabled="coachEntryDeadlinePassed" class="flex-1 bg-slate-50 border border-slate-200 p-2 rounded-lg text-[11px] font-bold outline-none disabled:opacity-40">
                                     <option value="">+ Add swimmer...</option>
                                     <option v-for="s in enterableSwimmers" :key="s.id" :value="s.id">{{s.first_name}} {{s.last_name}} ({{s.group_name}})</option>
                                 </select>
-                                <button @click="addMeetEntry(newEntrySwimmerId[e.id], e.id); newEntrySwimmerId[e.id] = ''" class="bg-[var(--pool-depth)] text-white px-4 rounded-lg text-[10px] font-black uppercase shrink-0">Add</button>
+                                <button @click="addMeetEntry(newEntrySwimmerId[e.id], e.id); newEntrySwimmerId[e.id] = ''" :disabled="coachEntryDeadlinePassed" class="bg-[var(--pool-depth)] text-white px-4 rounded-lg text-[10px] font-black uppercase shrink-0 disabled:opacity-40 disabled:cursor-not-allowed">Add</button>
                             </div>
                         </div>
                         <div v-if="!isPageLoading && !filteredMeetEvents.length" class="p-10 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No events yet — add on the Events tab or use Import</div>
@@ -2842,11 +2855,16 @@
                             <button @click="parentMeetEntryTarget = null" aria-label="Close" class="w-8 h-8 bg-slate-100 rounded-full font-black">X</button>
                         </div>
 
+                        <div v-if="parentMeetEntryTarget.meet.parent_entry_deadline" class="rounded-xl p-3 text-[11px] font-bold" :class="parentEntryDeadlinePassed ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-slate-50 text-slate-500 border border-slate-200'">
+                            <span v-if="parentEntryDeadlinePassed">Entries closed — the deadline was {{new Date(parentMeetEntryTarget.meet.parent_entry_deadline).toLocaleString()}}. Contact your coach for changes.</span>
+                            <span v-else>Entries close {{new Date(parentMeetEntryTarget.meet.parent_entry_deadline).toLocaleString()}}</span>
+                        </div>
+
                         <div v-if="parentMeetEntryTarget.meet.allow_opt_in_out" class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between gap-3">
                             <div class="text-xs font-bold text-slate-700">Is {{parentMeetEntryTarget.swimmer.first_name}} attending this meet?</div>
                             <div class="flex bg-white border border-slate-200 rounded-lg p-0.5 shrink-0">
-                                <button @click="setParticipation(parentMeetEntryTarget.meet.id, parentMeetEntryTarget.swimmer.id, 'opted_in')" :class="parentMeetParticipation === 'opted_in' ? 'bg-emerald-500 text-white' : 'text-slate-400'" class="px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-colors">In</button>
-                                <button @click="setParticipation(parentMeetEntryTarget.meet.id, parentMeetEntryTarget.swimmer.id, 'opted_out')" :class="parentMeetParticipation === 'opted_out' ? 'bg-red-500 text-white' : 'text-slate-400'" class="px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-colors">Out</button>
+                                <button @click="setParticipation(parentMeetEntryTarget.meet.id, parentMeetEntryTarget.swimmer.id, 'opted_in')" :disabled="parentEntryDeadlinePassed" :class="parentMeetParticipation === 'opted_in' ? 'bg-emerald-500 text-white' : 'text-slate-400'" class="px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-colors disabled:opacity-40 disabled:cursor-not-allowed">In</button>
+                                <button @click="setParticipation(parentMeetEntryTarget.meet.id, parentMeetEntryTarget.swimmer.id, 'opted_out')" :disabled="parentEntryDeadlinePassed" :class="parentMeetParticipation === 'opted_out' ? 'bg-red-500 text-white' : 'text-slate-400'" class="px-3 py-1.5 rounded-md text-[10px] font-black uppercase transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Out</button>
                             </div>
                         </div>
 
@@ -2854,7 +2872,7 @@
 
                         <div v-for="e in parentMeetEntryEvents" :key="e.id" class="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
                             <div class="text-xs font-bold">#{{e.event_number}} {{e.gender}} {{e.distance}} {{e.stroke}}</div>
-                            <button v-if="!entryExistsFor(e.id) && parentMeetEntryTarget.meet.allow_parent_event_selection" @click="requestMeetEntry(e)" class="text-[10px] font-black uppercase bg-blue-600 text-white px-3 py-1.5 rounded-lg">Enter</button>
+                            <button v-if="!entryExistsFor(e.id) && parentMeetEntryTarget.meet.allow_parent_event_selection && !parentEntryDeadlinePassed" @click="requestMeetEntry(e)" class="text-[10px] font-black uppercase bg-blue-600 text-white px-3 py-1.5 rounded-lg">Enter</button>
                             <span v-else-if="entryExistsFor(e.id)" class="text-[10px] font-black uppercase" :class="entryStatusFor(e.id)==='approved' ? 'text-emerald-600' : 'text-amber-600'">{{entryStatusFor(e.id) === 'pending_coach_approval' ? 'Pending Coach' : entryStatusFor(e.id)}}</span>
                         </div>
                         <div v-if="!parentMeetEntryEvents.length" class="text-xs text-slate-400 font-bold text-center py-6">No events loaded for this meet yet</div>
@@ -2992,6 +3010,7 @@ createApp({
             if (currentView.value === 'group-details') return groupDetailTab.value === 'attendance' ? 'practice' : 'groups';
             if (['dashboard', 'analytics', 'season-planning', 'plan-builder'].includes(currentView.value)) return 'practice';
             if (currentView.value === 'groups') return 'groups';
+            if (['meets', 'meet-detail', 'create-meet'].includes(currentView.value)) return 'meets';
             if (['staff', 'accounts', 'layout'].includes(currentView.value) && (myRole.value === 'owner' || myRole.value === 'admin')) return 'team';
             return null;
         });
@@ -3018,7 +3037,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 109;
+        const SW_VERSION = 111;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -3126,6 +3145,10 @@ createApp({
         });
         const newMeet = ref({ name: '', start_date: '', course: 'SCY', allow_opt_in_out: false, allow_parent_event_selection: true, parent_entry_deadline: '', coach_entry_deadline: '' });
         const selectedMeet = ref(null);
+        const coachEntryDeadlinePassed = computed(() => {
+            const deadline = selectedMeet.value?.coach_entry_deadline;
+            return deadline ? new Date() > new Date(deadline) : false;
+        });
         const meetDetailTab = ref('events');
         const meetEventsList = ref([]);
         const newMeetEvent = ref({ event_number: '', gender: 'M', distance: '', stroke: 'Free', qual_time: '' });
@@ -3135,6 +3158,14 @@ createApp({
         // PARENT PORTAL
         const myLinkedSwimmers = ref([]);
         const parentMeetEntryTarget = ref(null);
+        // Deadline enforcement -- no deadline set means entries are never
+        // closed on that basis. A plain comparison is enough here since
+        // meet deadlines are days/weeks out, not something that needs
+        // live second-by-second re-evaluation while the modal is open.
+        const parentEntryDeadlinePassed = computed(() => {
+            const deadline = parentMeetEntryTarget.value?.meet?.parent_entry_deadline;
+            return deadline ? new Date() > new Date(deadline) : false;
+        });
         const parentMeetParticipation = ref('undeclared');
         const parentMeetEntryEvents = ref([]);
         const parentMeetEntries = ref([]); // this parent's swimmer's entries for the open meet
@@ -4990,6 +5021,10 @@ createApp({
             return row ? row.status : 'undeclared';
         }
         async function setParticipation(meetId, swimmerId, status) {
+            const isCoachContext = selectedMeet.value?.id === meetId;
+            const isParentContext = parentMeetEntryTarget.value?.meet?.id === meetId;
+            if (isCoachContext && coachEntryDeadlinePassed.value) return alert("The coach entry deadline for this meet has passed.");
+            if (isParentContext && parentEntryDeadlinePassed.value) return alert("The entry deadline for this meet has passed.");
             const { error } = await client.from('meet_participation').upsert({
                 meet_id: meetId, swimmer_id: swimmerId, status, declared_by: user.value.id
             }, { onConflict: 'meet_id,swimmer_id' });
@@ -5079,6 +5114,7 @@ createApp({
         // This is meant to be fast, low-friction, and easily reversible
         // (click again to re-add), not a deliberate delete action.
         async function toggleSwimmerEventEntry(swimmerId, meetEventId) {
+            if (coachEntryDeadlinePassed.value) return alert("The coach entry deadline for this meet has passed.");
             const existing = meetEntriesList.value.find(en => en.swimmer_id === swimmerId && en.meet_event_id === meetEventId);
             if (existing) {
                 const { error } = await client.from('meet_entries').delete().eq('id', existing.id);
@@ -5091,6 +5127,7 @@ createApp({
 
         async function addMeetEntry(swimmerId, meetEventId) {
             if (!swimmerId || !meetEventId) return;
+            if (coachEntryDeadlinePassed.value) return alert("The coach entry deadline for this meet has passed.");
             const already = meetEntriesList.value.some(en => en.swimmer_id === swimmerId && en.meet_event_id === meetEventId);
             if (already) return alert("Already entered in this event.");
             const { error } = await client.from('meet_entries').insert({
@@ -5101,6 +5138,7 @@ createApp({
         }
 
         async function removeMeetEntry(entryId) {
+            if (coachEntryDeadlinePassed.value) return alert("The coach entry deadline for this meet has passed.");
             if (!confirm("Remove this entry?")) return;
             const { error } = await client.from('meet_entries').delete().eq('id', entryId);
             if (error) return alert("Error removing entry: " + error.message);
@@ -6355,6 +6393,7 @@ createApp({
         }
 
         async function approveMeetEntry(entryId) {
+            if (coachEntryDeadlinePassed.value) return alert("The coach entry deadline for this meet has passed.");
             const { data: { user: freshUser } } = await client.auth.getUser();
             const typedTime = overrideTimes.value[entryId];
             const payload = { status: 'approved', approved_by: freshUser?.id };
@@ -6365,6 +6404,7 @@ createApp({
         }
 
         async function declineMeetEntry(entryId) {
+            if (coachEntryDeadlinePassed.value) return alert("The coach entry deadline for this meet has passed.");
             const { data: { user: freshUser } } = await client.auth.getUser();
             await client.from("meet_entries").update({ status: 'declined', approved_by: freshUser?.id }).eq('id', entryId);
             loadMeetEntries(selectedMeet.value.id);
@@ -6440,6 +6480,7 @@ createApp({
         }
 
         async function requestMeetEntry(event) {
+            if (parentEntryDeadlinePassed.value) return alert("The entry deadline for this meet has passed.");
             const { swimmer, meet } = parentMeetEntryTarget.value;
             const { error } = await client.from("meet_entries").insert({
                 meet_id: meet.id, meet_event_id: event.id, swimmer_id: swimmer.id
@@ -7690,9 +7731,9 @@ createApp({
             swimmersByGroup, swimmerAttendancePercent, loadAttendanceSummary,
             showSwimmerHistoryFor, swimmerHistoryRecords, openSwimmerHistory, closeSwimmerHistory, updateHistoricalAttendance,
             seasonsList, selectedSeasonId, selectedSeasonName, showNewSeasonForm, newSeasonName, newSeasonStart, newSeasonEnd, loadSeasons, addSeason,
-            meetsList, newMeet, selectedMeet, meetDetailTab, meetEventsList, newMeetEvent, meetEntriesList, overrideTimes, exportMeetEventsCsv,
+            meetsList, newMeet, selectedMeet, coachEntryDeadlinePassed, meetDetailTab, meetEventsList, newMeetEvent, meetEntriesList, overrideTimes, exportMeetEventsCsv,
             loadMeets, createMeet, isCreatingMeet, openMeetDetail, addMeetEvent, deleteMeetEvent, pendingEntriesCount, swimmerName, eventLabel, approveMeetEntry, declineMeetEntry,
-            myLinkedSwimmers, parentMeetEntryTarget, parentMeetEntryEvents, openParentMeetEntry, entryExistsFor, entryStatusFor, requestMeetEntry,
+            myLinkedSwimmers, parentMeetEntryTarget, parentMeetEntryEvents, parentEntryDeadlinePassed, openParentMeetEntry, entryExistsFor, entryStatusFor, requestMeetEntry,
             importState, importPreview, importColumns, triggerGenericImportUpload, handleGenericImport, confirmImport, resetImport
         };
     }
