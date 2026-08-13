@@ -276,13 +276,13 @@
             <img :src="teamLogoUrl" style="width: 45vw; max-width: 480px; object-fit: contain;">
         </div>
         
-        <div class="glass-nav border-b border-slate-200/60 px-4 md:px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm transition-all">
+        <div class="glass-nav border-b border-slate-200/60 px-4 md:px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm transition-all md:pl-72">
             <div class="flex items-center gap-2 shrink-0" ref="navMenuRef">
-                <button v-if="myTeam" @click.stop="mobileNavOpen = !mobileNavOpen" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-[var(--pool-depth-3)] transition-colors shrink-0" aria-label="Toggle menu">
+                <button v-if="myTeam" @click.stop="mobileNavOpen = !mobileNavOpen" class="md:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-[var(--pool-depth-3)] transition-colors shrink-0" aria-label="Toggle menu">
                     <svg v-if="!mobileNavOpen" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     <svg v-else class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
-                <div class="flex items-center gap-3 cursor-pointer group" @click="currentView = myTeam ? (isParent ? 'parent-home' : (isOffice ? 'groups' : 'dashboard')) : 'onboarding'; mobileNavOpen = false">
+                <div class="md:hidden flex items-center gap-3 cursor-pointer group" @click="currentView = myTeam ? (isParent ? 'parent-home' : (isOffice ? 'groups' : 'dashboard')) : 'onboarding'; mobileNavOpen = false">
                     <div class="w-10 h-10 flex items-center justify-center rounded-xl group-hover:scale-105 transition-transform duration-300 overflow-hidden" :style="{ backgroundColor: teamColors.primary + '20' }">
                         <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain p-1">
                     </div>
@@ -308,7 +308,81 @@
 
         <div v-if="mobileNavOpen" @click="mobileNavOpen = false" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[55] transition-opacity"></div>
 
-        <div ref="drawerRef" class="fixed inset-y-0 left-0 z-[60] w-3/4 md:w-96 bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out" :class="mobileNavOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'">
+        <div class="hidden md:flex md:flex-col fixed inset-y-0 left-0 z-40 w-64 shrink-0" style="background: linear-gradient(165deg, var(--pool-depth-2) 0%, var(--pool-depth) 55%, var(--pool-depth-3) 100%);">
+            <div class="p-6 text-white shrink-0 relative overflow-hidden">
+                <div class="absolute pointer-events-none" style="top: -40%; right: -20%; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(14,116,144,0.22), transparent 70%);"></div>
+                <div class="flex items-center gap-3 relative cursor-pointer" @click="currentView = myTeam ? (isParent ? 'parent-home' : (isOffice ? 'groups' : 'dashboard')) : 'onboarding'">
+                    <div class="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center overflow-hidden shrink-0">
+                        <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain p-1.5">
+                    </div>
+                    <div class="min-w-0">
+                        <div class="font-display font-bold text-lg tracking-tight">Swimatics</div>
+                        <div class="text-[10px] font-bold uppercase tracking-widest opacity-70 truncate">{{myTeam}}</div>
+                    </div>
+                </div>
+                <div v-if="user" class="mt-5 pt-4 border-t border-white/10 flex items-center gap-2.5 relative">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0" :style="{ background: 'linear-gradient(135deg, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">{{ (coachName || user.email || '?').charAt(0).toUpperCase() }}</div>
+                    <div class="min-w-0">
+                        <div class="text-xs font-black truncate">{{coachName || user.email}}</div>
+                        <div class="text-[9px] font-bold uppercase tracking-widest opacity-60">{{myRole}}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto overscroll-contain p-3 space-y-1">
+                <template v-if="isParent || isAthlete">
+                <button @click="navigateTo('parent-home')" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'parent-home' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'parent-home' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">🏠</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Home</span>
+                </button>
+                <button v-if="teamModules.includes('calendar') && hasFeature('calendar')" @click="navigateTo('calendar', [loadCalendarEvents])" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'calendar' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'calendar' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">📅</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Calendar</span>
+                </button>
+                </template>
+                <template v-else-if="isOffice">
+                <button v-if="hasFeature('roster')" @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary])" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'groups' || currentView === 'group-details' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'groups' || currentView === 'group-details' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">📋</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Groups</span>
+                </button>
+                <button v-if="hasFeature('calendar')" @click="navigateTo('calendar', [loadCalendarEvents])" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'calendar' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'calendar' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">📅</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Calendar</span>
+                </button>
+                <button v-if="hasFeature('roster')" @click="navigateTo('registration')" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'registration' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'registration' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">📝</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Registration</span>
+                </button>
+                <button v-if="hasFeature('admin')" @click="navigateTo('accounts', [loadStaff, loadFamilyAccounts])" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'accounts' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'accounts' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">👪</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Accounts</span>
+                </button>
+                </template>
+                <template v-else>
+                <button v-for="m in navModules" :key="m.key" @click="selectModule(m.key)" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="isModuleActive(m.key) ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="isModuleActive(m.key) ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">{{m.icon}}</span>
+                    <span class="font-black uppercase tracking-widest text-xs">{{m.label}}</span>
+                </button>
+                <button v-if="(myRole === 'owner' || myRole === 'admin') && hasFeature('admin')" @click="openLayoutEditor()" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'layout' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'layout' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">⚙️</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Site Layout</span>
+                </button>
+                </template>
+            </div>
+
+            <div class="p-3 border-t border-white/10 shrink-0 space-y-1">
+                <button v-if="!isOffice && hasFeature('messages')" @click="openMessages()" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'messages' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'messages' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">💬</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Messages</span>
+                </button>
+                <button @click="openSettings()" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'settings' ? 'text-white shadow-md' : 'text-white/55 hover:bg-white/10'" :style="currentView === 'settings' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">⚙️</span>
+                    <span class="font-black uppercase tracking-widest text-xs">Settings</span>
+                </button>
+            </div>
+        </div>
+
+        <div ref="drawerRef" class="md:hidden fixed inset-y-0 left-0 z-[60] w-3/4 bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out" :class="mobileNavOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'">
             <div class="p-6 text-white shrink-0 relative overflow-hidden" style="background: linear-gradient(165deg, var(--pool-depth-2) 0%, var(--pool-depth) 55%, var(--pool-depth-3) 100%);">
                 <div class="absolute pointer-events-none" style="top: -40%; right: -20%; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(14,116,144,0.22), transparent 70%);"></div>
                 <button @click="mobileNavOpen = false" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors relative">
@@ -385,7 +459,46 @@
             </div>
         </div>
 
-        <div :key="currentView" class="page-transition max-w-[1200px] mx-auto p-4 md:p-6 mt-6 relative">
+        <div v-if="myTeam" class="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-slate-200 flex items-stretch pb-[env(safe-area-inset-bottom)]" style="box-shadow: 0 -2px 12px rgba(0,0,0,0.06);">
+            <template v-if="isParent || isAthlete">
+            <button @click="navigateTo('parent-home')" class="flex-1 flex flex-col items-center justify-center gap-1 py-2.5" :style="currentView === 'parent-home' ? { color: teamColors.primary } : {}" :class="currentView !== 'parent-home' ? 'text-slate-400' : ''">
+                <span class="text-lg">🏠</span><span class="text-[9px] font-black uppercase tracking-wide">Home</span>
+            </button>
+            <button v-if="teamModules.includes('calendar') && hasFeature('calendar')" @click="navigateTo('calendar', [loadCalendarEvents])" class="flex-1 flex flex-col items-center justify-center gap-1 py-2.5" :style="currentView === 'calendar' ? { color: teamColors.primary } : {}" :class="currentView !== 'calendar' ? 'text-slate-400' : ''">
+                <span class="text-lg">📅</span><span class="text-[9px] font-black uppercase tracking-wide">Calendar</span>
+            </button>
+            <button v-if="hasFeature('messages')" @click="openMessages()" class="flex-1 flex flex-col items-center justify-center gap-1 py-2.5" :style="currentView === 'messages' ? { color: teamColors.primary } : {}" :class="currentView !== 'messages' ? 'text-slate-400' : ''">
+                <span class="text-lg">💬</span><span class="text-[9px] font-black uppercase tracking-wide">Messages</span>
+            </button>
+            <button @click="openSettings()" class="flex-1 flex flex-col items-center justify-center gap-1 py-2.5" :style="currentView === 'settings' ? { color: teamColors.primary } : {}" :class="currentView !== 'settings' ? 'text-slate-400' : ''">
+                <span class="text-lg">⚙️</span><span class="text-[9px] font-black uppercase tracking-wide">Settings</span>
+            </button>
+            </template>
+            <template v-else-if="isOffice">
+            <button v-if="hasFeature('roster')" @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary])" class="flex-1 flex flex-col items-center justify-center gap-1 py-2.5" :style="currentView === 'groups' || currentView === 'group-details' ? { color: teamColors.primary } : {}" :class="!(currentView === 'groups' || currentView === 'group-details') ? 'text-slate-400' : ''">
+                <span class="text-lg">📋</span><span class="text-[9px] font-black uppercase tracking-wide">Groups</span>
+            </button>
+            <button v-if="hasFeature('calendar')" @click="navigateTo('calendar', [loadCalendarEvents])" class="flex-1 flex flex-col items-center justify-center gap-1 py-2.5" :style="currentView === 'calendar' ? { color: teamColors.primary } : {}" :class="currentView !== 'calendar' ? 'text-slate-400' : ''">
+                <span class="text-lg">📅</span><span class="text-[9px] font-black uppercase tracking-wide">Calendar</span>
+            </button>
+            <button v-if="hasFeature('roster')" @click="navigateTo('registration')" class="flex-1 flex flex-col items-center justify-center gap-1 py-2.5" :style="currentView === 'registration' ? { color: teamColors.primary } : {}" :class="currentView !== 'registration' ? 'text-slate-400' : ''">
+                <span class="text-lg">📝</span><span class="text-[9px] font-black uppercase tracking-wide">Register</span>
+            </button>
+            <button v-if="hasFeature('admin')" @click="navigateTo('accounts', [loadStaff, loadFamilyAccounts])" class="flex-1 flex flex-col items-center justify-center gap-1 py-2.5" :style="currentView === 'accounts' ? { color: teamColors.primary } : {}" :class="currentView !== 'accounts' ? 'text-slate-400' : ''">
+                <span class="text-lg">👪</span><span class="text-[9px] font-black uppercase tracking-wide">Accounts</span>
+            </button>
+            </template>
+            <template v-else>
+            <button v-for="m in navModules.slice(0, 4)" :key="m.key" @click="selectModule(m.key)" class="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 min-w-0" :style="isModuleActive(m.key) ? { color: teamColors.primary } : {}" :class="!isModuleActive(m.key) ? 'text-slate-400' : ''">
+                <span class="text-lg">{{m.icon}}</span><span class="text-[9px] font-black uppercase tracking-wide truncate px-1">{{m.label}}</span>
+            </button>
+            <button v-if="navModules.length > 4" @click="mobileNavOpen = true" class="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-slate-400">
+                <span class="text-lg">⋯</span><span class="text-[9px] font-black uppercase tracking-wide">More</span>
+            </button>
+            </template>
+        </div>
+
+        <div :key="currentView" class="page-transition max-w-[1200px] mx-auto p-4 md:p-6 mt-6 relative md:ml-64">
             
             <div v-if="myTeam && !myTeamPlan && currentView !== 'settings'" class="mb-6 bg-[var(--pool-depth)] text-white p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
@@ -2652,7 +2765,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 92;
+        const SW_VERSION = 93;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
