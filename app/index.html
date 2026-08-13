@@ -3550,18 +3550,45 @@ createApp({
                 // -- it reflows within the page width rather than
                 // pushing content off the side.
                 //
-                // FIX: #sheet has min-height:11in on-screen (for a
-                // realistic preview appearance), which was flooring this
-                // scrollHeight measurement at a full page's worth
-                // regardless of how short the actual content was --
-                // meaning short workouts always measured as "already
-                // fills the page" and never actually got scaled up.
-                // Neutralizing min-height just for this measurement.
+                // FIX (part 1): #sheet has min-height:11in on-screen (for
+                // a realistic preview appearance), which was flooring
+                // this scrollHeight measurement at a full page's worth.
+                //
+                // FIX (part 2, the real root cause): #sheet is
+                // display:none by default -- the only CSS rule that
+                // makes it visible (.print-page.print-active) lives
+                // inside @media print, so at this exact measurement
+                // moment (on-screen, before window.print() runs) the
+                // element is STILL display:none, meaning scrollHeight
+                // was always exactly 0. That made naturalHeight always
+                // 0, so targetHeight / naturalHeight was a division by
+                // zero (Infinity), which Math.min(2.5, ...) always
+                // clamped to the maximum 2.5x scale -- completely
+                // regardless of how long or short the actual workout
+                // was. This is why "auto" was producing wildly oversized
+                // text and many extra pages no matter what.
+                //
+                // Fix: temporarily force it measurable (display:block)
+                // but positioned far off-screen, so scrollHeight reads
+                // the true content height without ever visually
+                // flashing the sheet in front of the coach. Every
+                // property touched here is restored to its exact
+                // original value afterward, not just cleared, so the
+                // element's normal display:none/position:relative
+                // state is fully intact for everything that runs next.
                 sheet.style.minHeight = '0';
+                sheet.style.display = 'block';
+                sheet.style.position = 'fixed';
+                sheet.style.top = '-99999px';
+                sheet.style.left = '-99999px';
                 const naturalHeight = sheet.scrollHeight;
                 sheet.style.minHeight = '';
+                sheet.style.display = 'none';
+                sheet.style.position = 'relative';
+                sheet.style.top = '';
+                sheet.style.left = '';
                 const targetHeight = 11 * 96; // 11in at the standard 96 CSS px/in browsers use for layout
-                scale = Math.max(0.5, Math.min(2.5, targetHeight / naturalHeight));
+                scale = naturalHeight > 0 ? Math.max(0.5, Math.min(2.5, targetHeight / naturalHeight)) : 1;
             } else if (workoutFontSize.value !== 'auto') {
                 scale = workoutFontSize.value === 'small' ? 0.85 : workoutFontSize.value === 'large' ? 1.15 : 1;
             }
