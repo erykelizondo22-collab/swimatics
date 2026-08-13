@@ -11,11 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Swimatics" />
-    <meta name="theme-color" content="#0ea5e9" />
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#0B1E33" />
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -30,26 +26,36 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         [v-cloak] { display: none; }
-        
+
+        :root {
+            --pool-depth: #0B1E33; --pool-depth-2: #0F2A47; --pool-depth-3: #081426;
+            --deck: #F7F8FA; --current: #0E7490; --current-light: #14919B;
+            --lane-brass: #A9825A; --slate-ink: #1E293B; --mist: #94A3B8; --hairline: #E2E8F0;
+        }
+
         body { 
             margin: 0; 
-            font-family: 'Poppins', system-ui, -apple-system, sans-serif; 
-            background: radial-gradient(ellipse 60% 40% at 15% 0%, rgba(14,165,233,0.05), transparent), #f8fafc;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            background: radial-gradient(ellipse 60% 40% at 15% 0%, rgba(14,116,144,0.05), transparent), var(--deck);
             background-attachment: fixed;
+            color: var(--slate-ink);
             -webkit-tap-highlight-color: transparent; 
             -webkit-font-smoothing: antialiased;
         }
 
         h2, h3 {
-            font-family: 'Poppins', system-ui, sans-serif;
-            letter-spacing: -0.02em;
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+            letter-spacing: -0.01em;
         }
 
-        ::selection { background: #0ea5e955; }
+        .font-mono-data { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+        .font-display { font-family: 'Space Grotesk', system-ui, sans-serif; }
+
+        ::selection { background: #0e749055; }
 
         * { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
         *::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -201,7 +207,7 @@
         @media (prefers-reduced-motion: reduce) {
             .page-transition { animation: none; }
         }
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 700; }
+        .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 700; font-variant-numeric: tabular-nums; }
         
         .font-slider { 
             -webkit-appearance: none; 
@@ -239,7 +245,7 @@
     </div>
 
     <div v-if="!user" class="min-h-screen flex items-center justify-center px-4 pb-20 relative overflow-hidden" style="background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(14,165,233,0.12), transparent), radial-gradient(ellipse 60% 50% at 100% 100%, rgba(99,102,241,0.08), transparent), #f8fafc;">
-        <div class="p-8 md:p-12 max-w-md w-full bg-white rounded-[2rem] shadow-2xl shadow-blue-900/5 text-center border border-slate-100 relative z-10">
+        <div class="p-8 md:p-12 max-w-md w-full bg-white rounded-2xl shadow-2xl shadow-blue-900/5 text-center border border-slate-100 relative z-10">
             <div class="mb-8">
                 <div class="w-24 h-24 mx-auto flex items-center justify-center bg-blue-50 rounded-3xl p-4 shadow-inner overflow-hidden">
                     <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain">
@@ -271,7 +277,7 @@
         
         <div class="glass-nav border-b border-slate-200/60 px-4 md:px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm transition-all">
             <div class="flex items-center gap-2 shrink-0" ref="navMenuRef">
-                <button v-if="myTeam" @click.stop="mobileNavOpen = !mobileNavOpen" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-black transition-colors shrink-0" aria-label="Toggle menu">
+                <button v-if="myTeam" @click.stop="mobileNavOpen = !mobileNavOpen" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-[var(--pool-depth-3)] transition-colors shrink-0" aria-label="Toggle menu">
                     <svg v-if="!mobileNavOpen" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     <svg v-else class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
@@ -288,7 +294,7 @@
                     <button v-for="t in [{k:null,l:'Gold'},{k:'individual',l:'Ind.'},{k:'bronze',l:'Bronze'},{k:'silver',l:'Silver'}]" :key="t.l"
                             @click="demoTierOverride = t.k"
                             class="text-[9px] md:text-[10px] font-black uppercase tracking-widest px-2 md:px-3 py-1.5 rounded-md transition-colors"
-                            :class="demoTierOverride === t.k ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-200'">{{t.l}}</button>
+                            :class="demoTierOverride === t.k ? 'bg-[var(--pool-depth)] text-white' : 'text-slate-500 hover:bg-slate-200'">{{t.l}}</button>
                 </div>
                 <span class="text-[10px] md:text-xs font-black bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm" :style="{ color: teamColors.primary }">{{myTeam}}</span>
             </div>
@@ -302,24 +308,27 @@
         <div v-if="mobileNavOpen" @click="mobileNavOpen = false" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[55] transition-opacity"></div>
 
         <div ref="drawerRef" class="fixed inset-y-0 left-0 z-[60] w-3/4 md:w-96 bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out" :class="mobileNavOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'">
-            <div class="p-6 text-white shrink-0 relative overflow-hidden" :style="{ background: 'linear-gradient(135deg, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
-                <button @click="mobileNavOpen = false" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors">
+            <div class="p-6 text-white shrink-0 relative overflow-hidden" style="background: linear-gradient(165deg, var(--pool-depth-2) 0%, var(--pool-depth) 55%, var(--pool-depth-3) 100%);">
+                <div class="absolute pointer-events-none" style="top: -40%; right: -20%; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(14,116,144,0.22), transparent 70%);"></div>
+                <button @click="mobileNavOpen = false" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors relative">
                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center overflow-hidden shrink-0">
-                        <img src="icon.png" alt="Swimatics" class="w-full h-full object-contain p-1.5">
-                    </div>
+                <div class="flex items-center gap-3 relative">
+                    <svg width="42" height="42" viewBox="0 0 32 32" class="shrink-0">
+                        <circle cx="16" cy="16" r="15" fill="none" stroke="var(--lane-brass)" stroke-width="1.5"/>
+                        <circle cx="16" cy="16" r="15" fill="none" stroke="var(--current-light)" stroke-width="1.5" stroke-dasharray="47 47" stroke-dashoffset="23.5"/>
+                        <circle cx="16" cy="16" r="4.5" fill="var(--lane-brass)"/>
+                    </svg>
                     <div class="min-w-0">
-                        <div class="font-black text-xl tracking-tight">Swimatics</div>
-                        <div class="text-[10px] font-bold uppercase tracking-widest opacity-80 truncate">{{myTeam}}</div>
+                        <div class="font-display font-bold text-xl tracking-tight">Swimatics</div>
+                        <div class="text-[10px] font-bold uppercase tracking-widest opacity-70 truncate">{{myTeam}}</div>
                     </div>
                 </div>
-                <div v-if="user" class="mt-5 pt-4 border-t border-white/20 flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-black shrink-0">{{ (coachName || user.email || '?').charAt(0).toUpperCase() }}</div>
+                <div v-if="user" class="mt-5 pt-4 border-t border-white/10 flex items-center gap-2.5 relative">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0" :style="{ background: 'linear-gradient(135deg, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">{{ (coachName || user.email || '?').charAt(0).toUpperCase() }}</div>
                     <div class="min-w-0">
                         <div class="text-xs font-black truncate">{{coachName || user.email}}</div>
-                        <div class="text-[9px] font-bold uppercase tracking-widest opacity-70">{{myRole}}</div>
+                        <div class="text-[9px] font-bold uppercase tracking-widest opacity-60">{{myRole}}</div>
                     </div>
                 </div>
             </div>
@@ -379,7 +388,7 @@
 
         <div :key="currentView" class="page-transition max-w-[1200px] mx-auto p-4 md:p-6 mt-6 relative">
             
-            <div v-if="myTeam && !myTeamPlan && currentView !== 'settings'" class="mb-6 bg-slate-900 text-white p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div v-if="myTeam && !myTeamPlan && currentView !== 'settings'" class="mb-6 bg-[var(--pool-depth)] text-white p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <div class="font-black uppercase tracking-widest text-xs mb-1">No plan selected yet</div>
                     <div class="text-sm text-white/70 font-medium">{{ myRole === 'owner' ? 'Choose a plan to unlock the rest of Swimatics — everyone gets a free 7-day trial.' : 'Ask your team owner to choose a plan to unlock the rest of Swimatics.' }}</div>
@@ -471,7 +480,7 @@
                         <p class="text-sm text-slate-600 font-medium">Describe the set you want to generate. The AI will automatically pull the last 100 workouts for <strong>{{group || 'this group'}}</strong> and structure a new set that fits your coaching style.</p>
                         <textarea v-model="aiPrompt" rows="4" placeholder="e.g., Give me a 1200y threshold set using 100s and 200s..." class="w-full bg-white border border-slate-200 p-4 rounded-2xl outline-none focus:ring-4 transition-all text-sm font-medium resize-none shadow-sm" :style="{ outlineColor: teamColors.primary }"></textarea>
                         
-                        <button @click="generateWithAI" :disabled="isAiLoading || !aiPrompt.trim()" :class="{'opacity-50 cursor-not-allowed': isAiLoading || !aiPrompt.trim()}" class="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-black hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 uppercase tracking-widest text-xs">
+                        <button @click="generateWithAI" :disabled="isAiLoading || !aiPrompt.trim()" :class="{'opacity-50 cursor-not-allowed': isAiLoading || !aiPrompt.trim()}" class="w-full bg-[var(--pool-depth)] text-white font-black py-4 rounded-2xl hover:bg-[var(--pool-depth-3)] hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 uppercase tracking-widest text-xs">
                             <span v-if="isAiLoading" class="flex items-center gap-2">
                                 <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                 Analyzing History & Generating...
@@ -483,25 +492,25 @@
             </div>
 
             <div v-if="currentView === 'onboarding'" class="max-w-2xl mx-auto mt-10 md:mt-16">
-                <div v-if="isProcessingInvite" class="bg-white p-10 md:p-14 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
+                <div v-if="isProcessingInvite" class="bg-white p-10 md:p-14 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
                     <svg class="animate-spin h-8 w-8 mx-auto mb-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Getting you set up...</h2>
                     <p class="text-sm text-slate-400 font-medium">Just a moment.</p>
                 </div>
 
-                <div v-else-if="coachRequestPending" class="bg-white p-10 md:p-14 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
+                <div v-else-if="coachRequestPending" class="bg-white p-10 md:p-14 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
                     <div class="text-4xl mb-4">⏳</div>
                     <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Request Sent</h2>
                     <p class="text-sm text-slate-500 font-medium max-w-sm mx-auto">Your request to join as a coach is waiting on approval from the team owner. You'll be able to sign in as soon as they approve it — check back soon.</p>
                 </div>
 
-                <div v-else-if="coachRequestBlockedMessage" class="bg-white p-10 md:p-14 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
+                <div v-else-if="coachRequestBlockedMessage" class="bg-white p-10 md:p-14 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
                     <div class="text-4xl mb-4">🚫</div>
                     <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Can't Join Right Now</h2>
                     <p class="text-sm text-slate-500 font-medium max-w-sm mx-auto">{{coachRequestBlockedMessage}}</p>
                 </div>
 
-                <div v-else-if="isCreatingVault" class="bg-white p-10 md:p-14 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
+                <div v-else-if="isCreatingVault" class="bg-white p-10 md:p-14 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
                     <svg class="animate-spin h-8 w-8 mx-auto mb-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Redirecting to checkout...</h2>
                     <p class="text-sm text-slate-400 font-medium">This only takes a second.</p>
@@ -513,7 +522,7 @@
                         <p class="text-sm font-bold text-slate-400 mt-2">A few details, then pick a plan — your vault is created once checkout completes.</p>
                     </div>
 
-                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 mb-6">
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6">
                         <h3 class="text-lg font-black text-slate-900 uppercase tracking-tight mb-4">Team Details</h3>
                         <input v-model="vaultSetupName" placeholder="Team Name (e.g. South Florida Aquatics)" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all mb-3">
                         <input v-model="vaultSetupLocation" placeholder="Location (e.g. Miami, FL)" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all mb-4">
@@ -529,7 +538,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 mb-6">
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6">
                         <h3 class="text-lg font-black text-slate-900 uppercase tracking-tight mb-4">Choose a Plan</h3>
                         <div class="flex items-center justify-center gap-3 mb-5">
                             <span class="text-xs font-black uppercase" :class="!vaultSetupAnnual ? 'text-slate-900' : 'text-slate-400'">Monthly</span>
@@ -556,7 +565,7 @@
                         <p class="text-xs text-amber-800 font-bold leading-relaxed">If you cancel — during your trial or anytime after — your team's data is permanently deleted 7 days later. There's no recovery after that. If you just want a break, letting the subscription lapse still starts this same 7-day countdown, so reach out first if you're unsure.</p>
                     </div>
 
-                    <button @click="submitVaultSetupAndCheckout" :disabled="!vaultSetupName.trim()" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-black hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0">Continue to Checkout →</button>
+                    <button @click="submitVaultSetupAndCheckout" :disabled="!vaultSetupName.trim()" class="w-full bg-[var(--pool-depth)] text-white font-black py-5 rounded-2xl shadow-lg hover:bg-[var(--pool-depth-3)] hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0">Continue to Checkout →</button>
                 </div>
             </div>
 
@@ -566,20 +575,20 @@
                     <p class="text-sm font-bold text-slate-400 mt-2">Let's get your team set up — this only takes a minute.</p>
                 </div>
 
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 mb-6">
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6">
                     <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-1">Team Name</h3>
                     <p class="text-slate-500 text-sm font-medium mb-4">This is what everyone will see throughout the app.</p>
                     <input v-model="setupTeamName" placeholder="e.g. South Florida Aquatics" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all">
                     <p class="text-[10px] text-slate-400 font-bold mt-3">Internal ID: <span class="mono">{{myTeam}}</span> — used only behind the scenes, you'll never need to share it.</p>
                 </div>
 
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 mb-6">
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6">
                     <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-1">Location</h3>
                     <p class="text-slate-500 text-sm font-medium mb-4">City and state is plenty — helps families and coaches know it's the right team.</p>
                     <input v-model="setupLocation" placeholder="e.g. Miami, FL" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-black text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all">
                 </div>
 
-                <div class="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] shadow-sm mb-6">
+                <div class="bg-slate-50 border border-slate-200 p-8 rounded-2xl shadow-sm mb-6">
                     <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Team Colors</h3>
                     <p class="text-slate-500 text-sm font-medium mb-6">Used throughout the app — headers, buttons, your invite links.</p>
                     <div class="flex gap-6">
@@ -594,7 +603,7 @@
                     </div>
                 </div>
 
-                <div class="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] shadow-sm mb-8">
+                <div class="bg-slate-50 border border-slate-200 p-8 rounded-2xl shadow-sm mb-8">
                     <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Team Logo</h3>
                     <p class="text-slate-500 text-sm font-medium mb-6">Optional — you can always add this later from Staff.</p>
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
@@ -609,7 +618,7 @@
                     </div>
                 </div>
 
-                <button @click="completeTeamSetup" :disabled="isSavingSetup || !setupTeamName.trim()" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-black hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0">{{ isSavingSetup ? 'Saving...' : "Let's Go →" }}</button>
+                <button @click="completeTeamSetup" :disabled="isSavingSetup || !setupTeamName.trim()" class="w-full bg-[var(--pool-depth)] text-white font-black py-5 rounded-2xl shadow-lg hover:bg-[var(--pool-depth-3)] hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0">{{ isSavingSetup ? 'Saving...' : "Let's Go →" }}</button>
             </div>
 
             <div v-if="currentView === 'registration' && isOffice" class="max-w-xl mx-auto space-y-6 mt-6">
@@ -617,9 +626,9 @@
                     <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Registration</h2>
                     <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Sign up new families</p>
                 </div>
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 text-center space-y-4">
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center space-y-4">
                     <p class="text-sm text-slate-500 font-medium max-w-sm mx-auto">Generate a QR code that signs a family up for {{myTeam}} automatically as a parent — hand someone your phone, or display it on a screen at check-in.</p>
-                    <button @click="showInviteQRCode" class="bg-slate-900 text-white px-8 py-4 rounded-xl font-black shadow-lg hover:bg-black transition-colors uppercase tracking-widest text-xs inline-flex items-center justify-center gap-2">
+                    <button @click="showInviteQRCode" class="bg-[var(--pool-depth)] text-white px-8 py-4 rounded-xl font-black shadow-lg hover:bg-[var(--pool-depth-3)] transition-colors uppercase tracking-widest text-xs inline-flex items-center justify-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-4v-4m8 0h2m-2 0h-2M4 12H2m2 0h2M9 4H4a1 1 0 00-1 1v4m6-5h6a1 1 0 011 1v4m-7 6v5m0 0H4a1 1 0 01-1-1v-5m0 0h5m6 0h6m0 0v5a1 1 0 01-1 1h-5"></path></svg>
                         Show QR Code
                     </button>
@@ -627,7 +636,7 @@
             </div>
 
             <div v-if="currentView === 'dashboard'" class="space-y-8 md:space-y-10">
-                <div class="rounded-[2.5rem] p-8 md:p-12 text-white shadow-xl shadow-slate-900/20 flex flex-col md:flex-row justify-between items-center relative overflow-hidden gap-8" :style="{ background: 'linear-gradient(to bottom right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
+                <div class="rounded-3xl p-8 md:p-12 text-white shadow-xl shadow-slate-900/20 flex flex-col md:flex-row justify-between items-center relative overflow-hidden gap-8" :style="{ background: 'linear-gradient(to bottom right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
                     <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
                     <div class="absolute bottom-0 left-0 w-40 h-40 bg-black opacity-20 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
                     
@@ -638,7 +647,7 @@
                     
                     <div class="relative z-10 flex flex-col sm:flex-row w-full md:w-auto gap-4">
                         <input type="file" id="pdfUpload" accept="application/pdf" @change="importPdf" class="hidden">
-                        <button @click="triggerPdfUpload" :disabled="isImportingPdf" class="w-full sm:w-auto bg-slate-900 text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:bg-black hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2">
+                        <button @click="triggerPdfUpload" :disabled="isImportingPdf" class="w-full sm:w-auto bg-[var(--pool-depth)] text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:bg-[var(--pool-depth-3)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                             Import PDF
                         </button>
@@ -688,13 +697,13 @@
                     <button @click="filterGroup = ''; pastRangeStart = ''; pastRangeEnd = '';" class="text-[10px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest px-2 py-3 transition-colors">Clear Filter</button>
                 </div>
 
-                <div v-if="workoutsTab === 'today' && !todaysWorkouts.length" class="text-center py-32 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2.5rem]">
+                <div v-if="workoutsTab === 'today' && !todaysWorkouts.length" class="text-center py-32 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-3xl">
                     No workouts today
                 </div>
-                <div v-else-if="workoutsTab === 'upcoming' && !upcomingWorkouts.length" class="text-center py-32 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2.5rem]">
+                <div v-else-if="workoutsTab === 'upcoming' && !upcomingWorkouts.length" class="text-center py-32 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-3xl">
                     No upcoming workouts
                 </div>
-                <div v-else-if="workoutsTab === 'past' && !pastWorkouts.length" class="text-center py-32 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2.5rem]">
+                <div v-else-if="workoutsTab === 'past' && !pastWorkouts.length" class="text-center py-32 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-3xl">
                     No past workouts found
                 </div>
 
@@ -706,7 +715,7 @@
                             <div class="h-1 flex-1 rounded-full opacity-20" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', transparent)' }"></div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-                            <div v-for="w in todaysWorkouts" :key="w.id" @click="loadWorkout(w)" class="p-6 bg-white border border-slate-200 rounded-[2rem] hover:shadow-xl hover:-translate-y-1 cursor-pointer transition duration-300 group relative flex flex-col">
+                            <div v-for="w in todaysWorkouts" :key="w.id" @click="loadWorkout(w)" class="p-6 bg-white border border-slate-200 rounded-2xl hover:shadow-xl hover:-translate-y-1 cursor-pointer transition duration-300 group relative flex flex-col">
                                 <button @click.stop="deleteWorkout(w.id)" class="absolute top-5 right-5 text-slate-300 hover:text-red-500 hover:bg-red-50 z-10 bg-slate-50 p-2.5 rounded-xl transition-all duration-200 opacity-0 group-hover:opacity-100">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
@@ -730,7 +739,7 @@
                             <div class="h-1 flex-1 bg-gradient-to-r from-amber-400 to-transparent rounded-full opacity-20"></div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-                            <div v-for="w in upcomingWorkouts" :key="w.id" @click="loadWorkout(w)" class="p-6 bg-white border border-slate-200 rounded-[2rem] hover:border-amber-400 hover:shadow-xl hover:-translate-y-1 cursor-pointer transition duration-300 group relative flex flex-col">
+                            <div v-for="w in upcomingWorkouts" :key="w.id" @click="loadWorkout(w)" class="p-6 bg-white border border-slate-200 rounded-2xl hover:border-amber-400 hover:shadow-xl hover:-translate-y-1 cursor-pointer transition duration-300 group relative flex flex-col">
                                 <button @click.stop="deleteWorkout(w.id)" class="absolute top-5 right-5 text-slate-300 hover:text-red-500 hover:bg-red-50 z-10 bg-slate-50 p-2.5 rounded-xl transition-all duration-200 opacity-0 group-hover:opacity-100">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
@@ -754,7 +763,7 @@
                             <div class="h-1 flex-1 bg-gradient-to-r from-slate-200 to-transparent rounded-full opacity-50"></div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-                            <div v-for="w in pastWorkouts" :key="w.id" @click="loadWorkout(w)" class="p-6 bg-slate-50/50 border border-slate-200/60 rounded-[2rem] hover:bg-white hover:border-slate-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer transition duration-300 group relative flex flex-col grayscale-[20%] hover:grayscale-0">
+                            <div v-for="w in pastWorkouts" :key="w.id" @click="loadWorkout(w)" class="p-6 bg-slate-50/50 border border-slate-200/60 rounded-2xl hover:bg-white hover:border-slate-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer transition duration-300 group relative flex flex-col grayscale-[20%] hover:grayscale-0">
                                 <button @click.stop="deleteWorkout(w.id)" class="absolute top-5 right-5 text-slate-300 hover:text-red-500 hover:bg-red-50 z-10 bg-white p-2.5 rounded-xl shadow-sm transition-all duration-200 opacity-0 group-hover:opacity-100">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
@@ -783,7 +792,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200 flex flex-wrap gap-5 items-end">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap gap-5 items-end">
                     <div class="flex-1 min-w-[150px]">
                         <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5 ml-2">Target Group</label>
                         <select v-model="analyticsGroup" class="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-sm font-bold uppercase outline-none transition-all cursor-pointer">
@@ -803,29 +812,29 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-slate-900 text-white p-8 rounded-[2rem] shadow-xl flex flex-col justify-center items-center text-center relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+                    <div class="bg-[var(--pool-depth)] text-white p-8 rounded-2xl shadow-xl flex flex-col justify-center items-center text-center relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
                         <div class="absolute top-0 right-0 w-32 h-32 opacity-20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" :style="{ backgroundColor: teamColors.primary }"></div>
                         <div class="text-[10px] font-black uppercase tracking-widest mb-2 relative z-10" :style="{ color: teamColors.primary }">Total Volume</div>
                         <div class="text-5xl md:text-6xl font-black tracking-tighter relative z-10">{{analyticsStats.totalYards.toLocaleString()}}</div>
                     </div>
-                    <div class="text-white p-8 rounded-[2rem] shadow-xl shadow-slate-900/10 flex flex-col justify-center items-center text-center hover:-translate-y-1 transition-transform duration-300" :style="{ background: 'linear-gradient(to bottom right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
+                    <div class="text-white p-8 rounded-2xl shadow-xl shadow-slate-900/10 flex flex-col justify-center items-center text-center hover:-translate-y-1 transition-transform duration-300" :style="{ background: 'linear-gradient(to bottom right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
                         <div class="text-[10px] font-black text-white/80 uppercase tracking-widest mb-2">Workouts Logged</div>
                         <div class="text-5xl md:text-6xl font-black tracking-tighter">{{analyticsStats.workouts}}</div>
                     </div>
-                    <div class="bg-amber-500 text-white p-8 rounded-[2rem] shadow-xl shadow-amber-900/20 flex flex-col justify-center items-center text-center hover:-translate-y-1 transition-transform duration-300">
+                    <div class="bg-amber-500 text-white p-8 rounded-2xl shadow-xl shadow-amber-900/20 flex flex-col justify-center items-center text-center hover:-translate-y-1 transition-transform duration-300">
                         <div class="text-[10px] font-black text-amber-100 uppercase tracking-widest mb-2">Avg Volume / Practice</div>
                         <div class="text-5xl md:text-6xl font-black tracking-tighter">{{analyticsStats.workouts ? Math.round(analyticsStats.totalYards / analyticsStats.workouts).toLocaleString() : 0}}</div>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 h-[400px] flex flex-col">
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 h-[400px] flex flex-col">
                         <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest border-b border-slate-100 pb-4 mb-6">Training Focus (Type)</h3>
                         <div class="flex-1 relative w-full h-full">
                             <canvas id="typeChart"></canvas>
                         </div>
                     </div>
-                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 h-[400px] flex flex-col">
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 h-[400px] flex flex-col">
                         <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest border-b border-slate-100 pb-4 mb-6">Stroke Distribution</h3>
                         <div class="flex-1 relative w-full h-full">
                             <canvas id="strokeChart"></canvas>
@@ -833,7 +842,7 @@
                     </div>
                 </div>
                 
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 h-[400px] flex flex-col">
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 h-[400px] flex flex-col">
                     <div class="mb-6 border-b border-slate-100 pb-4">
                         <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Energy System Load (Volume)</h3>
                         <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">Calculated via Group Aliases</p>
@@ -844,7 +853,7 @@
                 </div>
             </div>
 
-            <div v-if="currentView === 'setup'" class="max-w-2xl mx-auto bg-white p-8 md:p-12 rounded-[2.5rem] shadow-2xl shadow-slate-900/5 border border-slate-100 mt-8">
+            <div v-if="currentView === 'setup'" class="max-w-2xl mx-auto bg-white p-8 md:p-12 rounded-3xl shadow-2xl shadow-slate-900/5 border border-slate-100 mt-8">
                 <h2 class="text-3xl font-black text-center mb-10 uppercase tracking-tight text-slate-900">Practice Setup</h2>
                 <div class="space-y-6">
                     <div class="space-y-1.5">
@@ -877,10 +886,10 @@
                     <div class="space-y-1.5">
                         <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Visibility</label>
                         <div class="flex flex-wrap gap-2 bg-slate-50 border border-slate-200 p-1.5 rounded-2xl">
-                            <button @click="workoutVisibility = 'group'" :class="workoutVisibility === 'group' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all min-w-[45%]">Group Coaches</button>
-                            <button @click="workoutVisibility = 'private'" :class="workoutVisibility === 'private' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all min-w-[45%]">Private</button>
-                            <button @click="workoutVisibility = 'staff'" :class="workoutVisibility === 'staff' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all min-w-[45%]">Staff</button>
-                            <button @click="workoutVisibility = 'public'" :class="workoutVisibility === 'public' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all min-w-[45%]">Public</button>
+                            <button @click="workoutVisibility = 'group'" :class="workoutVisibility === 'group' ? 'bg-[var(--pool-depth)] text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all min-w-[45%]">Group Coaches</button>
+                            <button @click="workoutVisibility = 'private'" :class="workoutVisibility === 'private' ? 'bg-[var(--pool-depth)] text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all min-w-[45%]">Private</button>
+                            <button @click="workoutVisibility = 'staff'" :class="workoutVisibility === 'staff' ? 'bg-[var(--pool-depth)] text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all min-w-[45%]">Staff</button>
+                            <button @click="workoutVisibility = 'public'" :class="workoutVisibility === 'public' ? 'bg-[var(--pool-depth)] text-white shadow-md' : 'text-slate-500'" type="button" class="flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all min-w-[45%]">Public</button>
                         </div>
                         <p class="text-[10px] text-slate-400 font-bold ml-2 leading-relaxed">
                             <span v-if="workoutVisibility === 'group'">Only coaches assigned to {{ group || 'this group' }} can see it.</span>
@@ -959,7 +968,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col flex-1 relative min-h-[600px]">
+                    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 flex flex-col flex-1 relative min-h-[600px]">
                         <div class="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-slate-100 pb-6 gap-4">
                             <h2 class="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-900 truncate pr-2">{{title || 'Untitled Workout'}}</h2>
                             
@@ -974,7 +983,7 @@
                 </div>
 
                 <div class="lg:col-span-4 space-y-6">
-                    <div class="bg-slate-900 text-white p-8 md:p-10 rounded-[2rem] shadow-2xl text-center relative overflow-hidden">
+                    <div class="bg-[var(--pool-depth)] text-white p-8 md:p-10 rounded-2xl shadow-2xl text-center relative overflow-hidden">
                         <div class="absolute top-0 right-0 w-32 h-32 opacity-20 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" :style="{ backgroundColor: teamColors.primary }"></div>
                         
                         <div class="flex justify-center items-end gap-6 mb-4 relative z-10">
@@ -1005,7 +1014,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 space-y-4">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                         <button @click="save" class="w-full text-white font-black py-4 rounded-xl shadow-lg uppercase tracking-widest hover:scale-[1.02] hover:shadow-xl transition-all duration-300 text-sm" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">Save Workout</button>
                         <button @click="printWorkoutSheet()" class="w-full bg-slate-100 text-slate-700 py-4 rounded-xl font-black uppercase tracking-widest border border-slate-200 hover:bg-slate-200 hover:text-slate-900 transition-colors text-sm">Print Sheet</button>
                         
@@ -1028,11 +1037,11 @@
                         <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Macrocycles</h2>
                         <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Long-term Season Planning</p>
                     </div>
-                    <button @click="startNewPlan" class="w-full sm:w-auto bg-slate-900 text-white px-8 py-3.5 rounded-xl font-black shadow-lg hover:bg-black hover:-translate-y-0.5 transition-all uppercase tracking-widest text-xs">+ Build Plan</button>
+                    <button @click="startNewPlan" class="w-full sm:w-auto bg-[var(--pool-depth)] text-white px-8 py-3.5 rounded-xl font-black shadow-lg hover:bg-[var(--pool-depth-3)] hover:-translate-y-0.5 transition-all uppercase tracking-widest text-xs">+ Build Plan</button>
                 </div>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-                    <div v-for="plan in seasonPlans" :key="plan.id" @click="editPlan(plan)" class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer transition-all duration-300 group flex flex-col">
+                    <div v-for="plan in seasonPlans" :key="plan.id" @click="editPlan(plan)" class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer transition-all duration-300 group flex flex-col">
                         <div class="text-[10px] font-black uppercase tracking-widest mb-4 self-start px-3 py-1 rounded-md border" :style="{ color: teamColors.primary, backgroundColor: teamColors.primary + '10', borderColor: teamColors.primary + '30' }">{{plan.group_name}}</div>
                         <h3 class="text-2xl font-black uppercase tracking-tight mb-6 transition-colors text-slate-900 flex-1">{{plan.title}}</h3>
                         <div class="flex justify-between items-center text-[10px] md:text-xs font-bold text-slate-500 uppercase border-t border-slate-100 pt-5 mt-auto">
@@ -1043,7 +1052,7 @@
                 </div>
             </div>
 
-            <div v-if="currentView === 'plan-builder'" class="max-w-[1200px] mx-auto bg-white p-8 md:p-12 rounded-[2.5rem] shadow-xl border border-slate-100 mt-6">
+            <div v-if="currentView === 'plan-builder'" class="max-w-[1200px] mx-auto bg-white p-8 md:p-12 rounded-3xl shadow-xl border border-slate-100 mt-6">
                 <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-6">
                     <h2 class="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-900">Plan Builder</h2>
                     <div class="flex gap-3">
@@ -1084,7 +1093,7 @@
                         <button @click="addWeek" :disabled="!planForm.group_name" class="text-[10px] font-black bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl uppercase tracking-widest transition-colors shadow-sm disabled:opacity-50" :style="{ color: teamColors.primary }">+ Add Week</button>
                     </div>
 
-                    <div v-if="!planForm.group_name" class="text-center py-12 border-2 border-dashed border-slate-200 rounded-[2rem] text-sm font-black text-slate-400 uppercase tracking-widest">
+                    <div v-if="!planForm.group_name" class="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl text-sm font-black text-slate-400 uppercase tracking-widest">
                         Select a Target Group to build your macrocycle
                     </div>
                     
@@ -1123,20 +1132,20 @@
                 </div>
 
                 <div v-if="seasonPlanTab === 'analytics'" class="space-y-10">
-                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col h-[400px]">
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[400px]">
                         <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest border-b border-slate-100 pb-4 mb-6">Planned Energy Systems (Weekly Load)</h3>
                         <div class="flex-1 relative w-full h-full"><canvas id="energyPlanChart"></canvas></div>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col h-[400px]">
+                        <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[400px]">
                             <div class="mb-6 border-b border-slate-100 pb-4">
                                 <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Actual Breakdown (Type)</h3>
                                 <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">From Workouts Logged in Season</p>
                             </div>
                             <div class="flex-1 relative w-full h-full"><canvas id="seasonTypeChartCanvas"></canvas></div>
                         </div>
-                        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col h-[400px]">
+                        <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[400px]">
                             <div class="mb-6 border-b border-slate-100 pb-4">
                                 <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Actual Stroke Dist.</h3>
                                 <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">From Workouts Logged in Season</p>
@@ -1159,7 +1168,7 @@
                             Show QR Code
                         </button>
                         <div class="relative w-full sm:w-auto">
-                            <button @click="showInviteShareMenu = !showInviteShareMenu" class="w-full sm:w-auto bg-slate-900 text-white px-6 py-3.5 rounded-xl font-black shadow-lg hover:bg-black transition-colors uppercase tracking-widest text-xs flex items-center justify-center gap-2">
+                            <button @click="showInviteShareMenu = !showInviteShareMenu" class="w-full sm:w-auto bg-[var(--pool-depth)] text-white px-6 py-3.5 rounded-xl font-black shadow-lg hover:bg-[var(--pool-depth-3)] transition-colors uppercase tracking-widest text-xs flex items-center justify-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                                 Send Coach Invite
                             </button>
@@ -1173,7 +1182,7 @@
                     </div>
                 </div>
 
-                <div v-if="(myRole === 'owner' || myRole === 'admin') && pendingCoachRequests.length" class="bg-amber-50 border border-amber-200 p-6 rounded-[2rem] shadow-sm mb-6">
+                <div v-if="(myRole === 'owner' || myRole === 'admin') && pendingCoachRequests.length" class="bg-amber-50 border border-amber-200 p-6 rounded-2xl shadow-sm mb-6">
                     <h3 class="text-lg font-black text-amber-900 uppercase tracking-tight mb-1">Pending Coach Requests</h3>
                     <p class="text-amber-700/80 text-xs font-bold mb-4">Someone used your invite link — approve them to grant coach access, or deny to turn them away.</p>
                     <div class="space-y-2">
@@ -1187,7 +1196,7 @@
                     </div>
                 </div>
 
-                <div v-if="myRole === 'owner'" class="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] shadow-sm mb-6">
+                <div v-if="myRole === 'owner'" class="bg-slate-50 border border-slate-200 p-8 rounded-2xl shadow-sm mb-6">
                     <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Team Colors</h3>
                     <p class="text-slate-500 text-sm font-medium mb-6">Set your team's primary and secondary colors.</p>
                     <div class="flex gap-6">
@@ -1202,7 +1211,7 @@
                     </div>
                 </div>
 
-                <div v-if="myRole === 'owner'" class="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] shadow-sm mb-6">
+                <div v-if="myRole === 'owner'" class="bg-slate-50 border border-slate-200 p-8 rounded-2xl shadow-sm mb-6">
                     <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Team Branding</h3>
                     <p class="text-slate-500 text-sm font-medium mb-6">Upload your team logo. It will be displayed as a secure watermark.</p>
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
@@ -1224,7 +1233,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200 space-y-4">
+                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                     <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest border-b border-slate-100 pb-4 mb-4">Active Members</h3>
                     <div v-for="member in visibleStaffList" :key="member.id" class="flex flex-col sm:flex-row justify-between sm:items-center bg-slate-50 p-5 rounded-2xl border border-slate-200 gap-4 hover:border-slate-300 transition-colors">
                         <div>
@@ -1233,7 +1242,7 @@
                             <div v-if="(myRole === 'owner' || myRole === 'admin') && member.role !== 'parent' && teamGroupsList.length" class="mt-3 flex flex-wrap gap-1.5 items-center">
                                 <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mr-1">Groups:</span>
                                 <button v-for="g in teamGroupsList" :key="g.id" @click="toggleCoachGroup(member.id, g.name)"
-                                        :class="(coachGroupLinksMap[member.id] || []).includes(g.name) ? 'bg-slate-900 text-white' : 'bg-white text-slate-400 border border-slate-200'"
+                                        :class="(coachGroupLinksMap[member.id] || []).includes(g.name) ? 'bg-[var(--pool-depth)] text-white' : 'bg-white text-slate-400 border border-slate-200'"
                                         class="text-[9px] font-black uppercase px-2 py-1 rounded-md transition-colors">{{g.name}}</button>
                             </div>
                         </div>
@@ -1272,12 +1281,12 @@
                     <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Everyone who has joined this team</p>
                 </div>
 
-                <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                     <input v-model="accountSearchQuery" placeholder="Search by name or email..." class="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-sm font-bold outline-none">
                     <p class="text-[10px] text-slate-400 font-bold mt-2 ml-1">Showing unpromoted parent accounts only. Once promoted, they move to the Staff page.</p>
                 </div>
 
-                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
                     <div v-for="acc in filteredAccounts" :key="acc.id">
                         <div @click="toggleAccountExpand(acc)" class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-slate-50 transition-colors">
                             <div>
@@ -1320,7 +1329,7 @@
                                         <option value="" disabled>Add a swimmer...</option>
                                         <option v-for="s in unlinkedSwimmersFor(acc.id)" :key="s.id" :value="s.id">{{s.first_name}} {{s.last_name}}</option>
                                     </select>
-                                    <button @click="addSwimmerToAccount(acc.id)" class="bg-slate-900 text-white px-4 rounded-lg font-black uppercase text-[10px] tracking-widest">Add</button>
+                                    <button @click="addSwimmerToAccount(acc.id)" class="bg-[var(--pool-depth)] text-white px-4 rounded-lg font-black uppercase text-[10px] tracking-widest">Add</button>
                                 </div>
                             </div>
 
@@ -1376,14 +1385,14 @@
                         </select>
                         <button @click="exportRosterCsv" class="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-slate-50 transition-colors">Roster CSV</button>
                         <button @click="exportAttendanceCsv" class="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-slate-50 transition-colors">Attend. CSV</button>
-                        <button @click="exportAttendancePdf" class="bg-slate-900 text-white px-4 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-black transition-colors">Attend. PDF</button>
+                        <button @click="exportAttendancePdf" class="bg-[var(--pool-depth)] text-white px-4 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-[var(--pool-depth-3)] transition-colors">Attend. PDF</button>
                     </div>
                 </div>
 
-                <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200">
+                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex gap-3 mb-8">
                         <input v-model="newGroupName" placeholder="New Group Name" class="flex-1 bg-slate-50 p-4 rounded-xl font-black uppercase outline-none border border-slate-200 transition-all text-slate-800">
-                        <button @click="addGroup" class="bg-slate-900 text-white px-8 rounded-xl font-black uppercase tracking-widest hover:bg-black transition-colors shadow-md">Add</button>
+                        <button @click="addGroup" class="bg-[var(--pool-depth)] text-white px-8 rounded-xl font-black uppercase tracking-widest hover:bg-[var(--pool-depth-3)] transition-colors shadow-md">Add</button>
                     </div>
 
                     <div class="space-y-3 relative">
@@ -1432,7 +1441,7 @@
                 </div>
 
                 <div v-if="groupDetailTab === 'swimmers'" class="space-y-6">
-                    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                         <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest mb-4">Add Swimmer</h3>
                         <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
                             <input v-model="newSwimmer.first_name" placeholder="First Name" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
@@ -1447,11 +1456,11 @@
                                 <option value="" disabled>Group</option>
                                 <option v-for="g in teamGroupsList" :key="g.id" :value="g.name">{{g.name}}</option>
                             </select>
-                            <button @click="addSwimmer" class="bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-xs">Add</button>
+                            <button @click="addSwimmer" class="bg-[var(--pool-depth)] text-white rounded-xl font-black uppercase tracking-widest text-xs">Add</button>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
                         <div v-for="s in (selectedGroupForEdit.id === null ? swimmersByGroup.unassigned : (swimmersByGroup.groups.find(g => g.name === selectedGroupForEdit.name)?.swimmers || []))" :key="s.id" class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
                                 <div class="flex items-center gap-2">
@@ -1488,7 +1497,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
                         <div v-for="s in filteredAttendanceSwimmers" :key="s.id" class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="flex items-center gap-3">
                                 <div class="text-base font-black w-12 text-center shrink-0" v-if="swimmerAttendancePercent[s.id] !== undefined && swimmerAttendancePercent[s.id] !== null" :class="swimmerAttendancePercent[s.id] >= 90 ? 'text-emerald-500' : swimmerAttendancePercent[s.id] >= 75 ? 'text-amber-500' : 'text-red-500'">{{swimmerAttendancePercent[s.id]}}%</div>
@@ -1529,13 +1538,13 @@
                         </div>
                     </div>
 
-                    <div class="rounded-[2rem] p-6 text-white text-center shadow-lg" :style="{ background: 'linear-gradient(to bottom right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
+                    <div class="rounded-2xl p-6 text-white text-center shadow-lg" :style="{ background: 'linear-gradient(to bottom right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
                         <div class="text-[9px] font-black uppercase tracking-widest opacity-80 mb-1">{{selectedGroupForEdit.name}} Overall Attendance ({{ selectedSeasonName }})</div>
                         <div class="text-4xl font-black tracking-tighter">{{ groupAttendanceSummary[selectedGroupForEdit.name] !== undefined && groupAttendanceSummary[selectedGroupForEdit.name] !== null ? groupAttendanceSummary[selectedGroupForEdit.name] + '%' : '—' }}</div>
                     </div>
                 </div>
 
-                <div v-if="groupDetailTab === 'settings' && selectedGroupForEdit.id !== null" class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200">
+                <div v-if="groupDetailTab === 'settings' && selectedGroupForEdit.id !== null" class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
 
                     <div class="mb-8 pb-8 border-b border-slate-100 relative">
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Practice Start Time</label>
@@ -1547,15 +1556,15 @@
                         <div v-if="showTimeWheelFor" @click="closeTimeWheel" class="fixed inset-0 z-40"></div>
                         <div v-if="showTimeWheelFor" class="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 p-4 flex gap-2" style="width: 240px;">
                             <div class="flex-1 h-40 overflow-y-auto rounded-xl bg-slate-50" style="scroll-snap-type: y mandatory;">
-                                <div v-for="h in 12" :key="h" @click="wheelHour = h" :class="wheelHour === h ? 'bg-slate-900 text-white font-black' : 'text-slate-500 font-bold hover:bg-slate-100'" class="text-center py-2.5 cursor-pointer text-sm transition-colors" style="scroll-snap-align: center;">{{h}}</div>
+                                <div v-for="h in 12" :key="h" @click="wheelHour = h" :class="wheelHour === h ? 'bg-[var(--pool-depth)] text-white font-black' : 'text-slate-500 font-bold hover:bg-slate-100'" class="text-center py-2.5 cursor-pointer text-sm transition-colors" style="scroll-snap-align: center;">{{h}}</div>
                             </div>
                             <div class="flex-1 h-40 overflow-y-auto rounded-xl bg-slate-50" style="scroll-snap-type: y mandatory;">
-                                <div v-for="m in [0,5,10,15,20,25,30,35,40,45,50,55]" :key="m" @click="wheelMinute = m" :class="wheelMinute === m ? 'bg-slate-900 text-white font-black' : 'text-slate-500 font-bold hover:bg-slate-100'" class="text-center py-2.5 cursor-pointer text-sm transition-colors" style="scroll-snap-align: center;">{{ String(m).padStart(2,'0') }}</div>
+                                <div v-for="m in [0,5,10,15,20,25,30,35,40,45,50,55]" :key="m" @click="wheelMinute = m" :class="wheelMinute === m ? 'bg-[var(--pool-depth)] text-white font-black' : 'text-slate-500 font-bold hover:bg-slate-100'" class="text-center py-2.5 cursor-pointer text-sm transition-colors" style="scroll-snap-align: center;">{{ String(m).padStart(2,'0') }}</div>
                             </div>
                             <div class="flex-1 h-40 overflow-y-auto rounded-xl bg-slate-50" style="scroll-snap-type: y mandatory;">
-                                <div v-for="ap in ['AM','PM']" :key="ap" @click="wheelAmPm = ap" :class="wheelAmPm === ap ? 'bg-slate-900 text-white font-black' : 'text-slate-500 font-bold hover:bg-slate-100'" class="text-center py-2.5 cursor-pointer text-sm transition-colors" style="scroll-snap-align: center;">{{ap}}</div>
+                                <div v-for="ap in ['AM','PM']" :key="ap" @click="wheelAmPm = ap" :class="wheelAmPm === ap ? 'bg-[var(--pool-depth)] text-white font-black' : 'text-slate-500 font-bold hover:bg-slate-100'" class="text-center py-2.5 cursor-pointer text-sm transition-colors" style="scroll-snap-align: center;">{{ap}}</div>
                             </div>
-                            <button @click="confirmTimeWheel(selectedGroupForEdit)" class="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-lg whitespace-nowrap">Set Time</button>
+                            <button @click="confirmTimeWheel(selectedGroupForEdit)" class="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-[var(--pool-depth)] text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-lg whitespace-nowrap">Set Time</button>
                         </div>
                     </div>
 
@@ -1602,9 +1611,9 @@
             <div v-if="currentView === 'meets'" class="max-w-5xl mx-auto space-y-6 mt-6">
                 <div class="flex justify-between items-end border-b border-slate-200 pb-6">
                     <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Meets</h2>
-                    <button @click="showNewMeetForm = !showNewMeetForm" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs">+ New Meet</button>
+                    <button @click="showNewMeetForm = !showNewMeetForm" class="bg-[var(--pool-depth)] text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs">+ New Meet</button>
                 </div>
-                <div v-if="showNewMeetForm" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div v-if="showNewMeetForm" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-3">
                     <input v-model="newMeet.name" placeholder="Meet Name" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none md:col-span-2">
                     <input v-model="newMeet.start_date" type="date" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
                     <select v-model="newMeet.course" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
@@ -1618,14 +1627,14 @@
                         <input type="checkbox" v-model="newMeet.allow_parent_event_selection" class="w-4 h-4 accent-slate-900">
                         <span class="text-xs font-bold text-slate-700">Let parents pick their kid's events (off = coaches only)</span>
                     </label>
-                    <button @click="createMeet" class="md:col-span-4 bg-slate-900 text-white py-3 rounded-xl font-black uppercase tracking-widest text-xs">Create Meet</button>
+                    <button @click="createMeet" class="md:col-span-4 bg-[var(--pool-depth)] text-white py-3 rounded-xl font-black uppercase tracking-widest text-xs">Create Meet</button>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div v-for="m in meetsList" :key="m.id" @click="openMeetDetail(m)" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 hover:shadow-lg cursor-pointer transition-all">
+                    <div v-for="m in meetsList" :key="m.id" @click="openMeetDetail(m)" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg cursor-pointer transition-all">
                         <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{{m.course}} • {{formatPracticeDate(m.start_date)}}</div>
                         <div class="font-black text-xl text-slate-900 uppercase">{{m.name}}</div>
                     </div>
-                    <div v-if="!isPageLoading && !meetsList.length" class="sm:col-span-2 text-center py-20 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2rem]">No meets yet</div>
+                    <div v-if="!isPageLoading && !meetsList.length" class="sm:col-span-2 text-center py-20 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-2xl">No meets yet</div>
                 </div>
             </div>
 
@@ -1637,7 +1646,7 @@
                     </div>
                     <div class="flex gap-2 items-center">
                         <button @click="exportMeetResultsCsv" class="text-[10px] font-black text-slate-600 bg-white border border-slate-200 px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors">Export CSV</button>
-                        <button @click="exportMeetEntriesHy3" class="text-[10px] font-black text-white bg-slate-900 px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-black transition-colors">Export HY3</button>
+                        <button @click="exportMeetEntriesHy3" class="text-[10px] font-black text-white bg-slate-900 px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-[var(--pool-depth-3)] transition-colors">Export HY3</button>
                         <button @click="currentView = 'meets'" class="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl uppercase tracking-widest">Back</button>
                     </div>
                 </div>
@@ -1672,7 +1681,7 @@
                             <span class="w-2 h-2 rounded-full" :class="groupColorFor(g.name).dot"></span>{{g.name}}
                         </span>
                     </div>
-                    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-x-auto">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
                         <table class="border-collapse text-xs">
                             <thead>
                                 <tr>
@@ -1707,7 +1716,7 @@
                             <option value="Free">Free</option><option value="Back">Back</option><option value="Breast">Breast</option><option value="Fly">Fly</option><option value="IM">IM</option>
                         </select>
                         <input v-model="newMeetEvent.qual_time" placeholder="Qual Time (m:ss.hh)" class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
-                        <button @click="addMeetEvent" class="bg-slate-900 text-white rounded-lg font-black uppercase tracking-widest text-[10px]">Add</button>
+                        <button @click="addMeetEvent" class="bg-[var(--pool-depth)] text-white rounded-lg font-black uppercase tracking-widest text-[10px]">Add</button>
                     </div>
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
                         <div v-for="e in meetEventsList" :key="e.id" class="p-4 flex justify-between items-center">
@@ -1736,8 +1745,8 @@
 
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-3 sm:items-center">
                         <div class="flex bg-slate-50 border border-slate-200 rounded-xl p-1 shrink-0">
-                            <button @click="entriesViewMode = 'swimmer'" :class="entriesViewMode === 'swimmer' ? 'bg-slate-900 text-white' : 'text-slate-500'" class="px-4 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest transition-colors">By Swimmer</button>
-                            <button @click="entriesViewMode = 'event'" :class="entriesViewMode === 'event' ? 'bg-slate-900 text-white' : 'text-slate-500'" class="px-4 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest transition-colors">By Event</button>
+                            <button @click="entriesViewMode = 'swimmer'" :class="entriesViewMode === 'swimmer' ? 'bg-[var(--pool-depth)] text-white' : 'text-slate-500'" class="px-4 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest transition-colors">By Swimmer</button>
+                            <button @click="entriesViewMode = 'event'" :class="entriesViewMode === 'event' ? 'bg-[var(--pool-depth)] text-white' : 'text-slate-500'" class="px-4 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest transition-colors">By Event</button>
                         </div>
                         <select v-model="entriesGroupFilter" class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none flex-1">
                             <option value="">All Groups {{ myRole === 'coach' ? '(Yours)' : '' }}</option>
@@ -1794,7 +1803,7 @@
                                     <option value="">+ Add swimmer...</option>
                                     <option v-for="s in enterableSwimmers" :key="s.id" :value="s.id">{{s.first_name}} {{s.last_name}} ({{s.group_name}})</option>
                                 </select>
-                                <button @click="addMeetEntry(newEntrySwimmerId[e.id], e.id); newEntrySwimmerId[e.id] = ''" class="bg-slate-900 text-white px-4 rounded-lg text-[10px] font-black uppercase shrink-0">Add</button>
+                                <button @click="addMeetEntry(newEntrySwimmerId[e.id], e.id); newEntrySwimmerId[e.id] = ''" class="bg-[var(--pool-depth)] text-white px-4 rounded-lg text-[10px] font-black uppercase shrink-0">Add</button>
                             </div>
                         </div>
                         <div v-if="!isPageLoading && !filteredMeetEvents.length" class="p-10 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No events yet — add on the Events tab or use Import</div>
@@ -1808,9 +1817,9 @@
                     <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Upload a roster, times, or meet event file</p>
                 </div>
 
-                <div v-if="importState.status === 'idle'" class="bg-white p-10 rounded-[2rem] shadow-sm border-2 border-dashed border-slate-200 text-center">
+                <div v-if="importState.status === 'idle'" class="bg-white p-10 rounded-2xl shadow-sm border-2 border-dashed border-slate-200 text-center">
                     <input type="file" id="genericImportUpload" @change="handleGenericImport" class="hidden">
-                    <button @click="triggerGenericImportUpload" class="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs">Choose File</button>
+                    <button @click="triggerGenericImportUpload" class="bg-[var(--pool-depth)] text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs">Choose File</button>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">PDF, CSV, TXT, XLSX, or Hy-Tek exports (HY3/CL2/EV3)</p>
                 </div>
 
@@ -1835,7 +1844,7 @@
                         </table>
                     </div>
                     <div class="flex gap-3">
-                        <button @click="confirmImport" class="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-sm">Confirm Import ({{importPreview.records.filter(r=>r._include).length}} rows)</button>
+                        <button @click="confirmImport" class="flex-1 bg-[var(--pool-depth)] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-sm">Confirm Import ({{importPreview.records.filter(r=>r._include).length}} rows)</button>
                         <button @click="resetImport" class="px-8 bg-slate-50 border border-slate-200 rounded-2xl font-black uppercase tracking-widest text-xs">Cancel</button>
                     </div>
                 </div>
@@ -1848,7 +1857,7 @@
                     <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Site Layout</h2>
                     <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Toggle and drag to reorder what your team sees</p>
                 </div>
-                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 p-4 space-y-2">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-2">
                     <div v-for="(m, index) in layoutDraft" :key="m.key"
                          draggable="true" @dragstart="layoutDragStart(index)" @dragover.prevent @drop="layoutDrop(index)"
                          :class="{ 'opacity-50': draggedLayoutIndex === index, 'opacity-50 grayscale': !m.enabled }"
@@ -1863,7 +1872,7 @@
                         </button>
                     </div>
                 </div>
-                <button @click="saveLayout" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-sm">Save Layout</button>
+                <button @click="saveLayout" class="w-full bg-[var(--pool-depth)] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-sm">Save Layout</button>
             </div>
 
             <div v-if="currentView === 'settings'" class="max-w-2xl mx-auto space-y-6 mt-6">
@@ -1872,30 +1881,30 @@
                     <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Just for you, on this device</p>
                 </div>
 
-                <div v-if="myRole === 'owner'" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                <div v-if="myRole === 'owner'" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <h3 class="text-xl font-black uppercase tracking-tight text-slate-900 mb-4">Plan & Billing</h3>
                     <div class="flex items-center justify-between gap-3 p-4 rounded-2xl" :class="planStatusDisplay.urgent ? 'bg-red-50' : 'bg-slate-50'">
                         <div>
                             <div class="font-black text-sm" :class="planStatusDisplay.urgent ? 'text-red-600' : 'text-slate-800'">{{planStatusDisplay.label}}</div>
                             <div class="text-xs font-medium mt-1" :class="planStatusDisplay.urgent ? 'text-red-500' : 'text-slate-500'">{{planStatusDisplay.detail}}</div>
                         </div>
-                        <button v-if="planStatusDisplay.showPortal" @click="openBillingPortal" class="text-[10px] font-black uppercase bg-slate-900 text-white px-4 py-2.5 rounded-lg shrink-0">Manage Billing</button>
-                        <a v-else href="/" class="text-[10px] font-black uppercase bg-slate-900 text-white px-4 py-2.5 rounded-lg shrink-0">Choose a Plan</a>
+                        <button v-if="planStatusDisplay.showPortal" @click="openBillingPortal" class="text-[10px] font-black uppercase bg-[var(--pool-depth)] text-white px-4 py-2.5 rounded-lg shrink-0">Manage Billing</button>
+                        <a v-else href="/" class="text-[10px] font-black uppercase bg-[var(--pool-depth)] text-white px-4 py-2.5 rounded-lg shrink-0">Choose a Plan</a>
                     </div>
                     <p v-if="planStatusDisplay.showPortal" class="text-[10px] text-slate-400 font-bold mt-3 px-1">Canceling deletes your team's data permanently 7 days later — there's no recovery after that.</p>
                 </div>
 
-                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <h3 class="text-xl font-black uppercase tracking-tight text-slate-900 mb-1">Appearance</h3>
                     <p class="text-xs text-slate-400 font-bold mb-4">Just for you — everyone else keeps their own choice.</p>
                     <div class="flex gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 w-full sm:w-auto sm:inline-flex">
-                        <button @click="setThemePreference('auto')" :class="themePreference === 'auto' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">📱 Match Device</button>
-                        <button @click="setThemePreference('light')" :class="themePreference === 'light' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">☀️ Light</button>
-                        <button @click="setThemePreference('dark')" :class="themePreference === 'dark' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">🌙 Dark</button>
+                        <button @click="setThemePreference('auto')" :class="themePreference === 'auto' ? 'bg-[var(--pool-depth)] text-white shadow-md' : 'text-slate-500'" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">📱 Match Device</button>
+                        <button @click="setThemePreference('light')" :class="themePreference === 'light' ? 'bg-[var(--pool-depth)] text-white shadow-md' : 'text-slate-500'" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">☀️ Light</button>
+                        <button @click="setThemePreference('dark')" :class="themePreference === 'dark' ? 'bg-[var(--pool-depth)] text-white shadow-md' : 'text-slate-500'" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">🌙 Dark</button>
                     </div>
                 </div>
 
-                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <h3 class="text-xl font-black uppercase tracking-tight text-slate-900 mb-4">Notifications</h3>
                     <div v-if="pushSubscribed" class="flex items-center justify-between gap-3">
                         <div class="flex items-center gap-3">
@@ -1906,7 +1915,7 @@
                     </div>
                     <div v-else-if="pushSupported" class="space-y-3">
                         <p class="text-sm text-slate-500 font-medium">Turn on push notifications to get alerts even when Swimatics isn't open.</p>
-                        <button @click="enablePushNotifications" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs">Enable Notifications</button>
+                        <button @click="enablePushNotifications" class="bg-[var(--pool-depth)] text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs">Enable Notifications</button>
                     </div>
                     <div v-else class="space-y-2">
                         <p class="text-xs font-bold text-red-500">Push notifications aren't available in this browser yet.</p>
@@ -1914,7 +1923,7 @@
                     </div>
                 </div>
 
-                <div v-if="!isParent && !isOffice" class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200 flex justify-between items-center gap-3">
+                <div v-if="!isParent && !isOffice" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center gap-3">
                     <div>
                         <span class="font-bold text-slate-800 text-sm block">Allow Parents to Message You</span>
                         <span class="text-xs text-slate-400 font-medium">When off, parents can't select you when starting a new conversation.</span>
@@ -1924,7 +1933,7 @@
                     </button>
                 </div>
 
-                <div v-if="pushSubscribed" class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                <div v-if="pushSubscribed" class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
                     <div v-for="t in myNotificationTypes" :key="t.key" class="p-5 flex justify-between items-center gap-3">
                         <span class="font-bold text-slate-800 text-sm">{{t.label}}</span>
                         <button @click="toggleNotificationPref(t.key)" :class="notificationPrefs[t.key] !== false ? 'bg-emerald-500' : 'bg-slate-300'" class="w-12 h-7 rounded-full relative transition-colors shrink-0">
@@ -1933,7 +1942,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
                     <button @click="switchAccount" class="w-full text-left p-5 font-black uppercase tracking-widest text-sm text-slate-700 hover:bg-slate-50 transition-colors rounded-t-[2rem]">Switch Account</button>
                     <button @click="logout" class="w-full text-left p-5 font-black uppercase tracking-widest text-sm text-red-500 hover:bg-red-50 transition-colors rounded-b-[2rem]">Log Out</button>
                 </div>
@@ -1948,7 +1957,7 @@
                 <template v-if="isAthlete">
                     <div>
                         <h3 class="text-lg font-black uppercase tracking-tight text-slate-900 mb-3">Announcements</h3>
-                        <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
                             <div v-for="a in broadcastHistory" :key="a.id" class="p-4">
                                 <div class="flex justify-between items-start gap-3">
                                     <span class="font-black text-slate-800 text-sm">{{a.title}}</span>
@@ -1971,22 +1980,22 @@
                         <p class="text-xs text-slate-400 font-bold mb-3">Your parent is always included automatically — there's no way to message a coach privately.</p>
 
                         <template v-if="!openGroupConvoId">
-                            <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100 mb-4">
+                            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100 mb-4">
                                 <div v-for="c in myGroupConversations" :key="c.id" @click="openGroupConversationThread(c)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
                                     <div class="font-black text-slate-800 text-sm">{{c.coachName}} <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">+ Parent</span></div>
                                 </div>
                                 <div v-if="!isPageLoading && !myGroupConversations.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No conversations yet</div>
                             </div>
-                            <div class="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-2">
+                            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-2">
                                 <select v-model="selectedCoachForNewConvo" class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
                                     <option value="" disabled>Message a coach...</option>
                                     <option v-for="c in dmEnabledCoaches" :key="c.id" :value="c.id">{{c.name || c.email}}</option>
                                 </select>
-                                <button @click="startGroupChatWithCoach" :disabled="!selectedCoachForNewConvo" class="bg-slate-900 text-white px-5 py-3 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">Start</button>
+                                <button @click="startGroupChatWithCoach" :disabled="!selectedCoachForNewConvo" class="bg-[var(--pool-depth)] text-white px-5 py-3 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">Start</button>
                             </div>
                         </template>
 
-                        <div v-else class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+                        <div v-else class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                             <div class="p-4 border-b border-slate-100 flex justify-between items-center">
                                 <span class="font-black text-slate-800 text-sm">{{ myGroupConversations.find(c => c.id === openGroupConvoId)?.coachName }} <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">+ Parent</span></span>
                                 <button @click="closeGroupConversation" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Close</button>
@@ -1994,7 +2003,7 @@
                             <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
                                 <div v-for="m in groupConversationThread" :key="m.id" class="max-w-[85%]" :class="m.sender_id === user.id ? 'ml-auto text-right' : ''">
                                     <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{{m.sender_name || m.sender_role}}</div>
-                                    <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_id === user.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
+                                    <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_id === user.id ? 'bg-[var(--pool-depth)] text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
                                     <div v-if="m.attachment_url" class="mt-1.5">
                                         <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
                                         <video v-else-if="attachmentType(m.attachment_name) === 'video'" :src="m.attachment_url" controls class="max-w-[200px] rounded-xl border border-slate-200 inline-block"></video>
@@ -2012,7 +2021,7 @@
                                     <input type="file" id="replyFileInputAthlete" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,.m4v" @change="conversationReplyFile = $event.target.files[0] || null" class="hidden">
                                     <label for="replyFileInputAthlete" class="shrink-0 bg-slate-50 border border-slate-200 w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors text-sm">📎</label>
                                     <input v-model="conversationReply" @keyup.enter="sendGroupMessage" placeholder="Type a message..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none">
-                                    <button @click="sendGroupMessage" class="bg-slate-900 text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
+                                    <button @click="sendGroupMessage" class="bg-[var(--pool-depth)] text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
                                 </div>
                             </div>
                         </div>
@@ -2020,12 +2029,12 @@
                 </template>
 
                 <template v-else-if="!isParent">
-                    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 space-y-4">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                         <h3 class="text-xl font-black uppercase tracking-tight text-slate-900">New Message</h3>
                         <div class="flex gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
-                            <button @click="messageTarget = 'team'" :class="messageTarget === 'team' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Team</button>
-                            <button @click="messageTarget = 'group'" :class="messageTarget === 'group' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Group</button>
-                            <button @click="messageTarget = 'family'" :class="messageTarget === 'family' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Direct</button>
+                            <button @click="messageTarget = 'team'" :class="messageTarget === 'team' ? 'bg-[var(--pool-depth)] text-white shadow-md' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Team</button>
+                            <button @click="messageTarget = 'group'" :class="messageTarget === 'group' ? 'bg-[var(--pool-depth)] text-white shadow-md' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Group</button>
+                            <button @click="messageTarget = 'family'" :class="messageTarget === 'family' ? 'bg-[var(--pool-depth)] text-white shadow-md' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Direct</button>
                         </div>
 
                         <div v-if="messageTarget === 'group'" class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-wrap gap-2">
@@ -2055,12 +2064,12 @@
                             </div>
                         </div>
 
-                        <button @click="sendMessage" :disabled="sendingAnnouncement || !announcementBody.trim() || (messageTarget !== 'family' && !announcementTitle.trim()) || (messageTarget === 'family' && !messageFamilyId && !messageAthleteSwimmerId) || (messageTarget === 'group' && !announcementGroups.length)" class="w-full bg-slate-900 text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">{{ sendingAnnouncement ? (isUploadingAttachment ? 'Uploading...' : 'Sending...') : 'Send' }}</button>
+                        <button @click="sendMessage" :disabled="sendingAnnouncement || !announcementBody.trim() || (messageTarget !== 'family' && !announcementTitle.trim()) || (messageTarget === 'family' && !messageFamilyId && !messageAthleteSwimmerId) || (messageTarget === 'group' && !announcementGroups.length)" class="w-full bg-[var(--pool-depth)] text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">{{ sendingAnnouncement ? (isUploadingAttachment ? 'Uploading...' : 'Sending...') : 'Send' }}</button>
                     </div>
 
                     <div>
                         <h3 class="text-lg font-black uppercase tracking-tight text-slate-900 mb-3">Broadcast History</h3>
-                        <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
                             <div v-for="a in broadcastHistory" :key="a.id" class="p-4">
                                 <div class="flex justify-between items-start gap-3">
                                     <span class="font-black text-slate-800 text-sm">{{a.title}}</span>
@@ -2080,7 +2089,7 @@
 
                     <div>
                         <h3 class="text-lg font-black uppercase tracking-tight text-slate-900 mb-3">Family Conversations</h3>
-                        <div v-if="!openConversationId" class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                        <div v-if="!openConversationId" class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
                             <div v-for="c in conversationsList" :key="c.id" @click="openConversationThread(c)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
                                 <div>
                                     <div class="font-black text-slate-800 text-sm">{{c.parentName}}</div>
@@ -2091,14 +2100,14 @@
                             <div v-if="!isPageLoading && !conversationsList.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No conversations yet</div>
                         </div>
 
-                        <div v-else class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+                        <div v-else class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                             <div class="p-4 border-b border-slate-100 flex justify-between items-center">
                                 <span class="font-black text-slate-800 text-sm">{{ conversationsList.find(c => c.id === openConversationId)?.parentName }}</span>
                                 <button @click="openConversationId = null; unsubscribeFromConversation();" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Close</button>
                             </div>
                             <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
                                 <div v-for="m in conversationThread" :key="m.id" class="max-w-[80%]" :class="m.sender_role === 'coach' ? 'ml-auto text-right' : ''">
-                                    <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_role === 'coach' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
+                                    <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_role === 'coach' ? 'bg-[var(--pool-depth)] text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
                                     <div v-if="m.attachment_url" class="mt-1.5">
                                         <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
                                         <video v-else-if="attachmentType(m.attachment_name) === 'video'" :src="m.attachment_url" controls class="max-w-[200px] rounded-xl border border-slate-200 inline-block"></video>
@@ -2115,7 +2124,7 @@
                                     <input type="file" id="replyFileInputCoach" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,.m4v" @change="conversationReplyFile = $event.target.files[0] || null" class="hidden">
                                     <label for="replyFileInputCoach" class="shrink-0 bg-slate-50 border border-slate-200 w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors text-sm">📎</label>
                                     <input v-model="conversationReply" @keyup.enter="sendConversationReply" placeholder="Reply..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none">
-                                    <button @click="sendConversationReply" class="bg-slate-900 text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
+                                    <button @click="sendConversationReply" class="bg-[var(--pool-depth)] text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
                                 </div>
                             </div>
                         </div>
@@ -2123,14 +2132,14 @@
 
                     <div>
                         <h3 class="text-lg font-black uppercase tracking-tight text-slate-900 mb-3">Athlete Group Chats <span class="text-[9px] text-slate-400 normal-case">(parent always included)</span></h3>
-                        <div v-if="!openGroupConvoId" class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                        <div v-if="!openGroupConvoId" class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
                             <div v-for="c in coachGroupConversations" :key="c.id" @click="openGroupConversationThread(c)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
                                 <div class="font-black text-slate-800 text-sm">{{c.athleteName}} <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">+ Parent</span></div>
                             </div>
                             <div v-if="!isPageLoading && !coachGroupConversations.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No athlete group chats yet</div>
                         </div>
 
-                        <div v-else class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+                        <div v-else class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                             <div class="p-4 border-b border-slate-100 flex justify-between items-center">
                                 <span class="font-black text-slate-800 text-sm">{{ coachGroupConversations.find(c => c.id === openGroupConvoId)?.athleteName }} <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">+ Parent</span></span>
                                 <button @click="closeGroupConversation" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Close</button>
@@ -2138,7 +2147,7 @@
                             <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
                                 <div v-for="m in groupConversationThread" :key="m.id" class="max-w-[85%]" :class="m.sender_id === user.id ? 'ml-auto text-right' : ''">
                                     <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{{m.sender_name || m.sender_role}}</div>
-                                    <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_id === user.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
+                                    <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_id === user.id ? 'bg-[var(--pool-depth)] text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
                                     <div v-if="m.attachment_url" class="mt-1.5">
                                         <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
                                         <video v-else-if="attachmentType(m.attachment_name) === 'video'" :src="m.attachment_url" controls class="max-w-[200px] rounded-xl border border-slate-200 inline-block"></video>
@@ -2156,7 +2165,7 @@
                                     <input type="file" id="replyFileInputCoachGroup" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,.m4v" @change="conversationReplyFile = $event.target.files[0] || null" class="hidden">
                                     <label for="replyFileInputCoachGroup" class="shrink-0 bg-slate-50 border border-slate-200 w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors text-sm">📎</label>
                                     <input v-model="conversationReply" @keyup.enter="sendGroupMessage" placeholder="Reply..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none">
-                                    <button @click="sendGroupMessage" class="bg-slate-900 text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
+                                    <button @click="sendGroupMessage" class="bg-[var(--pool-depth)] text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
                                 </div>
                             </div>
                         </div>
@@ -2166,7 +2175,7 @@
                 <template v-else>
                     <div>
                         <h3 class="text-lg font-black uppercase tracking-tight text-slate-900 mb-3">Announcements</h3>
-                        <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100">
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
                             <div v-for="a in broadcastHistory" :key="a.id" class="p-4">
                                 <div class="flex justify-between items-start gap-3">
                                     <span class="font-black text-slate-800 text-sm">{{a.title}}</span>
@@ -2188,7 +2197,7 @@
                         <h3 class="text-lg font-black uppercase tracking-tight text-slate-900 mb-3">Message Coaches</h3>
 
                         <template v-if="!openParentConvoId">
-                            <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 divide-y divide-slate-100 mb-4">
+                            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100 mb-4">
                                 <div v-for="c in myConversations" :key="c.id" @click="openParentConversationThread(c)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors">
                                     <div>
                                         <div class="font-black text-slate-800 text-sm">{{c.coachName}}</div>
@@ -2198,24 +2207,24 @@
                                 <div v-if="!isPageLoading && !myConversations.length" class="p-8 text-center text-slate-400 font-black uppercase tracking-widest text-xs">No conversations yet</div>
                             </div>
 
-                            <div class="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-2">
+                            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-2">
                                 <select v-model="selectedCoachForNewConvo" class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
                                     <option value="" disabled>Message a coach...</option>
                                     <option v-for="c in dmEnabledCoaches" :key="c.id" :value="c.id">{{c.name || c.email}}</option>
                                 </select>
-                                <button @click="startConversationWithCoach" :disabled="!selectedCoachForNewConvo" class="bg-slate-900 text-white px-5 py-3 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">Start</button>
+                                <button @click="startConversationWithCoach" :disabled="!selectedCoachForNewConvo" class="bg-[var(--pool-depth)] text-white px-5 py-3 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">Start</button>
                             </div>
                             <p v-if="!dmEnabledCoaches.length" class="text-[10px] text-slate-400 font-bold mt-2 ml-1">No coaches are accepting direct messages right now.</p>
                         </template>
 
-                        <div v-else class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+                        <div v-else class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                             <div class="p-4 border-b border-slate-100 flex justify-between items-center">
                                 <span class="font-black text-slate-800 text-sm">{{ myConversations.find(c => c.id === openParentConvoId)?.coachName }}</span>
                                 <button @click="closeParentConversation" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Close</button>
                             </div>
                             <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
                                 <div v-for="m in conversationThread" :key="m.id" class="max-w-[80%]" :class="m.sender_role === 'parent' ? 'ml-auto text-right' : ''">
-                                    <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_role === 'parent' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
+                                    <div v-if="m.body" class="inline-block px-4 py-2.5 rounded-2xl text-sm font-medium" :class="m.sender_role === 'parent' ? 'bg-[var(--pool-depth)] text-white' : 'bg-slate-100 text-slate-800'">{{m.body}}</div>
                                     <div v-if="m.attachment_url" class="mt-1.5">
                                         <img v-if="attachmentType(m.attachment_name) === 'image'" :src="m.attachment_url" class="max-w-[200px] rounded-xl border border-slate-200 inline-block">
                                         <video v-else-if="attachmentType(m.attachment_name) === 'video'" :src="m.attachment_url" controls class="max-w-[200px] rounded-xl border border-slate-200 inline-block"></video>
@@ -2233,7 +2242,7 @@
                                     <input type="file" id="replyFileInputParent" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,.m4v" @change="conversationReplyFile = $event.target.files[0] || null" class="hidden">
                                     <label for="replyFileInputParent" class="shrink-0 bg-slate-50 border border-slate-200 w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors text-sm">📎</label>
                                     <input v-model="conversationReply" @keyup.enter="sendConversationReply" placeholder="Type a message..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-medium outline-none">
-                                    <button @click="sendConversationReply" class="bg-slate-900 text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
+                                    <button @click="sendConversationReply" class="bg-[var(--pool-depth)] text-white px-5 rounded-xl font-black uppercase tracking-widest text-xs">Send</button>
                                 </div>
                             </div>
                         </div>
@@ -2251,9 +2260,9 @@
                         <button @click="prevMonth" class="w-10 h-10 bg-white border border-slate-200 rounded-xl font-black text-slate-600 hover:bg-slate-50">‹</button>
                         <button @click="goToToday" class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black uppercase text-[10px] tracking-widest text-slate-600 hover:bg-slate-50">Today</button>
                         <button @click="nextMonth" class="w-10 h-10 bg-white border border-slate-200 rounded-xl font-black text-slate-600 hover:bg-slate-50">›</button>
-                        <button @click="printCalendarSheet" class="px-4 py-2.5 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-colors">Print</button>
+                        <button @click="printCalendarSheet" class="px-4 py-2.5 bg-[var(--pool-depth)] text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-[var(--pool-depth-3)] transition-colors">Print</button>
                         <button @click="exportCalendarIcs" class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black uppercase text-[10px] tracking-widest text-slate-600 hover:bg-slate-50 transition-colors">Export .ics</button>
-                        <button @click="exportCalendarPdf" class="px-4 py-2.5 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-colors">Export PDF</button>
+                        <button @click="exportCalendarPdf" class="px-4 py-2.5 bg-[var(--pool-depth)] text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-[var(--pool-depth-3)] transition-colors">Export PDF</button>
                     </div>
                 </div>
 
@@ -2263,14 +2272,14 @@
                         <button @click="calendarVisibilityFilter.coaches = !calendarVisibilityFilter.coaches" :class="calendarVisibilityFilter.coaches ? 'bg-purple-600 text-white' : 'bg-white text-slate-400 border border-slate-200'" class="text-[10px] font-black uppercase px-3 py-2 rounded-lg transition-colors">Coaches Only</button>
                         <button @click="calendarVisibilityFilter.personal = !calendarVisibilityFilter.personal" :class="calendarVisibilityFilter.personal ? 'bg-amber-500 text-white' : 'bg-white text-slate-400 border border-slate-200'" class="text-[10px] font-black uppercase px-3 py-2 rounded-lg transition-colors">My Personal</button>
                     </template>
-                    <button v-if="!isParent" @click="showNewCalendarEventForm = !showNewCalendarEventForm" class="ml-auto bg-slate-900 text-white px-6 py-2.5 rounded-lg font-black uppercase tracking-widest text-[10px]">+ New Event</button>
+                    <button v-if="!isParent" @click="showNewCalendarEventForm = !showNewCalendarEventForm" class="ml-auto bg-[var(--pool-depth)] text-white px-6 py-2.5 rounded-lg font-black uppercase tracking-widest text-[10px]">+ New Event</button>
                 </div>
 
-                <div v-if="showNewCalendarEventForm" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 space-y-3">
+                <div v-if="showNewCalendarEventForm" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-3">
                     <div v-if="!isOffice" class="flex gap-2 bg-slate-100 p-1.5 rounded-xl">
-                        <button @click="newCalendarEvent.visibility = 'team'" :class="newCalendarEvent.visibility === 'team' ? 'bg-slate-900 text-white' : 'text-slate-500'" class="flex-1 py-2.5 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all">Team Calendar</button>
-                        <button @click="newCalendarEvent.visibility = 'coaches'" :class="newCalendarEvent.visibility === 'coaches' ? 'bg-slate-900 text-white' : 'text-slate-500'" class="flex-1 py-2.5 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all">Coaches Only</button>
-                        <button @click="newCalendarEvent.visibility = 'personal'" :class="newCalendarEvent.visibility === 'personal' ? 'bg-slate-900 text-white' : 'text-slate-500'" class="flex-1 py-2.5 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all">Just Me</button>
+                        <button @click="newCalendarEvent.visibility = 'team'" :class="newCalendarEvent.visibility === 'team' ? 'bg-[var(--pool-depth)] text-white' : 'text-slate-500'" class="flex-1 py-2.5 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all">Team Calendar</button>
+                        <button @click="newCalendarEvent.visibility = 'coaches'" :class="newCalendarEvent.visibility === 'coaches' ? 'bg-[var(--pool-depth)] text-white' : 'text-slate-500'" class="flex-1 py-2.5 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all">Coaches Only</button>
+                        <button @click="newCalendarEvent.visibility = 'personal'" :class="newCalendarEvent.visibility === 'personal' ? 'bg-[var(--pool-depth)] text-white' : 'text-slate-500'" class="flex-1 py-2.5 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all">Just Me</button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <input v-model="newCalendarEvent.title" placeholder="Event Title" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none md:col-span-2">
@@ -2286,11 +2295,11 @@
                         <input v-model="newCalendarEvent.start_time" type="time" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
                         <input v-model="newCalendarEvent.end_time" type="time" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
                         <textarea v-model="newCalendarEvent.notes" placeholder="Notes (optional)" rows="2" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none md:col-span-2"></textarea>
-                        <button @click="createCalendarEvent" class="md:col-span-2 bg-slate-900 text-white py-3 rounded-xl font-black uppercase tracking-widest text-xs">Add to Calendar</button>
+                        <button @click="createCalendarEvent" class="md:col-span-2 bg-[var(--pool-depth)] text-white py-3 rounded-xl font-black uppercase tracking-widest text-xs">Add to Calendar</button>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden relative">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative">
                     <div v-if="teamLogoUrl" class="absolute inset-0 flex items-center justify-center pointer-events-none" style="z-index: 0;">
                         <img :src="teamLogoUrl" class="w-1/2 max-w-[280px] object-contain" style="filter: grayscale(100%); opacity: 0.06;">
                     </div>
@@ -2341,7 +2350,7 @@
                     <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">My Swimmers</h2>
                 </div>
 
-                <div v-if="teamModules.includes('calendar') && upcomingCalendarEvents.length" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                <div v-if="teamModules.includes('calendar') && upcomingCalendarEvents.length" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Upcoming on the Calendar</h4>
                     <div v-for="e in upcomingCalendarEvents.slice(0,5)" :key="e.id" class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
                         <div class="text-sm font-bold text-slate-800">{{e.title}} <span v-if="e.group_name" class="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 ml-1">{{e.group_name}}</span></div>
@@ -2350,7 +2359,7 @@
                     <button @click="currentView = 'calendar'" class="text-[10px] font-black uppercase text-slate-400 hover:text-slate-700 mt-3">View Full Calendar →</button>
                 </div>
 
-                <div v-if="publicWorkouts.length" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+                <div v-if="publicWorkouts.length" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Team Workouts</h4>
                     <div v-for="w in publicWorkouts" :key="w.id" class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
                         <div>
@@ -2361,11 +2370,11 @@
                     </div>
                 </div>
 
-                <div v-if="!myLinkedSwimmers.length" class="text-center py-20 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-[2rem]">
+                <div v-if="!myLinkedSwimmers.length" class="text-center py-20 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-2xl">
                     Not linked to a swimmer yet — ask your coach to link your account from the Roster page.
                 </div>
 
-                <div v-for="s in myLinkedSwimmers" :key="s.id" class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200 space-y-6">
+                <div v-for="s in myLinkedSwimmers" :key="s.id" class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
                     <div class="flex justify-between items-center">
                         <h3 class="text-2xl font-black uppercase text-slate-900">{{s.first_name}} {{s.last_name}}</h3>
                         <span class="text-[10px] font-black uppercase bg-slate-100 px-3 py-1.5 rounded-lg text-slate-500">{{s.group_name}}</span>
@@ -2393,13 +2402,13 @@
                             <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Attendance ({{selectedSeasonName}})</h4>
                             <div class="text-2xl font-black mt-1" :class="swimmerAttendancePercent[s.id] >= 90 ? 'text-emerald-500' : swimmerAttendancePercent[s.id] >= 75 ? 'text-amber-500' : swimmerAttendancePercent[s.id] != null ? 'text-red-500' : 'text-slate-300'">{{ swimmerAttendancePercent[s.id] != null ? swimmerAttendancePercent[s.id] + '%' : 'No Data' }}</div>
                         </div>
-                        <button @click="openSwimmerHistory(s)" class="text-[10px] font-black uppercase bg-slate-900 text-white px-4 py-2.5 rounded-lg">View History</button>
+                        <button @click="openSwimmerHistory(s)" class="text-[10px] font-black uppercase bg-[var(--pool-depth)] text-white px-4 py-2.5 rounded-lg">View History</button>
                     </div>
                     <div>
                         <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Upcoming Meets</h4>
                         <div v-for="m in meetsList" :key="m.id" class="flex justify-between items-center bg-slate-50 p-4 rounded-xl mb-2">
                             <div class="text-sm font-bold text-slate-800">{{m.name}} <span class="text-[10px] text-slate-400 font-black uppercase ml-2">{{formatPracticeDate(m.start_date)}}</span></div>
-                            <button @click="openParentMeetEntry(m, s)" class="text-[10px] font-black uppercase bg-slate-900 text-white px-3 py-2 rounded-lg">Enter Events</button>
+                            <button @click="openParentMeetEntry(m, s)" class="text-[10px] font-black uppercase bg-[var(--pool-depth)] text-white px-3 py-2 rounded-lg">Enter Events</button>
                         </div>
                         <div v-if="!meetsList.length" class="text-xs text-slate-400 font-bold">No upcoming meets</div>
                     </div>
