@@ -425,7 +425,7 @@
             <button @click="selectModule('home')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'home' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'home' ? { color: teamColors.primary } : {}">Home</button>
             <button v-if="hasFeature('workouts')" @click="selectModule('dashboard')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="activeNavCategory === 'practice' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="activeNavCategory === 'practice' ? { color: teamColors.primary } : {}">Practice</button>
             <button v-if="hasFeature('roster')" @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary])" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="activeNavCategory === 'groups' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="activeNavCategory === 'groups' ? { color: teamColors.primary } : {}">Groups</button>
-            <button v-if="hasFeature('meets')" @click="selectModule('meets')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="['meets','meet-detail'].includes(currentView) ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="['meets','meet-detail'].includes(currentView) ? { color: teamColors.primary } : {}">Meets</button>
+            <button v-if="hasFeature('meets')" @click="selectModule('meets')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="['meets','meet-detail','create-meet'].includes(currentView) ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="['meets','meet-detail','create-meet'].includes(currentView) ? { color: teamColors.primary } : {}">Meets</button>
             <button v-if="hasFeature('calendar')" @click="selectModule('calendar')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="currentView === 'calendar' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="currentView === 'calendar' ? { color: teamColors.primary } : {}">Calendar</button>
             <button v-if="(myRole === 'owner' || myRole === 'admin') && hasFeature('admin')" @click="selectModule('staff')" class="px-4 py-3.5 font-black uppercase tracking-widest text-xs transition-colors border-b-2" :class="activeNavCategory === 'team' ? 'border-current' : 'border-transparent text-slate-500 hover:text-slate-900'" :style="activeNavCategory === 'team' ? { color: teamColors.primary } : {}">Team</button>
         </div>
@@ -508,7 +508,7 @@
                     </div>
                 </div>
 
-                <button v-if="hasFeature('meets')" @click="selectModule('meets'); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="['meets','meet-detail'].includes(currentView) ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="['meets','meet-detail'].includes(currentView) ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                <button v-if="hasFeature('meets')" @click="selectModule('meets'); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="['meets','meet-detail','create-meet'].includes(currentView) ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="['meets','meet-detail','create-meet'].includes(currentView) ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
                     <span class="text-lg w-6 text-center shrink-0">🏆</span><span class="font-black uppercase tracking-widest text-xs">Meets</span>
                 </button>
                 <button v-if="hasFeature('calendar')" @click="selectModule('calendar'); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'calendar' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'calendar' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
@@ -1939,29 +1939,94 @@
             </div>
 
 
+            <div v-if="currentView === 'create-meet' && (myRole === 'owner' || myRole === 'admin')" class="max-w-3xl mx-auto space-y-6 mt-6">
+                <div class="border-b border-slate-200 pb-6 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Create Meet</h2>
+                        <p class="text-sm font-bold uppercase tracking-widest mt-1" :style="{ color: teamColors.primary }">Set up events and deadlines, export for your meet software</p>
+                    </div>
+                    <button @click="selectedMeet = null; currentView = 'meets'" class="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-slate-100 transition-colors shadow-sm shrink-0">← Back to Meets</button>
+                </div>
+
+                <div v-if="!selectedMeet" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <input v-model="newMeet.name" placeholder="Meet Name" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none md:col-span-2">
+                        <input v-model="newMeet.start_date" type="date" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                        <select v-model="newMeet.course" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                            <option value="SCY">SCY</option><option value="SCM">SCM</option><option value="LCM">LCM</option>
+                        </select>
+                        <label class="md:col-span-2 flex items-center gap-3 bg-slate-50 border border-slate-200 p-3 rounded-xl cursor-pointer">
+                            <input type="checkbox" v-model="newMeet.allow_opt_in_out" class="w-4 h-4 accent-slate-900">
+                            <span class="text-xs font-bold text-slate-700">Let families opt in/out of this meet</span>
+                        </label>
+                        <label class="md:col-span-2 flex items-center gap-3 bg-slate-50 border border-slate-200 p-3 rounded-xl cursor-pointer">
+                            <input type="checkbox" v-model="newMeet.allow_parent_event_selection" class="w-4 h-4 accent-slate-900">
+                            <span class="text-xs font-bold text-slate-700">Let parents pick their kid's events (off = coaches only)</span>
+                        </label>
+                    </div>
+
+                    <div class="border-t border-slate-100 pt-4">
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Entry Deadlines <span class="normal-case font-bold text-slate-300">— parents first, then coaches finalize after</span></div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Parent Entry Deadline</label>
+                                <input type="datetime-local" v-model="newMeet.parent_entry_deadline" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                            </div>
+                            <div>
+                                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Coach Entry Deadline</label>
+                                <input type="datetime-local" v-model="newMeet.coach_entry_deadline" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                            </div>
+                        </div>
+                        <p class="text-[10px] font-bold text-slate-400 mt-2">Both are optional. Times are entered in your own local time and stay correct for everyone regardless of their timezone.</p>
+                    </div>
+
+                    <button @click="createMeet" :disabled="isCreatingMeet" class="w-full bg-[var(--pool-depth)] text-white py-3 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">{{ isCreatingMeet ? 'Creating...' : 'Create Meet & Continue' }}</button>
+                </div>
+
+                <div v-else class="space-y-6">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="font-black text-xl uppercase text-slate-900">{{selectedMeet.name}}</div>
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{{selectedMeet.course}} • {{formatPracticeDate(selectedMeet.start_date)}}</div>
+                        <div class="flex flex-wrap gap-4 mt-3 pt-3 border-t border-slate-100">
+                            <div v-if="selectedMeet.parent_entry_deadline" class="text-[10px] font-bold text-slate-500">Parents until <span class="font-black text-slate-700">{{new Date(selectedMeet.parent_entry_deadline).toLocaleString()}}</span></div>
+                            <div v-if="selectedMeet.coach_entry_deadline" class="text-[10px] font-bold text-slate-500">Coaches until <span class="font-black text-slate-700">{{new Date(selectedMeet.coach_entry_deadline).toLocaleString()}}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-2 md:grid-cols-6 gap-2">
+                        <input v-model="newMeetEvent.event_number" placeholder="#" class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
+                        <select v-model="newMeetEvent.gender" class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
+                            <option value="M">Boys</option><option value="F">Girls</option><option value="X">Mixed</option>
+                        </select>
+                        <input v-model="newMeetEvent.distance" type="number" placeholder="Dist" class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
+                        <select v-model="newMeetEvent.stroke" class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
+                            <option value="Free">Free</option><option value="Back">Back</option><option value="Breast">Breast</option><option value="Fly">Fly</option><option value="IM">IM</option>
+                        </select>
+                        <input v-model="newMeetEvent.qual_time" placeholder="Qual Time (m:ss.hh)" class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
+                        <button @click="addMeetEvent" class="bg-[var(--pool-depth)] text-white rounded-lg font-black uppercase tracking-widest text-[10px]">Add</button>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
+                        <div v-for="e in meetEventsList" :key="e.id" class="p-4 flex justify-between items-center">
+                            <div class="text-sm font-bold text-slate-800">#{{e.event_number}} — {{e.gender}} {{e.distance}} {{e.stroke}} <span v-if="e.qual_time_seconds" class="text-[10px] text-amber-600 font-black ml-2">QT {{secToTime(e.qual_time_seconds)}}</span></div>
+                            <button @click="deleteMeetEvent(e.id)" class="text-red-400 hover:text-red-600 text-[10px] font-black uppercase">Remove</button>
+                        </div>
+                        <div v-if="!meetEventsList.length" class="p-10 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No events yet — add above</div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button @click="exportMeetEventsCsv" class="flex-1 bg-white border border-slate-200 text-slate-700 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-sm hover:bg-slate-50 transition-colors">Export Events CSV</button>
+                        <button @click="selectedMeet = null; currentView = 'meets'" class="flex-1 bg-[var(--pool-depth)] text-white py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-[var(--pool-depth-3)] transition-colors">Done — Go to Meets</button>
+                    </div>
+                </div>
+            </div>
+
             <div v-if="currentView === 'meets'" class="space-y-6 mt-6">
                 <div class="flex justify-between items-end border-b border-slate-200 pb-6">
                     <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Meets</h2>
                     <div class="flex gap-2">
                         <button @click="triggerGenericImportUpload" class="bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-sm hover:bg-slate-50 transition-colors">Import Meets</button>
-                        <button @click="showNewMeetForm = !showNewMeetForm" class="bg-[var(--pool-depth)] text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs">+ New Meet</button>
+                        <button v-if="myRole === 'owner' || myRole === 'admin'" @click="selectedMeet = null; currentView = 'create-meet'" class="bg-[var(--pool-depth)] text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs">+ Create Meet</button>
                     </div>
-                </div>
-                <div v-if="showNewMeetForm" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-3">
-                    <input v-model="newMeet.name" placeholder="Meet Name" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none md:col-span-2">
-                    <input v-model="newMeet.start_date" type="date" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
-                    <select v-model="newMeet.course" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
-                        <option value="SCY">SCY</option><option value="SCM">SCM</option><option value="LCM">LCM</option>
-                    </select>
-                    <label class="md:col-span-2 flex items-center gap-3 bg-slate-50 border border-slate-200 p-3 rounded-xl cursor-pointer">
-                        <input type="checkbox" v-model="newMeet.allow_opt_in_out" class="w-4 h-4 accent-slate-900">
-                        <span class="text-xs font-bold text-slate-700">Let families opt in/out of this meet</span>
-                    </label>
-                    <label class="md:col-span-2 flex items-center gap-3 bg-slate-50 border border-slate-200 p-3 rounded-xl cursor-pointer">
-                        <input type="checkbox" v-model="newMeet.allow_parent_event_selection" class="w-4 h-4 accent-slate-900">
-                        <span class="text-xs font-bold text-slate-700">Let parents pick their kid's events (off = coaches only)</span>
-                    </label>
-                    <button @click="createMeet" :disabled="isCreatingMeet" class="md:col-span-4 bg-[var(--pool-depth)] text-white py-3 rounded-xl font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed">{{ isCreatingMeet ? 'Creating...' : 'Create Meet' }}</button>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div v-for="m in meetsList" :key="m.id" @click="openMeetDetail(m)" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg cursor-pointer transition-all">
@@ -2953,7 +3018,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 108;
+        const SW_VERSION = 109;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -3059,8 +3124,7 @@ createApp({
             if (!upcoming.length) return null;
             return upcoming.reduce((soonest, m) => m.start_date < soonest.start_date ? m : soonest, upcoming[0]);
         });
-        const showNewMeetForm = ref(false);
-        const newMeet = ref({ name: '', start_date: '', course: 'SCY', allow_opt_in_out: false, allow_parent_event_selection: true });
+        const newMeet = ref({ name: '', start_date: '', course: 'SCY', allow_opt_in_out: false, allow_parent_event_selection: true, parent_entry_deadline: '', coach_entry_deadline: '' });
         const selectedMeet = ref(null);
         const meetDetailTab = ref('events');
         const meetEventsList = ref([]);
@@ -5660,7 +5724,7 @@ createApp({
             'season-planning': { label: 'Season', icon: '🗓️', feature: 'workouts', activeViews: ['season-planning','plan-builder'], onSelect: async () => { currentView.value = 'season-planning'; } },
             'groups': { label: 'Groups', icon: '👥', feature: 'roster', activeViews: ['groups','group-details'], onSelect: async () => { currentView.value = 'groups'; selectedGroupForEdit.value = null; await Promise.all([loadSwimmers(), loadSeasons(), loadAttendanceSummary()]); } },
             'attendance': { label: 'Attendance', icon: '✅', feature: 'attendance', activeViews: ['attendance'], onSelect: async () => { currentView.value = 'attendance'; selectedGroupForEdit.value = null; await Promise.all([loadSwimmers(), loadSeasons(), loadAttendanceSummary(), loadTodayAttendanceByGroup()]); } },
-            'meets': { label: 'Meets', icon: '🏆', feature: 'meets', activeViews: ['meets','meet-detail'], onSelect: async () => { currentView.value = 'meets'; await loadMeets(); } },
+            'meets': { label: 'Meets', icon: '🏆', feature: 'meets', activeViews: ['meets','meet-detail','create-meet'], onSelect: async () => { currentView.value = 'meets'; await loadMeets(); } },
             'calendar': { label: 'Calendar', icon: '📅', feature: 'calendar', activeViews: ['calendar'], onSelect: async () => { currentView.value = 'calendar'; await Promise.all([loadCalendarEvents(), loadMyAssignedGroups()]); } },
             'staff': { label: 'Staff', icon: '🧑\u200d🏫', feature: 'admin', activeViews: ['staff'], onSelect: async () => { currentView.value = 'staff'; await Promise.all([loadStaff(), loadCoachGroupLinks(), loadPendingCoachRequests()]); } },
             'accounts': { label: 'Accounts', icon: '👤', feature: 'admin', activeViews: ['accounts'], onSelect: async () => { currentView.value = 'accounts'; await Promise.all([loadAccounts(), loadFamilyAccounts()]); } },
@@ -6195,14 +6259,35 @@ createApp({
         const isCreatingMeet = ref(false);
         async function createMeet() {
             if(!newMeet.value.name || !newMeet.value.start_date) return alert("Meet name and start date required.");
+            // datetime-local inputs produce a plain string with no timezone
+            // info (e.g. "2026-09-30T14:30") -- new Date() correctly
+            // interprets that as the browser's own local time and converts
+            // it to the right UTC instant, which is what actually needs to
+            // be stored so the deadline means the same moment for everyone
+            // regardless of who's viewing it from where.
+            if (newMeet.value.parent_entry_deadline && newMeet.value.coach_entry_deadline) {
+                if (new Date(newMeet.value.coach_entry_deadline) <= new Date(newMeet.value.parent_entry_deadline)) {
+                    return alert("Coach entry deadline must be after the parent entry deadline.");
+                }
+            }
             if (isCreatingMeet.value) return;
             isCreatingMeet.value = true;
             try {
-                const { error } = await client.from("meets").insert({ team_id: myTeam.value, ...newMeet.value });
+                const payload = {
+                    team_id: myTeam.value,
+                    ...newMeet.value,
+                    parent_entry_deadline: newMeet.value.parent_entry_deadline ? new Date(newMeet.value.parent_entry_deadline).toISOString() : null,
+                    coach_entry_deadline: newMeet.value.coach_entry_deadline ? new Date(newMeet.value.coach_entry_deadline).toISOString() : null,
+                };
+                const { data, error } = await client.from("meets").insert(payload).select().single();
                 if(error) return alert("Error creating meet: " + error.message);
-                newMeet.value = { name: '', start_date: '', course: 'SCY', allow_opt_in_out: false, allow_parent_event_selection: true };
-                showNewMeetForm.value = false;
-                loadMeets();
+                newMeet.value = { name: '', start_date: '', course: 'SCY', allow_opt_in_out: false, allow_parent_event_selection: true, parent_entry_deadline: '', coach_entry_deadline: '' };
+                // Stay on the Create Meet page, now showing the event
+                // builder and export options for the meet just created --
+                // the whole point is one continuous flow, not bouncing back
+                // to the Meets list mid-setup.
+                selectedMeet.value = data;
+                await Promise.all([loadMeets(), loadMeetEvents(data.id)]);
             } finally {
                 isCreatingMeet.value = false;
             }
@@ -6677,6 +6762,25 @@ createApp({
                 { label: 'Status', get: r => r.status },
             ]);
             downloadTextFile(`${selectedMeet.value.name || 'meet'}-results.csv`, csv);
+        }
+
+        // Bare event list -- no entries yet, since this runs during Create
+        // Meet setup before any swimmer has been entered. Meant for a coach
+        // to bring the event structure into their own meet-running software
+        // (Hy-Tek Meet Manager, TeamUnify, etc.) -- CSV rather than a
+        // reverse-engineered binary format, since every meet program can
+        // import CSV reliably and this doesn't risk producing a file that
+        // silently fails to load correctly.
+        async function exportMeetEventsCsv() {
+            if (!selectedMeet.value) return alert('Create the meet first.');
+            const csv = toCsv(meetEventsList.value, [
+                { label: 'Event #', get: r => r.event_number },
+                { label: 'Gender', get: r => r.gender },
+                { label: 'Distance', get: r => r.distance },
+                { label: 'Stroke', get: r => r.stroke },
+                { label: 'Qual Time (sec)', get: r => r.qual_time_seconds },
+            ]);
+            downloadTextFile(`${selectedMeet.value.name || 'meet'}-events.csv`, csv);
         }
 
         function icsEscape(s) { return String(s || '').replace(/[\\,;]/g, m => '\\' + m).replace(/\n/g, '\\n'); }
@@ -7586,7 +7690,7 @@ createApp({
             swimmersByGroup, swimmerAttendancePercent, loadAttendanceSummary,
             showSwimmerHistoryFor, swimmerHistoryRecords, openSwimmerHistory, closeSwimmerHistory, updateHistoricalAttendance,
             seasonsList, selectedSeasonId, selectedSeasonName, showNewSeasonForm, newSeasonName, newSeasonStart, newSeasonEnd, loadSeasons, addSeason,
-            meetsList, showNewMeetForm, newMeet, selectedMeet, meetDetailTab, meetEventsList, newMeetEvent, meetEntriesList, overrideTimes,
+            meetsList, newMeet, selectedMeet, meetDetailTab, meetEventsList, newMeetEvent, meetEntriesList, overrideTimes, exportMeetEventsCsv,
             loadMeets, createMeet, isCreatingMeet, openMeetDetail, addMeetEvent, deleteMeetEvent, pendingEntriesCount, swimmerName, eventLabel, approveMeetEntry, declineMeetEntry,
             myLinkedSwimmers, parentMeetEntryTarget, parentMeetEntryEvents, openParentMeetEntry, entryExistsFor, entryStatusFor, requestMeetEntry,
             importState, importPreview, importColumns, triggerGenericImportUpload, handleGenericImport, confirmImport, resetImport
