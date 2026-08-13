@@ -1665,8 +1665,6 @@
                             <option v-for="s in seasonsList" :key="s.id" :value="s.id">{{s.name}}</option>
                         </select>
                         <button v-if="myRole === 'owner' || myRole === 'admin'" @click="showNewSeasonForm = !showNewSeasonForm" class="text-[10px] font-black text-slate-500 bg-white border border-slate-200 px-3 py-2.5 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors">+ New Season</button>
-                        <button @click="exportAttendanceCsv" class="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-slate-50 transition-colors">Attend. CSV</button>
-                        <button @click="exportAttendancePdf" class="bg-[var(--pool-depth)] text-white px-4 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-[var(--pool-depth-3)] transition-colors">Attend. PDF</button>
                     </div>
                 </div>
 
@@ -1693,6 +1691,10 @@
                             {{ swimmers.filter(s => s.group_name === g.name).length }} Swimmers
                             <span v-if="groupAttendanceSummary[g.name] !== undefined && groupAttendanceSummary[g.name] !== null" :class="groupAttendanceSummary[g.name] >= 90 ? 'text-emerald-500' : groupAttendanceSummary[g.name] >= 75 ? 'text-amber-500' : 'text-red-500'">• {{groupAttendanceSummary[g.name]}}%</span>
                         </div>
+                        <div class="flex gap-2 mt-4 pt-4 border-t border-slate-100">
+                            <button @click.stop="exportAttendanceCsv(g.name)" class="flex-1 bg-slate-50 border border-slate-200 text-slate-600 px-3 py-2 rounded-lg font-black uppercase tracking-widest text-[9px] hover:bg-slate-100 transition-colors">CSV</button>
+                            <button @click.stop="exportAttendancePdf(g.name)" class="flex-1 bg-slate-50 border border-slate-200 text-slate-600 px-3 py-2 rounded-lg font-black uppercase tracking-widest text-[9px] hover:bg-slate-100 transition-colors">PDF</button>
+                        </div>
                     </div>
                     <div v-if="!teamGroupsList.length" class="sm:col-span-2 text-center py-20 text-slate-400 font-black uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-2xl">No groups yet — add one under Groups first</div>
                 </div>
@@ -1701,14 +1703,13 @@
             <div v-if="currentView === 'group-details' && selectedGroupForEdit" class="max-w-4xl mx-auto space-y-6 mt-6">
                 <div class="flex justify-between items-center border-b border-slate-200 pb-4">
                     <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">{{ selectedGroupForEdit.id === null ? 'No Group' : selectedGroupForEdit.name }}</h2>
-                    <button @click="currentView = (groupDetailTab === 'attendance' ? 'attendance' : 'groups'); selectedGroupForEdit = null" class="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-slate-100 transition-colors shadow-sm shrink-0">
-                        ← Back to {{ groupDetailTab === 'attendance' ? 'Attendance' : 'Groups' }}
+                    <button @click="currentView = (groupDetailAttendanceOnly ? 'attendance' : 'groups'); selectedGroupForEdit = null" class="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-slate-100 transition-colors shadow-sm shrink-0">
+                        ← Back to {{ groupDetailAttendanceOnly ? 'Attendance' : 'Groups' }}
                     </button>
                 </div>
 
-                <div class="flex gap-6 border-b border-slate-100 pb-2">
+                <div v-if="!groupDetailAttendanceOnly" class="flex gap-6 border-b border-slate-100 pb-2">
                     <button @click="groupDetailTab = 'swimmers'" :class="groupDetailTab === 'swimmers' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'" class="font-black uppercase tracking-widest text-xs pb-2 transition-colors">Swimmers</button>
-                    <button v-if="selectedGroupForEdit.id !== null" @click="groupDetailTab = 'attendance'" :class="groupDetailTab === 'attendance' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'" class="font-black uppercase tracking-widest text-xs pb-2 transition-colors">Attendance</button>
                     <button v-if="selectedGroupForEdit.id !== null" @click="groupDetailTab = 'settings'" :class="groupDetailTab === 'settings' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'" class="font-black uppercase tracking-widest text-xs pb-2 transition-colors">Settings</button>
                 </div>
 
@@ -1766,6 +1767,10 @@
                         <div>
                             <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Marking Date</label>
                             <input type="date" v-model="attendanceDate" @change="loadAttendanceForDate" class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold outline-none">
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="exportAttendanceCsv(selectedGroupForEdit.name)" class="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-slate-50 transition-colors">Export CSV</button>
+                            <button @click="exportAttendancePdf(selectedGroupForEdit.name)" class="bg-[var(--pool-depth)] text-white px-4 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-sm hover:bg-[var(--pool-depth-3)] transition-colors">Export PDF</button>
                         </div>
                     </div>
 
@@ -2883,7 +2888,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 101;
+        const SW_VERSION = 102;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -3969,7 +3974,19 @@ createApp({
                 await nextTick();
             }
 
+            // Browsers use document.title as the suggested filename/title
+            // when saving a print job as PDF -- without this, every single
+            // workout saved as PDF was titled "Swimatics - Coach Access
+            // Portal" (the app's own page title) regardless of which
+            // workout it actually was. Swapped in right before printing,
+            // restored right after, matching the same before/after
+            // cleanup pattern already used for font size and watermarks
+            // just above.
+            const originalDocTitle = document.title;
+            if (title.value) document.title = title.value;
+
             window.print();
+            document.title = originalDocTitle;
             document.documentElement.style.fontSize = '';
             fontSize.value = baseContentFontSize;
             printWatermarkPositions.value = [];
@@ -4112,6 +4129,7 @@ createApp({
         async function openGroupDetails(g) {
             selectedGroupForEdit.value = g;
             groupDetailTab.value = 'swimmers';
+            groupDetailAttendanceOnly.value = false;
             currentView.value = 'group-details';
             if (g.id !== null) {
                 attendanceMarkGroup.value = g.name;
@@ -4125,13 +4143,14 @@ createApp({
             }
         }
 
-        // Entry point from the Attendance page specifically -- identical
-        // to openGroupDetails except it lands directly on the Attendance
-        // tab instead of Swimmers, since that's what a coach clicking a
-        // group from the Attendance page actually wants to see first.
+        // Entry point from the Attendance page specifically -- lands
+        // directly on Attendance content, and groupDetailAttendanceOnly
+        // keeps Swimmers/Settings genuinely unreachable from this path,
+        // not just un-defaulted-to.
         async function openGroupDetailsForAttendance(g) {
             selectedGroupForEdit.value = g;
             groupDetailTab.value = 'attendance';
+            groupDetailAttendanceOnly.value = true;
             currentView.value = 'group-details';
             if (g.id !== null) {
                 attendanceMarkGroup.value = g.name;
@@ -4801,6 +4820,12 @@ createApp({
         const entriesGroupFilter = ref('');
         const rosterExportGroup = ref('');
         const groupDetailTab = ref('swimmers');
+        // Tracks whether this group-details visit came from the Attendance
+        // page specifically -- when true, only the Attendance tab's content
+        // shows (no tab bar, no Swimmers/Settings), and vice versa when
+        // false. Keeps the two entry points genuinely separate rather than
+        // just defaulting to a different starting tab within one shared view.
+        const groupDetailAttendanceOnly = ref(false);
         const isPageLoading = ref(false);
         const entriesEventFilter = ref('');
         const newEntrySwimmerId = ref({}); // { [meetEventId]: swimmerId } for the "by event" add-row
@@ -6411,16 +6436,18 @@ createApp({
             downloadTextFile(`${myTeam.value}-roster${group ? '-' + group : ''}.csv`, csv);
         }
 
-        async function exportAttendanceCsv() {
-            const { data, error } = await client.from('attendance').select('*, swimmers(first_name, last_name)').eq('team_id', myTeam.value).order('practice_date', { ascending: false });
+        async function exportAttendanceCsv(groupName) {
+            let query = client.from('attendance').select('*, swimmers(first_name, last_name, group_name)').eq('team_id', myTeam.value).order('practice_date', { ascending: false });
+            const { data, error } = await query;
             if (error) return alert('Error exporting attendance: ' + error.message);
-            const csv = toCsv(data || [], [
+            const rows = groupName ? (data || []).filter(r => r.swimmers?.group_name === groupName) : (data || []);
+            const csv = toCsv(rows, [
                 { label: 'Date', get: r => r.practice_date },
                 { label: 'First Name', get: r => r.swimmers?.first_name },
                 { label: 'Last Name', get: r => r.swimmers?.last_name },
                 { label: 'Status', get: r => r.status },
             ]);
-            downloadTextFile(`${myTeam.value}-attendance.csv`, csv);
+            downloadTextFile(`${myTeam.value}-${groupName || 'all'}-attendance.csv`, csv);
         }
 
         // Shared table-style PDF generator, used by both Attendance and
@@ -6445,17 +6472,18 @@ createApp({
             return doc;
         }
 
-        async function exportAttendancePdf() {
-            const { data, error } = await client.from('attendance').select('*, swimmers(first_name, last_name)').eq('team_id', myTeam.value).order('practice_date', { ascending: false });
+        async function exportAttendancePdf(groupName) {
+            const { data, error } = await client.from('attendance').select('*, swimmers(first_name, last_name, group_name)').eq('team_id', myTeam.value).order('practice_date', { ascending: false });
             if (error) return alert('Error exporting attendance: ' + error.message);
-            const doc = generateTablePdf(`${setupTeamName.value || myTeam.value} — Attendance`, `Exported ${new Date().toLocaleDateString()}`,
+            const rows = groupName ? (data || []).filter(r => r.swimmers?.group_name === groupName) : (data || []);
+            const doc = generateTablePdf(`${setupTeamName.value || myTeam.value} — ${groupName || 'All'} Attendance`, `Exported ${new Date().toLocaleDateString()}`,
                 [
                     { label: 'Date', get: r => r.practice_date },
                     { label: 'First Name', get: r => r.swimmers?.first_name },
                     { label: 'Last Name', get: r => r.swimmers?.last_name },
                     { label: 'Status', get: r => r.status },
-                ], data || []);
-            doc.save(`${myTeam.value}-attendance.pdf`);
+                ], rows);
+            doc.save(`${myTeam.value}-${groupName || 'all'}-attendance.pdf`);
         }
 
         async function exportMeetResultsCsv() {
@@ -7372,7 +7400,7 @@ createApp({
             dmEnabledCoaches, myConversations, openParentConvoId, selectedCoachForNewConvo, loadDmEnabledCoaches, loadMyConversations, openParentConversationThread, closeParentConversation, startConversationWithCoach,
             coachGroupLinksMap, myAssignedGroups, toggleCoachGroup,
             calendarEvents, newCalendarEvent, showNewCalendarEventForm, upcomingCalendarEvents, postableGroups, createCalendarEvent, deleteCalendarEvent,
-            entriesViewMode, entriesGroupFilter, entriesEventFilter, newEntrySwimmerId, meetEntryGroups, enterableSwimmers, filteredMeetEvents, entriesForSwimmer, entriesForEvent, addMeetEntry, removeMeetEntry, rosterExportGroup, groupDetailTab,
+            entriesViewMode, entriesGroupFilter, entriesEventFilter, newEntrySwimmerId, meetEntryGroups, enterableSwimmers, filteredMeetEvents, entriesForSwimmer, entriesForEvent, addMeetEntry, removeMeetEntry, rosterExportGroup, groupDetailTab, groupDetailAttendanceOnly,
             expandedSwimmerId, toggleSwimmerExpand, eventsJoinableBy, isEnteredIn, toggleSwimmerEventEntry, groupColorFor,
             meetParticipationList, participationFor, setParticipation, updateMeetSetting, parentMeetParticipation,
             calendarViewDate, calendarVisibilityFilter, selectedCalendarDay, calendarMonthLabel, calendarGridDays, eventsByDate,
