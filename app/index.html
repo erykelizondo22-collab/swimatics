@@ -1939,7 +1939,7 @@
             </div>
 
 
-            <div v-if="currentView === 'meets'" class="max-w-5xl mx-auto space-y-6 mt-6">
+            <div v-if="currentView === 'meets'" class="space-y-6 mt-6">
                 <div class="flex justify-between items-end border-b border-slate-200 pb-6">
                     <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Meets</h2>
                     <div class="flex gap-2">
@@ -2587,7 +2587,7 @@
                 </template>
             </div>
 
-            <div v-if="currentView === 'calendar'" class="max-w-5xl mx-auto space-y-6 mt-6">
+            <div v-if="currentView === 'calendar'" class="space-y-6 mt-6">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 border-b border-slate-200 pb-6">
                     <div>
                         <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900">Calendar</h2>
@@ -2953,7 +2953,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 107;
+        const SW_VERSION = 108;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
