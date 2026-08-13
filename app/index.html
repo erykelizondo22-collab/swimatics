@@ -490,22 +490,50 @@
                 </button>
                 </template>
                 <template v-else>
-                <button v-for="m in drawerNavModules" :key="m.key" @click="selectModule(m.key); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="isModuleActive(m.key) ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="isModuleActive(m.key) ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
-                    <span class="text-lg w-6 text-center shrink-0">{{m.icon}}</span>
-                    <span class="font-black uppercase tracking-widest text-xs">{{m.label}}</span>
+                <div v-if="hasFeature('workouts') && (drawerNavModules.some(m => ['analytics','season-planning'].includes(m.key)))">
+                    <button @click="mobileDrawerExpanded = mobileDrawerExpanded === 'practice' ? null : 'practice'" class="w-full flex items-center justify-between gap-3 text-left px-4 py-3.5 rounded-2xl transition-all text-slate-600 hover:bg-slate-50">
+                        <span class="flex items-center gap-3"><span class="text-lg w-6 text-center shrink-0">🏊</span><span class="font-black uppercase tracking-widest text-xs">Practice</span></span>
+                        <span class="text-[10px] transition-transform" :class="mobileDrawerExpanded === 'practice' ? 'rotate-180' : ''">▾</span>
+                    </button>
+                    <div v-if="mobileDrawerExpanded === 'practice'" class="pl-8 pr-2 py-1 space-y-0.5">
+                        <button v-if="hasFeature('workouts')" @click="selectModule('analytics'); mobileNavOpen = false" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:bg-slate-50">Analytics</button>
+                        <button v-if="hasFeature('workouts')" @click="selectModule('season-planning'); mobileNavOpen = false" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:bg-slate-50">Season</button>
+                    </div>
+                </div>
+
+                <div v-if="hasFeature('roster')">
+                    <button @click="mobileDrawerExpanded = mobileDrawerExpanded === 'groups' ? null : 'groups'" class="w-full flex items-center justify-between gap-3 text-left px-4 py-3.5 rounded-2xl transition-all text-slate-600 hover:bg-slate-50">
+                        <span class="flex items-center gap-3"><span class="text-lg w-6 text-center shrink-0">👥</span><span class="font-black uppercase tracking-widest text-xs">Groups</span></span>
+                        <span class="text-[10px] transition-transform" :class="mobileDrawerExpanded === 'groups' ? 'rotate-180' : ''">▾</span>
+                    </button>
+                    <div v-if="mobileDrawerExpanded === 'groups'" class="pl-8 pr-2 py-1 space-y-0.5">
+                        <button @click="selectedGroupForEdit = null; navigateTo('groups', [loadSwimmers, loadAttendanceSummary]); mobileNavOpen = false" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:bg-slate-50">Roster</button>
+                        <button @click="selectModule('import'); mobileNavOpen = false" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:bg-slate-50">Import</button>
+                    </div>
+                </div>
+
+                <button v-if="hasFeature('meets')" @click="selectModule('meets'); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="['meets','meet-detail'].includes(currentView) ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="['meets','meet-detail'].includes(currentView) ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">🏆</span><span class="font-black uppercase tracking-widest text-xs">Meets</span>
                 </button>
-                <button v-if="(myRole === 'owner' || myRole === 'admin') && hasFeature('admin')" @click="openLayoutEditor(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'layout' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'layout' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
-                    <span class="text-lg w-6 text-center shrink-0">⚙️</span>
-                    <span class="font-black uppercase tracking-widest text-xs">Site Layout</span>
+                <button v-if="hasFeature('calendar')" @click="selectModule('calendar'); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'calendar' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'calendar' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
+                    <span class="text-lg w-6 text-center shrink-0">📅</span><span class="font-black uppercase tracking-widest text-xs">Calendar</span>
                 </button>
+
+                <div v-if="(myRole === 'owner' || myRole === 'admin') && hasFeature('admin')">
+                    <button @click="mobileDrawerExpanded = mobileDrawerExpanded === 'team' ? null : 'team'" class="w-full flex items-center justify-between gap-3 text-left px-4 py-3.5 rounded-2xl transition-all text-slate-600 hover:bg-slate-50">
+                        <span class="flex items-center gap-3"><span class="text-lg w-6 text-center shrink-0">🧑‍🏫</span><span class="font-black uppercase tracking-widest text-xs">Team</span></span>
+                        <span class="text-[10px] transition-transform" :class="mobileDrawerExpanded === 'team' ? 'rotate-180' : ''">▾</span>
+                    </button>
+                    <div v-if="mobileDrawerExpanded === 'team'" class="pl-8 pr-2 py-1 space-y-0.5">
+                        <button @click="selectModule('staff'); mobileNavOpen = false" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:bg-slate-50">Staff</button>
+                        <button @click="selectModule('accounts'); mobileNavOpen = false" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:bg-slate-50">Accounts</button>
+                        <button @click="openLayoutEditor(); mobileNavOpen = false" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:bg-slate-50">Site Layout</button>
+                    </div>
+                </div>
                 </template>
             </div>
 
             <div class="p-3 border-t border-slate-100 shrink-0 space-y-1">
-                <button v-if="!isOffice && hasFeature('messages')" @click="openMessages(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'messages' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'messages' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
-                    <span class="text-lg w-6 text-center shrink-0">💬</span>
-                    <span class="font-black uppercase tracking-widest text-xs">Messages</span>
-                </button>
                 <button @click="openSettings(); mobileNavOpen = false" class="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl transition-all" :class="currentView === 'settings' ? 'text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'" :style="currentView === 'settings' ? { background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' } : {}">
                     <span class="text-lg w-6 text-center shrink-0">⚙️</span>
                     <span class="font-black uppercase tracking-widest text-xs">Settings</span>
@@ -2857,6 +2885,12 @@ createApp({
         // be manually kept in sync from every possible navigation path.
         // Categories with no sub-items (home, meets, calendar) return null,
         // which the sidebar uses to know it should stay hidden.
+        // Which category section is expanded within the mobile drawer's
+        // "More" menu specifically -- an actual toggle state, unlike
+        // desktop's activeNavCategory which is derived from currentView.
+        // The drawer needs its own since a coach browsing categories here
+        // hasn't necessarily navigated anywhere yet.
+        const mobileDrawerExpanded = ref(null);
         const activeNavCategory = computed(() => {
             if (currentView.value === 'attendance') return 'practice';
             if (currentView.value === 'group-details') return groupDetailTab.value === 'attendance' ? 'practice' : 'groups';
@@ -2888,7 +2922,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 102;
+        const SW_VERSION = 103;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -5588,7 +5622,7 @@ createApp({
         // and meets -- those already have their own direct, dedicated tabs in
         // the mobile bottom bar, so repeating them here would just be the
         // same items shown twice.
-        const drawerNavModules = computed(() => navModules.value.filter(m => !['dashboard', 'groups', 'attendance'].includes(m.key)));
+        const drawerNavModules = computed(() => navModules.value.filter(m => !['dashboard', 'attendance'].includes(m.key)));
 
         // Generic helper for nav buttons outside the MODULE_DEFS system
         // (parent/athlete and office role sidebars) -- same properly-awaited
@@ -5614,11 +5648,6 @@ createApp({
             } finally {
                 isPageLoading.value = false;
             }
-        }
-
-        function isModuleActive(key) {
-            const def = MODULE_DEFS[key];
-            return def ? def.activeViews.includes(currentView.value) : false;
         }
 
         // FIX: closing the nav dropdown used to rely on an invisible
@@ -7405,7 +7434,7 @@ createApp({
             meetParticipationList, participationFor, setParticipation, updateMeetSetting, parentMeetParticipation,
             calendarViewDate, calendarVisibilityFilter, selectedCalendarDay, calendarMonthLabel, calendarGridDays, eventsByDate,
             prevMonth, nextMonth, goToToday, openCalendarDay, closeCalendarDay, addEventOnDay,
-            navModules, drawerNavModules, selectModule, isModuleActive, navigateTo, isPageLoading, loadCalendarEvents,
+            navModules, drawerNavModules, selectModule, navigateTo, isPageLoading, loadCalendarEvents, mobileDrawerExpanded,
             swimmers, newSwimmer, teamParents, parentLinksBySwimmer, loadSwimmers, addSwimmer, isAddingSwimmer, deleteSwimmer, updateSwimmerGroup, linkParentToSwimmer, unlinkParent,
             attendanceDate, attendanceGroupFilter, attendanceMap, filteredAttendanceSwimmers, loadAttendanceForDate, setAttendance,
             attendanceMarkGroup, groupAttendanceSummary,
