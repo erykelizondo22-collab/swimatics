@@ -1,4 +1,4 @@
-const CACHE_NAME = 'swimops-v126';
+const CACHE_NAME = 'swimops-v127';
 const urlsToCache = [
   './index.html',
   './manifest.json',
