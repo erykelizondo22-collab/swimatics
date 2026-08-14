@@ -2371,7 +2371,7 @@
                             <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-xs font-bold text-amber-700">Found {{detectedImportTeams.length}} team(s) in this file — which one's results do you want to pull?</div>
                             <button @click="confirmTeamSelection(null)" class="w-full text-left bg-[var(--pool-depth)] text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[var(--pool-depth-3)] transition-colors">Match Against My Own Roster</button>
                             <div class="max-h-80 overflow-y-auto space-y-1.5 border-t border-slate-100 pt-3">
-                                <button v-for="t in detectedImportTeams" :key="t.code" @click="confirmTeamSelection(t.code)" class="w-full flex justify-between items-center bg-slate-50 hover:bg-slate-100 border border-slate-200 p-3 rounded-xl text-left transition-colors">
+                                <button v-for="(t, tIdx) in detectedImportTeams" :key="tIdx + '-' + t.code" @click="confirmTeamSelection(t.code)" class="w-full flex justify-between items-center bg-slate-50 hover:bg-slate-100 border border-slate-200 p-3 rounded-xl text-left transition-colors">
                                     <span class="font-bold text-sm text-slate-800">{{t.name}} <span class="text-slate-400 font-normal">({{t.code}})</span></span>
                                     <span class="text-[10px] font-black uppercase text-slate-400 shrink-0">{{t.swimmerCount}} swimmers</span>
                                 </button>
@@ -2403,6 +2403,8 @@
                         </div>
 
                         <div v-if="importState.status === 'done'" class="bg-emerald-50 border border-emerald-200 text-emerald-700 p-6 rounded-2xl font-black uppercase tracking-widest text-xs text-center">{{importState.message}} <button @click="resetImport" class="block mt-3 text-[10px] font-black uppercase underline">Import Another</button></div>
+
+                        <div v-if="!['idle','reading','analyzing','error','select-team','preview','done'].includes(importState.status)" class="bg-slate-50 border border-slate-200 text-slate-500 p-6 rounded-2xl font-bold text-sm text-center">Something went wrong loading this. <button @click="resetImport" class="block mt-3 text-[10px] font-black uppercase underline">Close and Try Again</button></div>
                     </div>
                 </div>
             </div>
@@ -3207,7 +3209,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 123;
+        const SW_VERSION = 125;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -7533,6 +7535,17 @@ createApp({
             const rows = importPreview.value.records.filter(r => r._include);
             const type = importPreview.value.detected_type;
             let inserted = 0, skipped = 0, createdMeetName = null;
+
+            // times/attendance need a swimmer match by name against
+            // swimmers.value below -- but confirmTeamSelection only
+            // refreshes that when "my own roster" was picked during
+            // extraction. If a specific team was chosen instead, this
+            // could still be running the final match against stale data
+            // from a previously-viewed team, not just empty data -- so
+            // this always reloads rather than only checking for empty.
+            if (type === 'times' || type === 'attendance') {
+                await loadSwimmers();
+            }
 
             try {
                 if(type === 'roster') {
