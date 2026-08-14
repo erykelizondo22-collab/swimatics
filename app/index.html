@@ -665,6 +665,20 @@
 
         <div :key="currentView" class="page-transition main-content-area">
             
+            <div v-if="showPushPrompt" class="mb-6 bg-[var(--current)] text-white p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-start gap-3">
+                    <span class="text-2xl shrink-0">🔔</span>
+                    <div>
+                        <div class="font-black uppercase tracking-widest text-xs mb-1">Turn on notifications</div>
+                        <div class="text-sm text-white/80 font-medium">Get alerts for new workouts, meet updates, messages, and announcements — right on this device.</div>
+                    </div>
+                </div>
+                <div class="flex gap-2 shrink-0 self-stretch sm:self-auto">
+                    <button @click="acceptPushPrompt" class="flex-1 sm:flex-none bg-white text-[var(--current)] px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-white/90 transition-colors">Enable</button>
+                    <button @click="dismissPushPrompt" class="flex-1 sm:flex-none bg-white/15 text-white px-5 py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-white/25 transition-colors">Not now</button>
+                </div>
+            </div>
+            
             <div v-if="myTeam && !myTeamPlan && currentView !== 'settings'" class="mb-6 bg-[var(--pool-depth)] text-white p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <div class="font-black uppercase tracking-widest text-xs mb-1">No plan selected yet</div>
@@ -3209,9 +3223,15 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 127;
+        const SW_VERSION = 128;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
+        // Controls the gentle in-app "turn on notifications" banner. Shown
+        // once the app decides this user hasn't been asked yet -- deferred
+        // rather than firing a system dialog automatically because iOS
+        // requires Notification.requestPermission() to be triggered by an
+        // actual tap (a button in the banner), not called on page load.
+        const showPushPrompt = ref(false);
         const notificationPrefs = ref({});
         const announcementGroups = ref([]);
         const announcementFile = ref(null);
@@ -5020,6 +5040,44 @@ createApp({
             } catch(e) {
                 pushSubscribed.value = false;
             }
+            // Once we know the real subscription state, decide whether to
+            // gently prompt. Slight delay so the banner appears a beat
+            // after the app settles rather than fighting the first paint.
+            setTimeout(maybeShowPushPrompt, 1500);
+        }
+
+        // Decides whether to surface the gentle enable-notifications banner.
+        // Only prompts someone genuinely un-decided: the device supports
+        // push, they're not already subscribed on this account, the browser
+        // permission is still the default "ask" state (not already granted
+        // or explicitly denied -- re-prompting a denial does nothing and
+        // just annoys), and they haven't dismissed this banner before. The
+        // dismissal is remembered per-device so it never nags on reload.
+        function maybeShowPushPrompt() {
+            try {
+                if (!pushSupported.value) return;
+                if (pushSubscribed.value) return;
+                if (typeof Notification === 'undefined' || Notification.permission !== 'default') return;
+                if (localStorage.getItem('push_prompt_dismissed') === '1') return;
+                showPushPrompt.value = true;
+            } catch(e) { /* localStorage/Notification unavailable -- just don't prompt */ }
+        }
+
+        // Banner's "Enable" button -> runs the real subscribe flow (which
+        // triggers the actual iOS/browser system permission dialog, valid
+        // because this is inside a genuine tap handler), then hides the
+        // banner regardless of outcome.
+        async function acceptPushPrompt() {
+            showPushPrompt.value = false;
+            await enablePushNotifications();
+        }
+
+        // Banner's "Not now" -> remember the dismissal so it doesn't
+        // reappear on every load. They can still enable it any time from
+        // Settings; this only suppresses the proactive banner.
+        function dismissPushPrompt() {
+            showPushPrompt.value = false;
+            try { localStorage.setItem('push_prompt_dismissed', '1'); } catch(e) {}
         }
 
         async function enablePushNotifications() {
@@ -7791,6 +7849,12 @@ createApp({
             loadThemePreference();
             
             if (user.value) {
+                // Check push status on load (chains into the enable-
+                // notifications banner decision) so a normal login can
+                // surface the prompt -- previously this only ran when the
+                // user happened to open Settings, so most people were
+                // never asked at all.
+                if (myTeam.value) checkExistingPushSubscription();
                 if (!myTeam.value) {
                     if (localStorage.getItem('pending_invite_code')) {
                         isProcessingInvite.value = true;
@@ -8444,6 +8508,7 @@ createApp({
             swimmerTopTimes, isLoadingTopTimes, showSwimmerTopTimesFor, openSwimmerTopTimesModal, closeSwimmerTopTimesModal,
             teamModules, layoutDraft, draggedLayoutIndex, openLayoutEditor, toggleLayoutModule, layoutDragStart, layoutDrop, saveLayout,
             pushSupported, pushSubscribed, notificationPrefs, myNotificationTypes, enablePushNotifications, disablePushNotifications, toggleNotificationPref, openSettings,
+            showPushPrompt, acceptPushPrompt, dismissPushPrompt,
             announcementGroups, announcementFile, isUploadingAttachment, announcementTitle, announcementBody, sendingAnnouncement, sendMessage, openMessages, attachmentType,
             messageTarget, messageFamilyId, directRecipientSearch, directRecipientMatches, broadcastHistory, conversationsList, openConversationId, conversationThread, conversationReply, conversationReplyFile,
             openConversationThread, sendConversationReply, unsubscribeFromConversation, unsubscribeFromAnnouncements,
