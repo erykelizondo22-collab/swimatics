@@ -3209,7 +3209,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 125;
+        const SW_VERSION = 126;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -7761,12 +7761,26 @@ createApp({
             // in flight when this code runs -- getUser() can return no
             // user even though the person just signed in successfully.
             // If the URL still carries OAuth redirect markers and we came
-            // up empty, wait briefly and check again before concluding
-            // nobody's signed in.
+            // up empty, retry a few times with escalating waits before
+            // concluding nobody's signed in. A single fixed wait was
+            // timing-fragile -- when token processing ran slower than that
+            // one wait (slower network, cold start, busy device), the app
+            // gave up and showed the sign-in screen again even though
+            // Google had authenticated successfully, which reads as an
+            // endless sign-in loop and can appear on one device or load
+            // but not another purely based on timing.
             if (!user.value && (window.location.hash.includes('access_token') || window.location.search.includes('code='))) {
-                await new Promise(r => setTimeout(r, 600));
-                const retry = await client.auth.getUser();
-                user.value = retry.data?.user;
+                for (const waitMs of [400, 700, 1000, 1500]) {
+                    await new Promise(r => setTimeout(r, waitMs));
+                    const retry = await client.auth.getUser();
+                    if (retry.data?.user) { user.value = retry.data.user; break; }
+                }
+                // Clean the OAuth markers out of the URL regardless, so a
+                // manual refresh can never re-trigger this processing path
+                // against a stale, already-consumed token.
+                if (window.history.replaceState) {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
             }
 
             loadThemePreference();
