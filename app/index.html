@@ -461,8 +461,8 @@
                             <span class="text-lg w-6 text-center shrink-0">➕</span><span class="font-black uppercase tracking-widest text-xs">Create Meet</span>
                         </button>
                         <div v-if="meetsList.length" class="pl-8 pr-2 py-1 space-y-0.5">
-                            <div class="text-[9px] font-black text-white/30 uppercase tracking-widest px-3 pb-1">Created Meets</div>
-                            <button v-for="m in meetsList" :key="m.id" @click="selectedMeet = m; currentView = 'create-meet'" class="w-full text-left px-3 py-2 rounded-xl text-xs font-bold truncate transition-colors" :class="currentView === 'create-meet' && selectedMeet?.id === m.id ? 'text-white bg-white/15' : 'text-white/50 hover:bg-white/10'">{{m.name}}</button>
+                            <div class="text-[9px] font-black text-white/30 uppercase tracking-widest px-3 pb-1">All Meets</div>
+                            <button v-for="m in meetsList" :key="m.id" @click="openMeetDetail(m)" class="w-full text-left px-3 py-2 rounded-xl text-xs font-bold truncate transition-colors" :class="currentView === 'meet-detail' && selectedMeet?.id === m.id ? 'text-white bg-white/15' : 'text-white/50 hover:bg-white/10'">{{m.name}}</button>
                         </div>
                     </template>
                 </template>
@@ -3223,7 +3223,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 128;
+        const SW_VERSION = 129;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         // Controls the gentle in-app "turn on notifications" banner. Shown
