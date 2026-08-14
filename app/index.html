@@ -241,7 +241,9 @@
         }
         @media (min-width: 768px) {
             .main-content-area {
+                width: calc(100vw - 256px);
                 max-width: 1200px;
+                box-sizing: border-box;
                 padding: 24px;
                 margin-top: 132px;
                 margin-left: 256px;
@@ -2170,17 +2172,23 @@
                             <div class="text-sm font-bold text-slate-800">Entry Deadlines</div>
                             <div class="text-xs text-slate-400 font-medium mt-0.5">Set the exact closing date <span class="font-bold">and time</span> for entries. These are your team's only — they aren't part of the exported meet file, so another team you share it with won't see them.</div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="space-y-3">
                             <div>
                                 <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Parent Entry Deadline</label>
-                                <input type="datetime-local" v-model="meetDeadlineDraft.parent" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="date" v-model="meetDeadlineDraft.parentDate" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none" placeholder="Date">
+                                    <input type="time" v-model="meetDeadlineDraft.parentTime" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none" placeholder="Time">
+                                </div>
                             </div>
                             <div>
                                 <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Coach Entry Deadline</label>
-                                <input type="datetime-local" v-model="meetDeadlineDraft.coach" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="date" v-model="meetDeadlineDraft.coachDate" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none" placeholder="Date">
+                                    <input type="time" v-model="meetDeadlineDraft.coachTime" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none" placeholder="Time">
+                                </div>
                             </div>
                         </div>
-                        <p class="text-[10px] font-bold text-slate-400">Both optional. Entered in your local time and shown correctly to everyone regardless of timezone. Coach deadline must be after the parent one.</p>
+                        <p class="text-[10px] font-bold text-slate-400">Both optional — set a date and a time for each. Entered in your local time and shown correctly to everyone regardless of timezone. Coach deadline must be after the parent one.</p>
                         <button @click="saveMeetDeadlines" class="bg-[var(--pool-depth)] text-white px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-[var(--pool-depth-3)] transition-colors">Save Deadlines</button>
                     </div>
                     <label class="flex items-center justify-between gap-3 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 cursor-pointer">
@@ -3235,7 +3243,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 130;
+        const SW_VERSION = 132;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         // Controls the gentle in-app "turn on notifications" banner. Shown
@@ -6636,32 +6644,45 @@ createApp({
 
         // Holds the Settings-tab deadline inputs as datetime-local strings
         // (local time). Populated from the meet's stored UTC values when it
-        // opens, saved back to UTC on demand.
-        const meetDeadlineDraft = ref({ parent: '', coach: '' });
-        // Converts a stored UTC ISO timestamp to the 'YYYY-MM-DDTHH:MM'
-        // shape a datetime-local input expects, in the viewer's local time.
-        function isoToLocalInput(iso) {
+        // opens, saved back to UTC on demand. Date and time are kept as
+        // separate fields per role so each gets its own input box.
+        const meetDeadlineDraft = ref({ parentDate: '', parentTime: '', coachDate: '', coachTime: '' });
+        // Split a stored UTC ISO timestamp into local-time date ('YYYY-MM-DD')
+        // and time ('HH:MM') parts for the two separate input boxes.
+        function isoToLocalDate(iso) {
             if (!iso) return '';
             const d = new Date(iso);
             const pad = (n) => String(n).padStart(2, '0');
-            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        }
+        function isoToLocalTime(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+        // Combine a separate date box and time box into one UTC ISO string.
+        // No date means no deadline (null). A date with no time defaults to
+        // 23:59 local -- a deadline "on the 30th" naturally means end of
+        // that day, not midnight at its very start.
+        function combineDateTimeToIso(dateStr, timeStr) {
+            if (!dateStr) return null;
+            const t = timeStr || '23:59';
+            return new Date(`${dateStr}T${t}`).toISOString();
         }
         async function saveMeetDeadlines() {
-            const p = meetDeadlineDraft.value.parent;
-            const c = meetDeadlineDraft.value.coach;
+            const p = combineDateTimeToIso(meetDeadlineDraft.value.parentDate, meetDeadlineDraft.value.parentTime);
+            const c = combineDateTimeToIso(meetDeadlineDraft.value.coachDate, meetDeadlineDraft.value.coachTime);
             if (p && c && new Date(c) <= new Date(p)) {
                 return alert("Coach entry deadline must be after the parent entry deadline.");
             }
-            // datetime-local strings carry no timezone -- new Date() reads
-            // them as local time and toISOString() stores the right UTC
-            // instant, so the deadline means the same moment for everyone.
             const { error } = await client.from('meets').update({
-                parent_entry_deadline: p ? new Date(p).toISOString() : null,
-                coach_entry_deadline: c ? new Date(c).toISOString() : null,
+                parent_entry_deadline: p,
+                coach_entry_deadline: c,
             }).eq('id', selectedMeet.value.id);
             if (error) return alert("Error saving deadlines: " + error.message);
-            selectedMeet.value.parent_entry_deadline = p ? new Date(p).toISOString() : null;
-            selectedMeet.value.coach_entry_deadline = c ? new Date(c).toISOString() : null;
+            selectedMeet.value.parent_entry_deadline = p;
+            selectedMeet.value.coach_entry_deadline = c;
             alert("Deadlines saved.");
         }
 
@@ -6670,8 +6691,10 @@ createApp({
             meetDetailTab.value = 'events';
             currentView.value = 'meet-detail';
             meetDeadlineDraft.value = {
-                parent: isoToLocalInput(meet.parent_entry_deadline),
-                coach: isoToLocalInput(meet.coach_entry_deadline),
+                parentDate: isoToLocalDate(meet.parent_entry_deadline),
+                parentTime: isoToLocalTime(meet.parent_entry_deadline),
+                coachDate: isoToLocalDate(meet.coach_entry_deadline),
+                coachTime: isoToLocalTime(meet.coach_entry_deadline),
             };
             isPageLoading.value = true;
             try {
@@ -7833,7 +7856,9 @@ createApp({
             }
             if (mainContent) {
                 mainContent.style.marginLeft = isDesktop ? '256px' : '';
+                mainContent.style.width = isDesktop ? 'calc(100vw - 256px)' : '';
                 mainContent.style.maxWidth = isDesktop ? '1200px' : '';
+                mainContent.style.boxSizing = isDesktop ? 'border-box' : '';
                 mainContent.style.marginTop = isDesktop ? '132px' : '24px';
                 mainContent.style.padding = isDesktop ? '24px' : '16px';
             }
