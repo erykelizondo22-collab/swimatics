@@ -2274,6 +2274,50 @@
                 </div>
 
                 <div v-if="meetDetailTab === 'events'" class="space-y-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                        <div>
+                            <div class="text-sm font-black text-slate-800 uppercase tracking-widest">Quick Build</div>
+                            <div class="text-xs text-slate-400 font-medium mt-0.5">Pick a stroke, tap the distances and genders you want, and generate every combination at once.</div>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Stroke</label>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button v-for="s in ['Free','Back','Breast','Fly','IM']" :key="s" @click="quickBuild.stroke = s" :class="quickBuild.stroke === s ? 'bg-[var(--pool-depth)] text-white' : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100'" class="px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-colors">{{s}}</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Distances</label>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button v-for="d in quickBuildDistances" :key="d" @click="toggleQuickDistance(d)" :class="quickBuild.distances.includes(d) ? 'bg-[var(--current)] text-white' : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100'" class="px-3.5 py-2 rounded-lg text-xs font-black transition-colors">{{d}}</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Gender</label>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <button v-for="g in quickBuildGenders" :key="g.code" @click="toggleQuickGender(g.code)" :class="quickBuild.genders.includes(g.code) ? 'bg-[var(--current)] text-white' : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100'" class="px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-colors">{{g.label}}</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Age Range <span class="normal-case font-bold text-slate-300">— optional</span></label>
+                                <div class="flex items-center gap-2">
+                                    <input v-model="quickBuild.ageMin" type="number" placeholder="Min" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-xs font-bold outline-none">
+                                    <span class="text-slate-300 font-black">–</span>
+                                    <input v-model="quickBuild.ageMax" type="number" placeholder="Max" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-xs font-bold outline-none">
+                                </div>
+                            </div>
+                        </div>
+                        <button @click="quickBuildEvents" :disabled="isQuickBuilding || !quickBuild.distances.length || !quickBuild.genders.length" class="w-full bg-[var(--pool-depth)] text-white py-3 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-[var(--pool-depth-3)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                            {{ isQuickBuilding ? 'Building...' : (quickBuild.distances.length && quickBuild.genders.length ? 'Add ' + (quickBuild.distances.length * quickBuild.genders.length) + ' Event' + (quickBuild.distances.length * quickBuild.genders.length === 1 ? '' : 's') : 'Pick Distances & Genders') }}
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1 h-px bg-slate-200"></div>
+                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">or add one at a time</span>
+                        <div class="flex-1 h-px bg-slate-200"></div>
+                    </div>
+
                     <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-2 md:grid-cols-6 gap-2">
                         <input v-model="newMeetEvent.event_number" placeholder="#" class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
                         <select v-model="newMeetEvent.gender" class="bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold outline-none">
@@ -2288,7 +2332,7 @@
                     </div>
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 divide-y divide-slate-100">
                         <div v-for="e in meetEventsList" :key="e.id" class="p-4 flex justify-between items-center">
-                            <div class="text-sm font-bold text-slate-800">#{{e.event_number}} — {{e.gender}} {{e.distance}} {{e.stroke}} <span v-if="e.qual_time_seconds" class="text-[10px] text-amber-600 font-black ml-2">QT {{secToTime(e.qual_time_seconds)}}</span></div>
+                            <div class="text-sm font-bold text-slate-800">#{{e.event_number}} — {{genderLabel(e.gender)}} <span v-if="e.age_min || e.age_max">{{ageRangeLabel(e.age_min, e.age_max)}} </span>{{e.distance}} {{e.stroke}} <span v-if="e.qual_time_seconds" class="text-[10px] text-amber-600 font-black ml-2">QT {{secToTime(e.qual_time_seconds)}}</span></div>
                             <button @click="deleteMeetEvent(e.id)" class="text-red-400 hover:text-red-600 text-[10px] font-black uppercase">Remove</button>
                         </div>
                         <div v-if="!isPageLoading && !meetEventsList.length" class="p-10 text-center text-slate-400 font-black uppercase tracking-widest text-sm">No events yet — add above or use Import</div>
@@ -3243,7 +3287,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 132;
+        const SW_VERSION = 133;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         // Controls the gentle in-app "turn on notifications" banner. Shown
@@ -3396,6 +3440,79 @@ createApp({
         const meetDetailTab = ref('events');
         const meetEventsList = ref([]);
         const newMeetEvent = ref({ event_number: '', gender: 'M', distance: '', stroke: 'Free', qual_time: '' });
+        // Quick-builder: pick a stroke, tap the distances and genders you
+        // want, and generate every combination as events in one action --
+        // turns setting up a 40-event meet from 40 manual rows into a few
+        // taps. Distances cover the full standard set across SCY/SCM/LCM.
+        const quickBuild = ref({
+            stroke: 'Free',
+            distances: [],
+            genders: [],
+            ageMin: '',
+            ageMax: '',
+        });
+        const quickBuildDistances = [25, 50, 100, 200, 400, 500, 800, 1000, 1500, 1650];
+        const quickBuildGenders = [
+            { code: 'M', label: 'Boys' },
+            { code: 'F', label: 'Girls' },
+            { code: 'X', label: 'Mixed' },
+        ];
+        function toggleQuickDistance(d) {
+            const i = quickBuild.value.distances.indexOf(d);
+            if (i === -1) quickBuild.value.distances.push(d);
+            else quickBuild.value.distances.splice(i, 1);
+        }
+        function toggleQuickGender(code) {
+            const i = quickBuild.value.genders.indexOf(code);
+            if (i === -1) quickBuild.value.genders.push(code);
+            else quickBuild.value.genders.splice(i, 1);
+        }
+        const isQuickBuilding = ref(false);
+        async function quickBuildEvents() {
+            const qb = quickBuild.value;
+            if (!qb.distances.length || !qb.genders.length) {
+                return alert("Pick at least one distance and one gender.");
+            }
+            if (isQuickBuilding.value) return;
+            isQuickBuilding.value = true;
+            try {
+                // Continue numbering after whatever events already exist, so
+                // building in multiple passes (e.g. all the Free events, then
+                // all the Back events) keeps a clean running sequence.
+                const existingNumbers = meetEventsList.value
+                    .map(e => parseInt(e.event_number))
+                    .filter(n => !isNaN(n));
+                let nextNum = existingNumbers.length ? Math.max(...existingNumbers) + 1 : 1;
+                const ageMin = qb.ageMin !== '' ? parseInt(qb.ageMin) : null;
+                const ageMax = qb.ageMax !== '' ? parseInt(qb.ageMax) : null;
+                const rows = [];
+                // Distance-major, then gender -- gives a natural running
+                // order like "1 Girls 50 Free, 2 Boys 50 Free, 3 Girls 100
+                // Free..." rather than all one gender then all the other.
+                for (const d of qb.distances) {
+                    for (const g of qb.genders) {
+                        rows.push({
+                            meet_id: selectedMeet.value.id,
+                            event_number: nextNum++,
+                            gender: g,
+                            distance: d,
+                            stroke: qb.stroke,
+                            qual_time_seconds: null,
+                            age_min: ageMin,
+                            age_max: ageMax,
+                        });
+                    }
+                }
+                const { error } = await client.from("meet_events").insert(rows);
+                if (error) return alert("Error building events: " + error.message);
+                // Reset selections but keep the stroke, so adding the next
+                // stroke's events is just: change stroke, re-tap distances.
+                quickBuild.value = { stroke: qb.stroke, distances: [], genders: [], ageMin: '', ageMax: '' };
+                loadMeetEvents(selectedMeet.value.id);
+            } finally {
+                isQuickBuilding.value = false;
+            }
+        }
         const meetEntriesList = ref([]);
         const meetResultsList = ref([]);
         const newResultSwimmerId = ref({});
@@ -6710,6 +6827,18 @@ createApp({
             meetEventsList.value = data || [];
         }
 
+        // Display helpers for the event list -- convert stored codes to
+        // readable labels.
+        function genderLabel(g) {
+            return g === 'M' ? 'Boys' : g === 'F' ? 'Girls' : g === 'X' ? 'Mixed' : g;
+        }
+        function ageRangeLabel(min, max) {
+            if (min && max) return `${min}-${max}`;
+            if (max && !min) return `${max} & Under`;
+            if (min && !max) return `${min} & Over`;
+            return '';
+        }
+
         async function addMeetEvent() {
             const ev = newMeetEvent.value;
             if(!ev.distance || !ev.stroke) return alert("Distance and stroke required.");
@@ -8592,6 +8721,7 @@ createApp({
             seasonsList, selectedSeasonId, selectedSeasonName, showNewSeasonForm, newSeasonName, newSeasonStart, newSeasonEnd, loadSeasons, addSeason,
             meetsList, upcomingMeetsList, pastMeetsList, newMeet, selectedMeet, coachEntryDeadlinePassed, meetDetailTab, meetEventsList, newMeetEvent, meetEntriesList, overrideTimes, exportMeetEventsCsv, deleteMeet,
             meetDeadlineDraft, saveMeetDeadlines,
+            quickBuild, quickBuildDistances, quickBuildGenders, toggleQuickDistance, toggleQuickGender, quickBuildEvents, isQuickBuilding, genderLabel, ageRangeLabel,
             meetResultsList, resultsForEvent, newResultSwimmerId, newResultTime, isAddingResult, addMeetResult, deleteMeetResult, formatSwimTime,
             detectedImportTeams, confirmTeamSelection,
             loadMeets, createMeet, isCreatingMeet, openMeetDetail, addMeetEvent, deleteMeetEvent, pendingEntriesCount, swimmerName, eventLabel, approveMeetEntry, declineMeetEntry,
