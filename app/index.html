@@ -3209,7 +3209,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 126;
+        const SW_VERSION = 127;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         const notificationPrefs = ref({});
@@ -4863,7 +4863,12 @@ createApp({
 
         async function addSwimmerToAccount(parentUserId) {
             if (!swimmerToAddId.value) return;
-            const { error } = await client.from('parent_links').insert({ parent_user_id: parentUserId, swimmer_id: swimmerToAddId.value });
+            // team_id is required: the parent_links RLS policy authorizes
+            // the insert via is_team_coach(team_id), which reads the row's
+            // own team_id column. Omitting it leaves that column null, the
+            // policy check fails, and the insert is rejected even when the
+            // user genuinely is the team's owner/coach.
+            const { error } = await client.from('parent_links').insert({ team_id: myTeam.value, parent_user_id: parentUserId, swimmer_id: swimmerToAddId.value });
             if (error) { alert("Error linking swimmer: " + error.message); return; }
             swimmerToAddId.value = '';
             loadAccountSwimmers(parentUserId);
