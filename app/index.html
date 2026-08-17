@@ -74,6 +74,29 @@
                 min-height: 0 !important;
                 display: block !important; 
             }
+            /* Force browsers to actually print the watermark image and any
+               team colors. By default Safari and Chrome strip background
+               colors AND drop faint/decorative imagery when printing as an
+               ink-saving optimization -- which silently removed the
+               low-opacity grayscale watermark entirely. These properties
+               override that and are required for the watermark to appear. */
+            .print-page.print-active,
+            .print-page.print-active * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .print-page.print-active img {
+                display: inline-block !important;
+                visibility: visible !important;
+            }
+            /* On screen #sheet has overflow:hidden, but during print a
+               container that spans multiple pages can CLIP its own
+               absolutely-positioned children (the per-page watermarks) that
+               sit beyond the first page's box. Let it overflow visibly when
+               printing so every page's watermark actually renders. */
+            #sheet.print-active, #calendarSheet.print-active {
+                overflow: visible !important;
+            }
         }
 
         #sheet { 
@@ -1268,7 +1291,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Start Time</label>
-                            <input type="time" v-model="start" class="w-full bg-slate-50 border border-slate-200 p-5 rounded-2xl font-black text-slate-800 transition-all outline-none text-base cursor-pointer">
+                            <button type="button" @click="openTimeWheelGeneric('generic:workout-start', start, (v) => start = v)" class="w-full bg-slate-50 border border-slate-200 p-5 rounded-2xl font-black text-slate-800 transition-all outline-none text-base cursor-pointer text-left hover:bg-slate-100">{{ formatTime12h(start) }}</button>
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Base Interval</label>
@@ -1958,13 +1981,19 @@
                 </div>
 
                 <div v-if="groupDetailTab === 'lanes' && selectedGroupForEdit.id !== null" class="space-y-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-end gap-4">
-                        <div>
-                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Number of Lanes</label>
-                            <input type="number" min="1" max="20" v-model.number="laneCount" class="w-28 bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-sm font-bold outline-none">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                        <div class="flex flex-wrap items-end gap-4">
+                            <div>
+                                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Number of Lanes</label>
+                                <input type="number" min="1" max="20" v-model.number="laneCount" class="w-28 bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-sm font-bold outline-none">
+                            </div>
+                            <span v-if="laneAssignments && laneAssignments.updated_at" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest pb-1">Last assigned {{ formatPracticeDate(laneAssignments.updated_at.slice(0,10)) }}<span v-if="laneAssignments.mode === 'attendance'"> · present only</span></span>
                         </div>
-                        <button @click="randomizeLanes" :disabled="isRandomizingLanes" class="bg-[var(--pool-depth)] text-white px-6 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs shadow-md hover:bg-[var(--pool-depth-3)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">{{ isRandomizingLanes ? 'Randomizing...' : 'Randomize' }}</button>
-                        <span v-if="laneAssignments && laneAssignments.updated_at" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Last randomized {{ formatPracticeDate(laneAssignments.updated_at.slice(0,10)) }}</span>
+                        <div class="flex flex-wrap gap-2">
+                            <button @click="randomizeLanes('all')" :disabled="isRandomizingLanes" class="bg-[var(--pool-depth)] text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-md hover:bg-[var(--pool-depth-3)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">{{ isRandomizingLanes ? 'Assigning...' : 'Assign All' }}</button>
+                            <button @click="randomizeLanes('attendance')" :disabled="isRandomizingLanes" class="bg-[var(--current)] text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed">{{ isRandomizingLanes ? 'Assigning...' : 'Assign by Attendance' }}</button>
+                        </div>
+                        <p class="text-[10px] font-bold text-slate-400"><span class="text-slate-600">Assign All</span> includes everyone in the group. <span class="text-slate-600">Assign by Attendance</span> only includes swimmers marked present today — take attendance first.</p>
                     </div>
 
                     <div v-if="laneAssignments && laneAssignments.lanes" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -2177,14 +2206,14 @@
                                 <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Parent Entry Deadline</label>
                                 <div class="grid grid-cols-2 gap-2">
                                     <input type="date" v-model="meetDeadlineDraft.parentDate" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none" placeholder="Date">
-                                    <input type="time" v-model="meetDeadlineDraft.parentTime" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none" placeholder="Time">
+                                    <button type="button" @click="openTimeWheelGeneric('generic:meet-parent-time', meetDeadlineDraft.parentTime, (v) => meetDeadlineDraft.parentTime = v)" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none text-left hover:bg-slate-100 transition-colors">{{ meetDeadlineDraft.parentTime ? formatTime12h(meetDeadlineDraft.parentTime) : 'Set time' }}</button>
                                 </div>
                             </div>
                             <div>
                                 <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Coach Entry Deadline</label>
                                 <div class="grid grid-cols-2 gap-2">
                                     <input type="date" v-model="meetDeadlineDraft.coachDate" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none" placeholder="Date">
-                                    <input type="time" v-model="meetDeadlineDraft.coachTime" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none" placeholder="Time">
+                                    <button type="button" @click="openTimeWheelGeneric('generic:meet-coach-time', meetDeadlineDraft.coachTime, (v) => meetDeadlineDraft.coachTime = v)" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none text-left hover:bg-slate-100 transition-colors">{{ meetDeadlineDraft.coachTime ? formatTime12h(meetDeadlineDraft.coachTime) : 'Set time' }}</button>
                                 </div>
                             </div>
                         </div>
@@ -2927,8 +2956,8 @@
                         </select>
                         <input v-model="newCalendarEvent.start_date" type="date" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
                         <input v-model="newCalendarEvent.location" placeholder="Location" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
-                        <input v-model="newCalendarEvent.start_time" type="time" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
-                        <input v-model="newCalendarEvent.end_time" type="time" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                        <button type="button" @click="openTimeWheelGeneric('generic:cal-start', newCalendarEvent.start_time, (v) => newCalendarEvent.start_time = v)" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none text-left hover:bg-slate-100 transition-colors">{{ newCalendarEvent.start_time ? formatTime12h(newCalendarEvent.start_time) : 'Start time' }}</button>
+                        <button type="button" @click="openTimeWheelGeneric('generic:cal-end', newCalendarEvent.end_time, (v) => newCalendarEvent.end_time = v)" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none text-left hover:bg-slate-100 transition-colors">{{ newCalendarEvent.end_time ? formatTime12h(newCalendarEvent.end_time) : 'End time' }}</button>
                         <textarea v-model="newCalendarEvent.notes" placeholder="Notes (optional)" rows="2" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none md:col-span-2"></textarea>
                         <button @click="createCalendarEvent" class="md:col-span-2 bg-[var(--pool-depth)] text-white py-3 rounded-xl font-black uppercase tracking-widest text-xs">Add to Calendar</button>
                     </div>
@@ -3130,6 +3159,28 @@
                 </div>
             </div>
 
+            <div v-if="showTimeWheelFor && String(showTimeWheelFor).startsWith('generic:')" @click="closeTimeWheel" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+                <div @click.stop class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-xs">
+                    <div class="text-sm font-black text-slate-800 uppercase tracking-widest text-center mb-1">Set Time</div>
+                    <div class="text-2xl font-black text-[var(--pool-depth)] text-center mb-4">{{ wheelHour }}:{{ String(wheelMinute).padStart(2,'0') }} {{ wheelAmPm }}</div>
+                    <div class="flex gap-2">
+                        <div class="flex-1 h-44 overflow-y-auto rounded-xl bg-slate-50" style="scroll-snap-type: y mandatory;">
+                            <div v-for="h in 12" :key="h" @click="wheelHour = h" :class="wheelHour === h ? 'bg-[var(--pool-depth)] text-white font-black' : 'text-slate-500 font-bold hover:bg-slate-100'" class="text-center py-2.5 cursor-pointer text-sm transition-colors" style="scroll-snap-align: center;">{{h}}</div>
+                        </div>
+                        <div class="flex-1 h-44 overflow-y-auto rounded-xl bg-slate-50" style="scroll-snap-type: y mandatory;">
+                            <div v-for="m in [0,5,10,15,20,25,30,35,40,45,50,55]" :key="m" @click="wheelMinute = m" :class="wheelMinute === m ? 'bg-[var(--pool-depth)] text-white font-black' : 'text-slate-500 font-bold hover:bg-slate-100'" class="text-center py-2.5 cursor-pointer text-sm transition-colors" style="scroll-snap-align: center;">{{ String(m).padStart(2,'0') }}</div>
+                        </div>
+                        <div class="flex-1 h-44 overflow-y-auto rounded-xl bg-slate-50" style="scroll-snap-type: y mandatory;">
+                            <div v-for="ap in ['AM','PM']" :key="ap" @click="wheelAmPm = ap" :class="wheelAmPm === ap ? 'bg-[var(--pool-depth)] text-white font-black' : 'text-slate-500 font-bold hover:bg-slate-100'" class="text-center py-2.5 cursor-pointer text-sm transition-colors" style="scroll-snap-align: center;">{{ap}}</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-4">
+                        <button @click="closeTimeWheel" class="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-colors">Cancel</button>
+                        <button @click="confirmTimeWheelGeneric" class="flex-1 bg-[var(--pool-depth)] text-white py-3 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-[var(--pool-depth-3)] transition-colors">Set Time</button>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
     <div id="sheet" style="display:none; position: relative; overflow: hidden;" class="print-page" :class="{'no-print': !user, 'print-active': printTarget === 'workout'}">
@@ -3186,8 +3237,8 @@
     </div>
 
     <div id="calendarSheet" style="display:none; position: relative; overflow: hidden;" class="print-page" :class="{'no-print': !user, 'print-active': printTarget === 'calendar'}">
-        <div v-if="teamLogoUrl" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 0; opacity: 0.06; pointer-events: none;">
-            <img :src="teamLogoUrl" alt="" style="width: 60%; max-height: 60%; object-fit: contain; filter: grayscale(100%);">
+        <div v-for="topPx in calendarWatermarkPositions" :key="topPx" style="position: absolute; left: 0; right: 0; display: flex; align-items: center; justify-content: center; z-index: 0; opacity: 0.06; pointer-events: none;" :style="{ top: topPx + 'px', transform: 'translateY(-50%)' }">
+            <img :src="teamLogoUrl" alt="" style="width: 55%; max-height: 55%; object-fit: contain; filter: grayscale(100%);">
         </div>
 
         <div style="position: relative; z-index: 10;">
@@ -3287,7 +3338,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 133;
+        const SW_VERSION = 136;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         // Controls the gentle in-app "turn on notifications" banner. Shown
@@ -3632,6 +3683,7 @@ createApp({
         const currentWorkoutId = ref(null); 
         const fontSize = ref(22); 
         const printWatermarkPositions = ref([]);
+        const calendarWatermarkPositions = ref([]);
 
         const title = ref(""); 
         const group = ref(""); 
@@ -4544,9 +4596,27 @@ createApp({
             orientationStyle.textContent = '@media print { @page { size: landscape; margin: 0.5in; } }';
             document.head.appendChild(orientationStyle);
 
+            // Center a watermark on EVERY printed page, not just the first.
+            // A single position:fixed watermark only renders once in print;
+            // instead we measure the sheet's rendered height and drop one
+            // centered watermark per page. Landscape Letter with 0.5in
+            // margins gives an 8in-tall printable area (~768px at 96dpi).
+            const calSheet = document.getElementById('calendarSheet');
+            if (calSheet && teamLogoUrl.value) {
+                const pageHeightPx = 8 * 96; // landscape Letter height minus margins
+                const prevDisplay = calSheet.style.display;
+                calSheet.style.display = 'block';
+                const finalHeight = calSheet.scrollHeight;
+                calSheet.style.display = prevDisplay;
+                const numPages = Math.max(1, Math.ceil(finalHeight / pageHeightPx));
+                calendarWatermarkPositions.value = Array.from({ length: numPages }, (_, i) => (i * pageHeightPx) + (pageHeightPx / 2));
+                await nextTick();
+            }
+
             window.print();
 
             document.getElementById('calendar-print-orientation')?.remove();
+            calendarWatermarkPositions.value = [];
         }
 
         function discardDraft() { 
@@ -4587,12 +4657,21 @@ createApp({
         }
 
         // Custom wheel time picker -- replaces the native <input type="time">
-        // so the picking experience is consistent across every browser
-        // instead of varying wildly by platform.
+        // so the picking experience is consistent across every browser.
+        // This matters specifically because DESKTOP SAFARI renders
+        // <input type="time"> as an inert plain text box with no picker at
+        // all -- clicking it does nothing -- so every native time field was
+        // unusable there. This wheel works with mouse and touch alike.
+        // Generalized to serve any time field: openTimeWheelGeneric is given
+        // a unique key (so only one picker shows at a time), the current
+        // "HH:MM" value, and a callback that receives the newly chosen
+        // "HH:MM" -- the caller decides what to do with it (set a ref, update
+        // a draft field, save to the DB, etc.).
         const showTimeWheelFor = ref(null);
         const wheelHour = ref(5);
         const wheelMinute = ref(0);
         const wheelAmPm = ref('PM');
+        const wheelOnConfirm = ref(null);
 
         function formatTime12h(time24) {
             if (!time24) return 'Not Set';
@@ -4602,28 +4681,57 @@ createApp({
             return `${h12}:${String(m).padStart(2, '0')} ${ap}`;
         }
 
-        function openTimeWheel(group) {
-            if (group.practice_start_time) {
-                const [h, m] = group.practice_start_time.split(':').map(Number);
+        // Seed the three wheels from an existing "HH:MM" (or a 5 PM default).
+        function seedWheelFromValue(time24) {
+            if (time24) {
+                const [h, m] = time24.split(':').map(Number);
                 wheelAmPm.value = h >= 12 ? 'PM' : 'AM';
                 wheelHour.value = h % 12 === 0 ? 12 : h % 12;
                 wheelMinute.value = Math.round(m / 5) * 5 % 60;
             } else {
                 wheelHour.value = 5; wheelMinute.value = 0; wheelAmPm.value = 'PM';
             }
-            showTimeWheelFor.value = group.id;
+        }
+
+        // Assemble the three wheels back into a 24-hour "HH:MM" string.
+        function wheelValue24() {
+            let h24 = wheelHour.value % 12;
+            if (wheelAmPm.value === 'PM') h24 += 12;
+            return `${String(h24).padStart(2, '0')}:${String(wheelMinute.value).padStart(2, '0')}`;
+        }
+
+        // Generic opener: key identifies which field's picker is showing,
+        // onConfirm receives the chosen "HH:MM".
+        function openTimeWheelGeneric(key, currentValue, onConfirm) {
+            seedWheelFromValue(currentValue);
+            wheelOnConfirm.value = onConfirm;
+            showTimeWheelFor.value = key;
+        }
+
+        function confirmTimeWheelGeneric() {
+            if (wheelOnConfirm.value) wheelOnConfirm.value(wheelValue24());
+            wheelOnConfirm.value = null;
+            showTimeWheelFor.value = null;
+        }
+
+        // Original group-practice-time entry points, kept working by
+        // delegating to the generic version.
+        function openTimeWheel(group) {
+            openTimeWheelGeneric(group.id, group.practice_start_time, (val) => {
+                group.practice_start_time = val;
+                updateGroupStartTime(group);
+            });
         }
 
         function closeTimeWheel() {
+            wheelOnConfirm.value = null;
             showTimeWheelFor.value = null;
         }
 
         function confirmTimeWheel(group) {
-            let h24 = wheelHour.value % 12;
-            if (wheelAmPm.value === 'PM') h24 += 12;
-            group.practice_start_time = `${String(h24).padStart(2, '0')}:${String(wheelMinute.value).padStart(2, '0')}`;
-            updateGroupStartTime(group);
-            showTimeWheelFor.value = null;
+            // Retained for any existing callers, but the generic confirm now
+            // does the work via the callback set in openTimeWheel.
+            confirmTimeWheelGeneric();
         }
 
         const isAddingGroup = ref(false);
@@ -4664,14 +4772,39 @@ createApp({
         // Randomizes this group's swimmers across the given number of
         // lanes and saves the result -- it stays exactly as assigned until
         // the coach clicks Randomize again, not re-shuffled on every visit.
-        async function randomizeLanes() {
+        // mode 'all' assigns every swimmer in the group; mode 'attendance'
+        // only assigns swimmers marked present for today, so anyone absent
+        // or not marked in isn't given a lane.
+        async function randomizeLanes(mode = 'all') {
             if (!selectedGroupForEdit.value || selectedGroupForEdit.value.id === null) return;
             if (!laneCount.value || laneCount.value < 1) return alert("Enter at least 1 lane.");
             if (isRandomizingLanes.value) return;
             isRandomizingLanes.value = true;
             try {
-                const groupSwimmers = swimmers.value.filter(s => s.group_name === selectedGroupForEdit.value.name);
+                let groupSwimmers = swimmers.value.filter(s => s.group_name === selectedGroupForEdit.value.name);
                 if (!groupSwimmers.length) return alert("No swimmers in this group to assign.");
+
+                if (mode === 'attendance') {
+                    // Pull today's attendance for these swimmers and keep only
+                    // the ones marked present. Someone absent, excused, or not
+                    // marked at all simply isn't given a lane.
+                    // Match attendance's own stored date exactly -- it saves
+                    // practice_date using this same tz-offset-adjusted local
+                    // date, so computing "today" any other way risks a
+                    // mismatch that would find zero present swimmers.
+                    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+                    const today = (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
+                    const ids = groupSwimmers.map(s => s.id);
+                    const { data: att, error: attErr } = await client.from("attendance")
+                        .select("swimmer_id, status")
+                        .eq('team_id', myTeam.value)
+                        .eq('practice_date', today)
+                        .in('swimmer_id', ids);
+                    if (attErr) return alert("Error checking attendance: " + attErr.message);
+                    const presentIds = new Set((att || []).filter(r => r.status === 'present').map(r => r.swimmer_id));
+                    groupSwimmers = groupSwimmers.filter(s => presentIds.has(s.id));
+                    if (!groupSwimmers.length) return alert("No swimmers are marked present today for this group. Take attendance first, or use Assign All.");
+                }
 
                 // Fisher-Yates shuffle -- a genuinely unbiased randomization,
                 // not just Array.sort(() => Math.random() - 0.5) which skews.
@@ -4689,7 +4822,7 @@ createApp({
                     lanes[laneNum].push(swimmerId);
                 });
 
-                const newAssignment = { num_lanes: laneCount.value, lanes, updated_at: new Date().toISOString() };
+                const newAssignment = { num_lanes: laneCount.value, lanes, updated_at: new Date().toISOString(), mode };
                 const { error } = await client.from("team_groups").update({ lane_assignments: newAssignment }).eq('id', selectedGroupForEdit.value.id);
                 if (error) return alert("Error saving lane assignment: " + error.message);
 
@@ -8677,12 +8810,12 @@ createApp({
             athleteShareMenuFor, copyAthleteLink, textAthleteLink, emailAthleteLink, joinAsAthleteViaLink,
             coachRequestPending, coachRequestBlockedMessage, pendingCoachRequests, requestCoachAccessViaLink, decideCoachRequest,
             vaultSetupName, vaultSetupLocation, vaultSetupColors, vaultSetupPlan, vaultSetupAnnual,
-            title, group, poolType, defaultStroke, workoutVisibility, workoutFontSize, printWorkoutSheet, printCalendarSheet, printWatermarkPositions, publicWorkouts, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
+            title, group, poolType, defaultStroke, workoutVisibility, workoutFontSize, printWorkoutSheet, printCalendarSheet, printWatermarkPositions, calendarWatermarkPositions, publicWorkouts, unit, start, base, input, parsed, totalYards, duration, cloudWorkouts, coachName, practiceDate,
             seasonPlans, activePlanContext, teamGroupsList, staffList, planForm, newGroupName, myRole, myTeam,
             filterGroup, workoutsTab, pastRangeStart, pastRangeEnd, filteredWorkouts, todaysWorkouts, upcomingWorkouts, pastWorkouts, getWeekDateRange,
             formatTime, formattedStartTime, save, isSaving, loadWorkout, startNewWorkout, formatPracticeDate, startNewPlan, editPlan, addWeek, savePlan, deletePlan, deleteWorkout,
             addGroup, isAddingGroup, updateGroupStartTime, deleteGroup, removeStaff, changeRole, copyInviteLink, showInviteQRCode, showQRCode, qrCodeDataUrl, closeQRCode, joinTeam, discardDraft, loadStaff, visibleStaffList,
-            showTimeWheelFor, wheelHour, wheelMinute, wheelAmPm, formatTime12h, openTimeWheel, closeTimeWheel, confirmTimeWheel,
+            showTimeWheelFor, wheelHour, wheelMinute, wheelAmPm, formatTime12h, openTimeWheel, closeTimeWheel, confirmTimeWheel, openTimeWheelGeneric, confirmTimeWheelGeneric,
             hasDraft, resumeDraft, currentSetPace, updateCursor, stressScore, stressColor,
             analyticsGroup, analyticsStartDate, analyticsEndDate, analyticsStats, resetAnalyticsDates,
             showAiModal, aiPrompt, isAiLoading, generateWithAI,
