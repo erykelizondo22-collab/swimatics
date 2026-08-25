@@ -818,6 +818,43 @@
                 </div>
             </div>
 
+            <div v-if="showTranslateModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 transition-opacity">
+                <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+                    <div class="p-6 flex justify-between items-center text-white shrink-0" :style="{ background: 'linear-gradient(to right, ' + teamColors.primary + ', ' + teamColors.secondary + ')' }">
+                        <div>
+                            <h3 class="font-black text-xl leading-tight flex items-center gap-2">🌐 Translate Workout</h3>
+                            <p class="text-[10px] text-white/80 uppercase tracking-widest mt-1 opacity-90">{{title || 'Untitled Workout'}}</p>
+                        </div>
+                        <button @click="showTranslateModal = false" aria-label="Close" class="font-black hover:bg-white/20 bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors">X</button>
+                    </div>
+
+                    <div class="p-6 space-y-4 bg-slate-50/50 overflow-y-auto">
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Translate Into</label>
+                            <select v-model="translateTargetLang" class="w-full bg-white border border-slate-200 p-3 rounded-xl text-sm font-bold outline-none">
+                                <option v-for="lang in translateLanguages" :key="lang" :value="lang">{{lang}}</option>
+                            </select>
+                        </div>
+                        <button @click="translateWorkout" :disabled="isTranslating" class="w-full bg-[var(--pool-depth)] text-white font-black py-3.5 rounded-2xl hover:bg-[var(--pool-depth-3)] transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span v-if="isTranslating" class="flex items-center gap-2">
+                                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                Translating...
+                            </span>
+                            <span v-else>{{ translatedWorkout ? 'Translate Again' : 'Translate' }}</span>
+                        </button>
+
+                        <div v-if="translatedWorkout" class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">{{translateTargetLang}} Translation</label>
+                                <button @click="copyTranslatedWorkout" class="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors">Copy</button>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-2xl p-4 whitespace-pre-wrap text-sm font-medium text-slate-700 leading-relaxed max-h-72 overflow-y-auto">{{translatedWorkout}}</div>
+                            <p class="text-[10px] font-bold text-slate-400">This is a translated copy — your original workout is unchanged.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div v-if="currentView === 'onboarding'" class="max-w-2xl mx-auto mt-10 md:mt-16">
                 <div v-if="isProcessingInvite" class="bg-white p-10 md:p-14 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
                     <svg class="animate-spin h-8 w-8 mx-auto mb-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -1344,6 +1381,7 @@
                             
                             <div class="flex gap-3">
                                 <button @click="showAiModal = true" class="text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl hover:bg-slate-100 transition-colors flex items-center gap-1.5 shadow-sm" :style="{ color: teamColors.primary, borderColor: teamColors.primary + '50' }">✨ AI Co-Pilot</button>
+                                <button @click="openTranslateModal" class="text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl hover:bg-slate-100 transition-colors flex items-center gap-1.5 shadow-sm text-slate-600">🌐 Translate</button>
                                 <button @click="currentView = 'setup'" class="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl hover:bg-slate-100 hover:text-slate-700 transition-colors">Edit Setup</button>
                             </div>
                         </div>
@@ -3338,7 +3376,7 @@ createApp({
         // registration below, so a browser is forced to treat the SW
         // file as genuinely new and check for an update, independent of
         // any HTTP cache-control configuration on the hosting platform.
-        const SW_VERSION = 136;
+        const SW_VERSION = 137;
         const pushSupported = ref(typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
         const pushSubscribed = ref(false);
         // Controls the gentle in-app "turn on notifications" banner. Shown
@@ -3694,6 +3732,74 @@ createApp({
         const defaultStroke = ref("free");
         const workoutVisibility = ref("group");
         const workoutFontSize = ref("auto");
+
+        // Workout translation -- lets a coach translate the workout they
+        // wrote into another language (e.g. Spanish for a Spanish-speaking
+        // assistant coach) without changing the original. Output shows in a
+        // modal; the authored workout is never overwritten.
+        const showTranslateModal = ref(false);
+        const translateTargetLang = ref('Spanish');
+        const translatedWorkout = ref('');
+        const isTranslating = ref(false);
+        const translateLanguages = ['Spanish', 'Portuguese', 'French', 'Mandarin Chinese', 'Vietnamese', 'Russian', 'Arabic'];
+
+        async function translateWorkout() {
+            if (!input.value.trim()) return alert("Write or load a workout first, then translate it.");
+            if (isTranslating.value) return;
+            isTranslating.value = true;
+            translatedWorkout.value = '';
+            try {
+                const { data: { session } } = await client.auth.getSession();
+                // The prompt is deliberately strict about NOT touching the
+                // numeric/structural parts -- distances, rep counts, send-off
+                // intervals (e.g. "@ 1:30"), times, and stroke abbreviations
+                // must stay exactly as written so the workout is still
+                // swimmable. Only the words around them get translated.
+                const prompt = `Translate this swim practice workout into ${translateTargetLang.value}. Follow these rules exactly:
+- Keep ALL numbers, distances, rep/set counts (like "4x100"), send-off intervals (like "@ 1:30"), times, and pace notations EXACTLY as written -- do not translate, convert, or alter them.
+- Translate swimming terms correctly using standard swim vocabulary in the target language (e.g. freestyle, backstroke, breaststroke, butterfly, IM, kick, pull, drill, warmup, main set, cooldown, sprint, easy, build, descend).
+- Preserve the line-by-line structure and any section headings -- translate the heading text but keep it as a heading on its own line.
+- Return ONLY the translated workout text. No preamble, no explanation, no markdown code fences.`;
+                const response = await fetch("https://nzrzcbxxqxwktocrmplg.supabase.co/functions/v1/generate-workout", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${session?.access_token || ''}`,
+                        "apikey": "sb_publishable_IENWSv_n2kZ1yR2-VmV8ew_pljwvLdt"
+                    },
+                    body: JSON.stringify({
+                        prompt,
+                        context: `You are a precise translator specializing in swim coaching terminology. Target language: ${translateTargetLang.value}.`,
+                        history: input.value
+                    })
+                });
+                if (!response.ok) throw new Error(`Translation failed (server ${response.status}). Try again in a moment.`);
+                const data = await response.json();
+                let out = (data.result || '').replace(/```/g, '').trim();
+                if (!out) throw new Error("The translation came back empty. Try again.");
+                translatedWorkout.value = out;
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                isTranslating.value = false;
+            }
+        }
+
+        function openTranslateModal() {
+            if (!input.value.trim()) return alert("Write or load a workout first, then translate it.");
+            translatedWorkout.value = '';
+            showTranslateModal.value = true;
+        }
+
+        async function copyTranslatedWorkout() {
+            if (!translatedWorkout.value) return;
+            try {
+                await navigator.clipboard.writeText(translatedWorkout.value);
+                alert("Translation copied to clipboard.");
+            } catch (e) {
+                alert("Couldn't copy automatically -- select the text and copy manually.");
+            }
+        }
         
         const cloudWorkouts = ref([]);
         const seasonPlans = ref([]);
@@ -8819,6 +8925,7 @@ createApp({
             hasDraft, resumeDraft, currentSetPace, updateCursor, stressScore, stressColor,
             analyticsGroup, analyticsStartDate, analyticsEndDate, analyticsStats, resetAnalyticsDates,
             showAiModal, aiPrompt, isAiLoading, generateWithAI,
+            showTranslateModal, translateTargetLang, translatedWorkout, isTranslating, translateLanguages, translateWorkout, openTranslateModal, copyTranslatedWorkout,
             isImportingPdf, pdfImportProgress, triggerPdfUpload, importPdf,
             selectedGroupSystems, addEnergySystem, removeEnergySystem, saveGroupSystems, calculateWeekTotal, seasonPlanTab,
             addAlias, removeAlias, saveGroupAliases, editorSystemTotals,
